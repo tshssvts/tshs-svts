@@ -7,7 +7,7 @@
 
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
         /* Reset & Box Sizing */
         * {
@@ -287,7 +287,7 @@
             align-items: center;
             backdrop-filter: blur(5px);
         }
-        
+
         .modal-content {
             background: rgba(99,95,95,0.15);
             border: 1px solid rgba(255,255,255,0.25);
@@ -302,26 +302,26 @@
             color: white;
             animation: modalFadeIn 0.3s ease-out;
         }
-        
+
         @keyframes modalFadeIn {
             from { opacity: 0; transform: translateY(-20px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        
+
         .modal h2 {
             color: #ff6b6b;
             margin-bottom: 15px;
             font-size: 28px;
             font-weight: 700;
         }
-        
+
         .modal p {
             margin-bottom: 20px;
             color: rgba(255,255,255,0.9);
             font-size: 16px;
             line-height: 1.5;
         }
-        
+
         .countdown {
             font-size: 32px;
             font-weight: bold;
@@ -329,13 +329,13 @@
             margin: 15px 0;
             text-shadow: 0 0 10px rgba(79,172,254,0.5);
         }
-        
+
         /* Hidden attempts counter - removed from modal */
-        
+
         .modal-actions {
             margin-top: 20px;
         }
-        
+
         .ok-btn {
             background: linear-gradient(135deg, #4facfe, #00f2fe);
             color: white;
@@ -347,41 +347,41 @@
             font-size: 16px;
             transition: 0.3s ease;
         }
-        
+
         .ok-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 8px 18px rgba(79,172,254,0.4);
         }
-        
+
         /* Success Modal Styles */
         .success-modal .modal-content h2 {
             color: #2ecc71;
         }
-        
+
         .success-modal .modal-content p {
             color: rgba(255,255,255,0.9);
         }
-        
+
         .success-modal .ok-btn {
             background: linear-gradient(135deg, #2ecc71, #1abc9c);
         }
-        
+
         .success-modal .ok-btn:hover {
             box-shadow: 0 8px 18px rgba(46,204,113,0.4);
         }
-        
+
         .success-icon {
             font-size: 48px;
             margin-bottom: 15px;
             color: #2ecc71;
             text-shadow: 0 0 15px rgba(46,204,113,0.5);
         }
-        
+
         /* Contact Information Styles */
         .contact-info {
             margin-top: 5px;
         }
-        
+
         .contact-link {
             color: #4facfe;
             text-decoration: none;
@@ -389,7 +389,7 @@
             transition: all 0.2s ease;
             cursor: pointer;
         }
-        
+
         .contact-link:hover {
             color: #00f2fe;
             border-bottom: 1px solid #00f2fe;
@@ -418,7 +418,7 @@
 <div class="main-container">
     <!-- Left Section with More Details -->
     <div class="welcome-text">
-        <h2>Welcome Back!</h2>
+        <h2>WELCOME Back!</h2>
         <p>Track and manage student behavior effectively with the Student Violation Tracking System.<br>
            Access violation records, parent notifications, and reports easily.</p>
 
@@ -435,11 +435,11 @@
             <div class="highlight">
                 <span>📞</span>
                 <p>
-                    <strong>Contact:</strong> 
+                    <strong>Contact:</strong>
                     <span class="contact-info">
                         <a href="tel:09131234567" class="contact-link">0913-123-4567</a>
                     </span><br>
-                    <strong>Email:</strong> 
+                    <strong>Email:</strong>
                     <span class="contact-info">
                         <a href="mailto:tshs@gmail.com" class="contact-link">tshs@gmail.com</a>
                     </span>
@@ -451,7 +451,7 @@
     <!-- Login Card shifted slightly right -->
     <div class="login-card">
         <!-- Removed the attempts counter from the login form -->
-        
+
         <div class="login-header">
             <img src="{{ asset('images/logo.png') }}" alt="Logo">
             <h2> Login</h2>
@@ -568,18 +568,18 @@ if (lockoutEnd && new Date().getTime() < parseInt(lockoutEnd)) {
 function startLockout(seconds) {
     // Disable form
     loginBtn.disabled = true;
-    
+
     let timeLeft = seconds;
     updateLoginButtonText(timeLeft);
-    
+
     // Show modal
     attemptsModal.style.display = 'flex';
-    
+
     countdownInterval = setInterval(() => {
         timeLeft--;
         countdownDisplay.textContent = timeLeft;
         updateLoginButtonText(timeLeft);
-        
+
         if (timeLeft <= 0) {
             clearInterval(countdownInterval);
             attemptsModal.style.display = 'none';
@@ -598,13 +598,13 @@ function updateLoginButtonText(timeLeft) {
 function showSuccessMessage(redirectUrl) {
     // Show success modal
     successModal.style.display = 'flex';
-    
+
     // Start countdown for automatic redirect (1 second instead of 3)
     let countdown = 1;
-    
+
     redirectInterval = setInterval(() => {
         countdown--;
-        
+
         if (countdown <= 0) {
             clearInterval(redirectInterval);
             window.location.href = redirectUrl;
@@ -620,13 +620,13 @@ okBtn.addEventListener('click', function() {
 
 loginForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     // If user is in lockout period, prevent form submission
     const lockoutEnd = localStorage.getItem('lockoutEnd');
     if (lockoutEnd && new Date().getTime() < parseInt(lockoutEnd)) {
         return;
     }
-    
+
     let valid = true;
     emailError.classList.remove('visible');
     passwordError.classList.remove('visible');
@@ -656,22 +656,22 @@ loginForm.addEventListener('submit', function(e) {
             // Reset attempts on successful login
             loginAttempts = 0;
             localStorage.removeItem('lockoutEnd');
-            
+
             // Show success message before redirecting
             showSuccessMessage(data.redirect);
         } else {
             loginAttempts++;
             localStorage.setItem('loginAttempts', loginAttempts);
-            
+
             passwordError.textContent = data.message;
             passwordError.classList.add('visible');
-            
+
             // Check if we've reached the maximum attempts
             if (loginAttempts >= maxAttempts) {
                 // Set lockout end time
                 const lockoutEndTime = new Date().getTime() + (lockoutTime * 1000);
                 localStorage.setItem('lockoutEnd', lockoutEndTime);
-                
+
                 // Start lockout
                 startLockout(lockoutTime);
             }
@@ -680,16 +680,16 @@ loginForm.addEventListener('submit', function(e) {
     .catch(() => {
         loginAttempts++;
         localStorage.setItem('loginAttempts', loginAttempts);
-        
+
         passwordError.textContent = "Something went wrong. Please try again.";
         passwordError.classList.add('visible');
-        
+
         // Check if we've reached the maximum attempts
         if (loginAttempts >= maxAttempts) {
             // Set lockout end time
             const lockoutEndTime = new Date().getTime() + (lockoutTime * 1000);
             localStorage.setItem('lockoutEnd', lockoutEndTime);
-            
+
             // Start lockout
             startLockout(lockoutTime);
         }
