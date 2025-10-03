@@ -418,7 +418,7 @@
 <div class="main-container">
     <!-- Left Section with More Details -->
     <div class="welcome-text">
-        <h2>WELCOME Back!</h2>
+        <h2>Welcome Back!</h2>
         <p>Track and manage student behavior effectively with the Student Violation Tracking System.<br>
            Access violation records, parent notifications, and reports easily.</p>
 
