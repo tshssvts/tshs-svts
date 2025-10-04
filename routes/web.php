@@ -99,7 +99,18 @@ Route::prefix('prefect')->group(function () {
         Route::get('/violations/create', [PViolationController::class, 'create'])->name('violations.create');
         Route::post('/violations/store', [PViolationController::class, 'store'])->name('violations.store');
         Route::put('/violations/update/{violationId}', [PViolationController::class, 'update'])->name('violations.update');
-
+        // Violation Archive Routes
+        Route::post('/violations/archive', [PViolationController::class, 'archive'])->name('violations.archive');
+        Route::get('/violations/archived', [PViolationController::class, 'getArchived'])->name('violations.getArchived');
+        Route::post('/violations/restore', [PViolationController::class, 'restore'])->name('violations.restore');
+        Route::post('/violations/destroy-multiple', [PViolationController::class, 'destroyMultiple'])->name('violations.destroyMultiple');
+        // Archive Routes for different types
+        Route::post('/violation-appointments/archive', [PViolationController::class, 'archiveAppointments'])->name('violation.appointments.archive');
+        Route::post('/violation-anecdotals/archive', [PViolationController::class, 'archiveAnecdotals'])->name('violation.anecdotals.archive');
+        Route::get('/violation-appointments/archived', [PViolationController::class, 'getArchivedAppointments'])->name('violation.appointments.archived');
+        Route::get('/violation-anecdotals/archived', [PViolationController::class, 'getArchivedAnecdotals'])->name('violation.anecdotals.archived');
+        Route::post('/violations/restore-multiple', [PViolationController::class, 'restoreMultiple'])->name('violations.restore.multiple');
+        Route::post('/violations/destroy-multiple-archived', [PViolationController::class, 'destroyMultipleArchived'])->name('violations.destroy.multiple.archived');
 
         // Violation Anecdotal Routes
         // Display the create anecdotal form

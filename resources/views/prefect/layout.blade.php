@@ -94,11 +94,7 @@
         <li class="{{ request()->routeIs('report.generate') ? 'active' : '' }}">
             <a href="{{ route('report.generate') }}"><i class="fas fa-chart-line"></i> Reports</a>
         </li>
-        <li>
-            <a href="#" onclick="event.preventDefault(); logout();">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </li>
+
     </ul>
 </div>
 
