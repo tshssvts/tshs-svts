@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\PrefectOfDiscipline;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -169,7 +170,8 @@ class ProfileController extends Controller
                 'email' => $user->prefect_email,
                 'gender' => $user->prefect_sex,
                 'contact' => $user->prefect_contactinfo,
-                'status' => $user->status
+                'status' => $user->status,
+                'profile_image' => $user->profile_image ? Storage::url($user->profile_image) : '/images/user.jpg'
             ]);
 
         } catch (\Exception $e) {
@@ -177,6 +179,93 @@ class ProfileController extends Controller
             
             return response()->json([
                 'message' => 'Failed to load profile information'
+            ], 500);
+        }
+    }
+
+    public function uploadProfileImage(Request $request)
+    {
+        try {
+            $user = Auth::guard('prefect')->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 422);
+            }
+
+            // Delete old profile image if exists
+            if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
+                Storage::disk('public')->delete($user->profile_image);
+            }
+
+            // Store new image
+            $imagePath = $request->file('profile_image')->store('profile_images', 'public');
+            
+            // Update user record
+            $user->profile_image = $imagePath;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile image uploaded successfully',
+                'image_url' => Storage::url($imagePath)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Profile image upload failed: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload profile image: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function removeProfileImage(Request $request)
+    {
+        try {
+            $user = Auth::guard('prefect')->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Delete image file if exists
+            if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
+                Storage::disk('public')->delete($user->profile_image);
+            }
+
+            // Update user record
+            $user->profile_image = null;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile image removed successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Profile image removal failed: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove profile image'
             ], 500);
         }
     }

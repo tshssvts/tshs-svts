@@ -38,6 +38,26 @@ function updateProfileDisplay() {
         headerUserName.textContent = userData.name;
     }
 
+    // Update profile images if available
+    const profileImagePreview = document.getElementById(
+        "profile-image-preview"
+    );
+    const headerProfileImage = document.getElementById("header-profile-image");
+
+    if (
+        userData.profile_image &&
+        userData.profile_image !== "/images/user.jpg"
+    ) {
+        const timestamp = new Date().getTime();
+        const imageUrl = userData.profile_image + "?t=" + timestamp;
+        if (profileImagePreview) profileImagePreview.src = imageUrl;
+        if (headerProfileImage) headerProfileImage.src = imageUrl;
+    } else {
+        // Use default image
+        if (profileImagePreview) profileImagePreview.src = "/images/user.jpg";
+        if (headerProfileImage) headerProfileImage.src = "/images/user.jpg";
+    }
+
     // Update profile tab
     const profileName = document.getElementById("profile-name");
     const profileEmail = document.getElementById("profile-email");
@@ -490,8 +510,239 @@ function initializePasswordConfirmation() {
     }
 }
 
+// Profile Picture Functions - FIXED VERSION
+function initializeProfileImageUpload() {
+    const profileImageInput = document.getElementById("profile-image-input");
+    const profileImagePreview = document.getElementById(
+        "profile-image-preview"
+    );
+    const headerProfileImage = document.getElementById("header-profile-image");
+    const profileImageContainer = document.querySelector(
+        ".profile-image-container"
+    );
+
+    console.log("Initializing profile image upload...");
+    console.log("Profile image input:", profileImageInput);
+    console.log("Profile image container:", profileImageContainer);
+
+    if (profileImageInput) {
+        profileImageInput.addEventListener("change", function (e) {
+            console.log("File input changed");
+            const file = e.target.files[0];
+            if (file) {
+                console.log("File selected:", file.name, file.type, file.size);
+
+                // Validate file type
+                if (!file.type.match("image.*")) {
+                    showProfileImageError(
+                        "Please select a valid image file (JPEG, PNG, GIF)"
+                    );
+                    return;
+                }
+
+                // Validate file size (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    showProfileImageError("Image size must be less than 2MB");
+                    return;
+                }
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    console.log("File read successfully");
+                    if (profileImagePreview) {
+                        profileImagePreview.src = e.target.result;
+                        console.log("Preview image updated");
+                    }
+                    if (headerProfileImage) {
+                        headerProfileImage.src = e.target.result;
+                        console.log("Header image updated");
+                    }
+                    hideProfileImageError();
+
+                    // Upload image automatically
+                    uploadProfileImage(file);
+                };
+                reader.onerror = function (error) {
+                    console.error("Error reading file:", error);
+                    showProfileImageError("Error reading image file");
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    } else {
+        console.error("Profile image input not found!");
+    }
+
+    // Add hover effects
+    if (profileImageContainer) {
+        profileImageContainer.addEventListener("mouseenter", function () {
+            const overlay = this.querySelector(".profile-image-overlay");
+            if (overlay) overlay.style.display = "flex";
+        });
+
+        profileImageContainer.addEventListener("mouseleave", function () {
+            const overlay = this.querySelector(".profile-image-overlay");
+            if (overlay) overlay.style.display = "none";
+        });
+
+        // Click to upload
+        profileImageContainer.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Profile image container clicked");
+            document.getElementById("profile-image-input").click();
+        });
+    } else {
+        console.error("Profile image container not found!");
+    }
+}
+
+function uploadProfileImage(file) {
+    console.log("Starting upload for file:", file.name);
+
+    const formData = new FormData();
+    formData.append("profile_image", file);
+    formData.append("_token", CSRF_TOKEN);
+
+    // Show loading state
+    const uploadBtn = document.querySelector(".btn-send-code");
+    const originalText = uploadBtn ? uploadBtn.innerHTML : "";
+
+    if (uploadBtn) {
+        uploadBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        uploadBtn.disabled = true;
+    }
+
+    fetch(ROUTES.uploadProfileImage, {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": CSRF_TOKEN,
+        },
+        body: formData,
+    })
+        .then((response) => {
+            console.log("Upload response status:", response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            console.log("Upload response data:", data);
+            if (data.success) {
+                showAlert("Profile picture updated successfully!", "success");
+
+                // Update both preview and header image with cache-busting
+                const profileImagePreview = document.getElementById(
+                    "profile-image-preview"
+                );
+                const headerProfileImage = document.getElementById(
+                    "header-profile-image"
+                );
+
+                if (data.image_url) {
+                    const timestamp = new Date().getTime();
+                    const imageUrl = data.image_url + "?t=" + timestamp;
+
+                    if (profileImagePreview) profileImagePreview.src = imageUrl;
+                    if (headerProfileImage) headerProfileImage.src = imageUrl;
+
+                    console.log("Profile images updated with URL:", imageUrl);
+                }
+
+                // Reload user data to get updated profile info
+                loadUserProfile();
+            } else {
+                showAlert(
+                    data.message || "Failed to upload profile picture",
+                    "error"
+                );
+                // Reset to default image on failure
+                resetToDefaultImage();
+            }
+        })
+        .catch((error) => {
+            console.error("Upload error:", error);
+            showAlert("An error occurred while uploading the image", "error");
+            resetToDefaultImage();
+        })
+        .finally(() => {
+            // Reset button state
+            if (uploadBtn) {
+                uploadBtn.innerHTML =
+                    '<i class="fas fa-upload"></i> Upload Photo';
+                uploadBtn.disabled = false;
+            }
+        });
+}
+
+function removeProfileImage() {
+    if (!confirm("Are you sure you want to remove your profile picture?")) {
+        return;
+    }
+
+    fetch(ROUTES.removeProfileImage, {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": CSRF_TOKEN,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                showAlert("Profile picture removed successfully!", "success");
+                resetToDefaultImage();
+                // Reload user data
+                loadUserProfile();
+            } else {
+                showAlert(
+                    data.message || "Failed to remove profile picture",
+                    "error"
+                );
+            }
+        })
+        .catch((error) => {
+            console.error("Remove error:", error);
+            showAlert("An error occurred while removing the image", "error");
+        });
+}
+
+function resetToDefaultImage() {
+    const defaultImage = "/images/user.jpg";
+    const profileImagePreview = document.getElementById(
+        "profile-image-preview"
+    );
+    const headerProfileImage = document.getElementById("header-profile-image");
+
+    if (profileImagePreview) profileImagePreview.src = defaultImage;
+    if (headerProfileImage) headerProfileImage.src = defaultImage;
+}
+
+function showProfileImageError(message) {
+    const errorElement = document.getElementById("profile-image-error");
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = "block";
+    }
+}
+
+function hideProfileImageError() {
+    const errorElement = document.getElementById("profile-image-error");
+    if (errorElement) {
+        errorElement.textContent = "";
+        errorElement.style.display = "none";
+    }
+}
+
 // Initialize all event listeners
 function initializeEventListeners() {
+    console.log("Initializing event listeners...");
+
     // Existing dropdown functionality
     document.querySelectorAll(".dropdown-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -555,10 +806,14 @@ function initializeEventListeners() {
     initializePasswordStrength();
     initializeVerificationCodeInput();
     initializePasswordConfirmation();
+
+    // Initialize profile image upload - THIS IS CRITICAL
+    initializeProfileImageUpload();
 }
 
 // Load user profile when page loads
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM loaded, initializing application...");
     loadUserProfile();
     initializeEventListeners();
 });

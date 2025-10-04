@@ -52,7 +52,9 @@ Route::prefix('prefect')->group(function () {
         Route::post('/send-verification-code', [ProfileController::class, 'sendVerificationCode'])->name('prefect.send-verification-code');
         Route::post('/change-password', [ProfileController::class, 'changePassword'])->name('prefect.change-password');
         Route::get('/profile-info', [ProfileController::class, 'getProfileInfo'])->name('prefect.profile-info');
-
+        Route::post('/upload-profile-image', [ProfileController::class, 'uploadProfileImage'])->name('prefect.upload-profile-image');
+        Route::post('/remove-profile-image', [ProfileController::class, 'removeProfileImage'])->name('prefect.remove-profile-image');
+        
         // Management Routes
         Route::get('/studentmanagement', [PStudentController::class, 'studentmanagement'])->name('student.management');
         Route::get('/violation', [PViolationController::class, 'index'])->name('prefect.violation');

@@ -6,15 +6,62 @@
   <title>Prefect</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="{{ asset('css/prefect(1)/sidebar.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/prefect/cards.css') }}">
-     <link rel="stylesheet" href="{{ asset('css/prefect(1)/createViolation.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/prefect(1)/toolbar.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/prefect(1)/modal.css') }}">
-     <link rel="stylesheet" href="{{ asset('css/prefect(1)/createParent.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/prefect(1)/createStudent.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/prefect(1)/createComplaint.css') }}">
-
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/sidebar.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect/cards.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/createViolation.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/toolbar.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/modal.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/createParent.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/createStudent.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/createComplaint.css') }}">
+  <style>
+    /* Add these styles for alerts and image upload */
+    .alert {
+      padding: 12px 15px;
+      margin: 15px 0;
+      border-radius: 5px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .alert-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .alert-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .profile-image-container {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+    
+    .profile-image-container:hover .profile-image-overlay {
+      display: flex !important;
+    }
+    
+    .profile-image-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+  </style>
 </head>
 <body>
 
@@ -74,6 +121,29 @@
 
             <!-- Profile Tab -->
             <div id="profile-tab" class="tab-content active">
+                <!-- Profile Picture Section -->
+                <div class="profile-picture-section" style="text-align: center; margin-bottom: 20px;">
+                    <div class="profile-image-container" style="position: relative; display: inline-block;">
+                        <img id="profile-image-preview" src="/images/user.jpg" alt="Profile" 
+                            style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #3498db;">
+                        <div class="profile-image-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center;">
+                            <i class="fas fa-camera" style="color: white; font-size: 24px;"></i>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
+                        <button type="button" onclick="document.getElementById('profile-image-input').click()" 
+                                class="btn-send-code" style="margin: 5px;">
+                            <i class="fas fa-upload"></i> Upload Photo
+                        </button>
+                        <button type="button" onclick="removeProfileImage()" 
+                                class="btn-cancel" style="margin: 5px; padding: 8px 15px;">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                    <div id="profile-image-error" class="error-message" style="text-align: center;"></div>
+                </div>
+
                 <div class="profile-info">
                     <div class="info-item">
                         <span class="info-label">Name:</span>
@@ -96,9 +166,6 @@
                         <span class="info-value" id="profile-status">Loading...</span>
                     </div>
                 </div>
-                <p style="text-align: center; color: #7f8c8d; font-size: 13px;">
-                    <i class="fas fa-info-circle"></i> Contact administrator to update profile information
-                </p>
             </div>
 
             <!-- Change Password Tab -->
@@ -181,7 +248,6 @@
         </div>
     </div>
 </div>
-
             
 
 <!-- Main content area -->
@@ -192,7 +258,8 @@
         </div>
         <div class="header-right">
             <div class="user-info" onclick="toggleProfileDropdown()">
-                <img src="/images/user.jpg" alt="User">
+                <img id="header-profile-image" src="/images/user.jpg" alt="User" 
+                    style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #3498db;">
                 <span id="header-user-name">Loading...</span>
                 <i class="fas fa-caret-down"></i>
             </div>
@@ -218,11 +285,14 @@
         sendVerificationCode: '{{ route("prefect.send-verification-code") }}',
         changePassword: '{{ route("prefect.change-password") }}',
         profileInfo: '{{ route("prefect.profile-info") }}',
+        uploadProfileImage: '{{ route("prefect.upload-profile-image") }}',
+        removeProfileImage: '{{ route("prefect.remove-profile-image") }}',
         logout: '{{ route("prefect.logout") }}',
         login: '{{ route("login") }}'
     };
     const CSRF_TOKEN = '{{ csrf_token() }}';
 </script>
 
-<script src="{{ asset('js/prefect/layout.js') }}"></script></body>
+<script src="{{ asset('js/prefect/layout.js') }}"></script>
+</body>
 </html>

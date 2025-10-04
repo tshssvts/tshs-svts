@@ -700,4 +700,115 @@ body {
         align-items: flex-start;
         gap: 10px;
     }
+    /* Profile Picture Styles */
+    .profile-picture-section {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 2px dashed #e1e8ed;
+    }
+
+    .profile-image-container {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+
+    .profile-image-container:hover {
+        transform: scale(1.05);
+    }
+
+    .profile-image-container:hover .profile-image-overlay {
+        display: flex !important;
+    }
+
+    .profile-image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+
+    /* Image preview styles */
+    .profile-image-preview {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #3498db;
+        transition: all 0.3s;
+    }
+
+    .header-profile-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #3498db;
+    }
+
+    /* Upload button styles */
+    .upload-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+        margin: 5px;
+    }
+
+    .upload-btn:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+    }
+
+    .remove-btn {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+        margin: 5px;
+    }
+
+    .remove-btn:hover {
+        background: #c0392b;
+        transform: translateY(-2px);
+    }
+
+    /* Loading animation */
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 10px auto;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
 }
