@@ -13,61 +13,92 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth; // Assuming Prefect is authenticated
 use App\Models\OffensesWithSanction;
 use App\Models\ViolationRecord;
+use App\Models\ViolationAppointment;
+use App\Models\ViolationAnecdotal;
 
 class PViolationController extends Controller
+{public function index()
 {
 
-    public function index()
-    {
-// Get the actual dates from your violation records
-$mostRecentViolationDate = DB::table('tbl_violation_record')->max('violation_date');
-$earliestViolationDate = DB::table('tbl_violation_record')->min('violation_date');
+$vappointments = ViolationAppointment::with(['violation.student'])->get();
+$vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
 
-// Use the most recent violation date for calculations, or today if no records exist
-$referenceDate = $mostRecentViolationDate ? Carbon::parse($mostRecentViolationDate) : Carbon::today();
+    // Get the actual dates from your violation records
+    $mostRecentViolationDate = DB::table('tbl_violation_record')->max('violation_date');
+    $earliestViolationDate = DB::table('tbl_violation_record')->min('violation_date');
 
-// Calculate date ranges based on the actual violation dates
-$today = $referenceDate->copy(); // This is the date from violation_date, not necessarily today
-$startOfWeek = $referenceDate->copy()->startOfWeek();
-$endOfWeek = $referenceDate->copy()->endOfWeek();
-$startOfMonth = $referenceDate->copy()->startOfMonth();
-$endOfMonth = $referenceDate->copy()->endOfMonth();
+    // Use the most recent violation date for calculations, or today if no records exist
+    $referenceDate = $mostRecentViolationDate ? Carbon::parse($mostRecentViolationDate) : Carbon::today();
 
-// Daily violations - count violations that happened on the most recent violation date
-$dailyViolations = DB::table('tbl_violation_record')
-    ->whereDate('violation_date', $today)
-    ->count();
+    // Calculate date ranges based on the actual violation dates
+    $today = $referenceDate->copy();
+    $startOfWeek = $referenceDate->copy()->startOfWeek();
+    $endOfWeek = $referenceDate->copy()->endOfWeek();
+    $startOfMonth = $referenceDate->copy()->startOfMonth();
+    $endOfMonth = $referenceDate->copy()->endOfMonth();
 
-// Weekly violations - count violations in the week of the most recent violation
-$weeklyViolations = DB::table('tbl_violation_record')
-    ->whereBetween('violation_date', [$startOfWeek, $endOfWeek])
-    ->count();
+    // ✅ Summary Counts
+    $dailyViolations = DB::table('tbl_violation_record')
+        ->whereDate('violation_date', $today)
+        ->count();
 
-// Monthly violations - count violations in the month of the most recent violation
-$monthlyViolations = DB::table('tbl_violation_record')
-    ->whereBetween('violation_date', [$startOfMonth, $endOfMonth])
-    ->count();
-        // Other data
-        $violations = ViolationRecord::with(['student', 'offense'])->paginate(10);
-        $offenses = OffensesWithSanction::all();
+    $weeklyViolations = DB::table('tbl_violation_record')
+        ->whereBetween('violation_date', [$startOfWeek, $endOfWeek])
+        ->count();
 
-        // ✅ don’t overwrite $dailyViolations again
-        return view('prefect.violation', compact(
-            'violations',
-            'offenses',
-            'mostRecentViolationDate',
-            'earliestViolationDate',
-            'referenceDate',
-            'today',
-            'startOfWeek',
-            'endOfWeek',
-            'startOfMonth',
-            'endOfMonth',
-            'dailyViolations',
-            'weeklyViolations',
-            'monthlyViolations'
-        ));
-    }
+    $monthlyViolations = DB::table('tbl_violation_record')
+        ->whereBetween('violation_date', [$startOfMonth, $endOfMonth])
+        ->count();
+
+    // ✅ Fetch Main Violation Records
+    $violations = ViolationRecord::with(['student', 'offense'])
+        ->orderBy('violation_date', 'desc')
+        ->paginate(10);
+
+    // ✅ Fetch Violation Appointments
+    $appointments = DB::table('tbl_violation_appointment')
+        ->join('tbl_violation_record', 'tbl_violation_appointment.violation_id', '=', 'tbl_violation_record.violation_id')
+        ->select(
+            'tbl_violation_appointment.*',
+            'tbl_violation_record.violation_incident'
+        )
+        ->orderBy('tbl_violation_appointment.violation_app_date', 'desc')
+        ->paginate(10);
+
+    // ✅ Fetch Violation Anecdotals
+    $anecdotals = DB::table('tbl_violation_anecdotal')
+        ->join('tbl_violation_record', 'tbl_violation_anecdotal.violation_id', '=', 'tbl_violation_record.violation_id')
+        ->select(
+            'tbl_violation_anecdotal.*',
+            'tbl_violation_record.violation_incident'
+        )
+        ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc')
+        ->paginate(10);
+
+    // ✅ Fetch Offenses (if needed for dropdowns)
+    $offenses = OffensesWithSanction::all();
+
+    // ✅ Return to Blade
+    return view('prefect.violation', compact(
+        'violations',
+        'appointments',
+        'anecdotals',
+                'vanecdotals',
+                        'vappointments',
+        'offenses',
+        'mostRecentViolationDate',
+        'earliestViolationDate',
+        'referenceDate',
+        'today',
+        'startOfWeek',
+        'endOfWeek',
+        'startOfMonth',
+        'endOfMonth',
+        'dailyViolations',
+        'weeklyViolations',
+        'monthlyViolations'
+    ));
+}
 
 
 // Store violations

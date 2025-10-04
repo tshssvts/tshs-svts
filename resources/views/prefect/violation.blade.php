@@ -3,7 +3,7 @@
 @section('content')
 <div class="main-container">
 
-  <!-- Toolbar -->
+  <!-- ✅ Toolbar -->
   <div class="toolbar">
     <h2>Violation Management</h2>
     <div class="actions">
@@ -16,7 +16,7 @@
     </div>
   </div>
 
-  <!-- Summary Cards -->
+  <!-- ✅ Summary Cards -->
   <div class="summary">
     <div class="card">
       <h2>{{ $monthlyViolations }}</h2>
@@ -30,10 +30,9 @@
       <h2>{{ $dailyViolations }}</h2>
       <p>Today</p>
     </div>
-</div>
+  </div>
 
-
-  <!-- Bulk Action / Select Options -->
+  <!-- ✅ Bulk Action / Dropdown -->
   <div class="select-options">
     <div class="left-controls">
       <label for="selectAll" class="select-label">
@@ -41,7 +40,6 @@
         <span>Select All</span>
       </label>
 
-      <!-- Dropdown Button -->
       <div class="dropdown">
         <button class="btn-info dropdown-btn">⬇️ View Records</button>
         <div class="dropdown-content">
@@ -53,114 +51,179 @@
     </div>
 
     <div class="right-controls">
+      <button class="btn-cleared" id="moveToTrashBtn">Cleared</button>
       <button class="btn-danger" id="moveToTrashBtn">🗑️ Move Selected to Trash</button>
     </div>
   </div>
 
-  <!-- Violation Table -->
   <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>ID</th>
-          <th>Student Name</th>
-          <th>Incident</th>
-          <th>Offense Type</th>
-          <th>Sanction</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody">
-        @forelse($violations as $violation)
+
+    <!-- 📋 VIOLATION RECORDS TABLE -->
+    <div id="violationRecordsTable" class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>ID</th>
+            <th>Student Name</th>
+            <th>Incident</th>
+            <th>Offense Type</th>
+            <th>Sanction</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          @forelse($violations as $violation)
           <tr
+            data-violation-id="{{ $violation->violation_id }}"
             data-student-id="{{ $violation->student->student_id }}"
-            data-offense-id="{{ $violation->offense->offense_sanc_id }}"
             data-student-name="{{ $violation->student->student_fname }} {{ $violation->student->student_lname }}"
+            data-offense-id="{{ $violation->offense->offense_sanc_id }}"
             data-offense-type="{{ $violation->offense->offense_type }}"
             data-sanction="{{ $violation->offense->sanction_consequences }}"
             data-incident="{{ $violation->violation_incident }}"
             data-date="{{ $violation->violation_date }}"
+            data-status="{{ $violation->status }}"
             data-time="{{ \Carbon\Carbon::parse($violation->violation_time)->format('h:i A') }}"
           >
             <td><input type="checkbox" class="rowCheckbox"></td>
             <td>{{ $violation->violation_id }}</td>
             <td>{{ $violation->student->student_fname }} {{ $violation->student->student_lname }}</td>
             <td>{{ $violation->violation_incident }}</td>
-            <td><span title="{{ $violation->offense->offense_type }}">{{ $violation->offense->offense_type }}</span></td>
-            <td><span title="{{ $violation->offense->sanction_consequences }}">{{ $violation->offense->sanction_consequences }}</span></td>
+            <td>{{ $violation->offense->offense_type }}</td>
+            <td>{{ $violation->offense->sanction_consequences }}</td>
             <td>{{ $violation->violation_date }}</td>
             <td>{{ \Carbon\Carbon::parse($violation->violation_time)->format('h:i A') }}</td>
-            <td>
-              <button class="btn-primary editViolationBtn">✏️ Edit</button>
-            </td>
+            <td>{{ $violation->status }}</td>
+            <td><button class="btn-primary editViolationBtn">✏️ Edit</button></td>
           </tr>
-        @empty
+          @empty
           <tr class="no-data-row">
             <td colspan="9" style="text-align:center;">No violations found</td>
           </tr>
-        @endforelse
-      </tbody>
-    </table>
+          @endforelse
+        </tbody>
+      </table>
 
-    <!-- Pagination -->
-    <div class="pagination-wrapper">
-      <div class="pagination-summary">
-        Showing {{ $violations->firstItem() ?? 0 }} to {{ $violations->lastItem() ?? 0 }} of {{ $violations->total() ?? 0 }} violation{{ $violations->total() == 1 ? '' : 's' }}
+      <div class="pagination-wrapper">
+        <div class="pagination-summary">
+          @if($violations instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            Showing {{ $violations->firstItem() ?? 0 }} to {{ $violations->lastItem() ?? 0 }} of {{ $violations->total() ?? 0 }} record(s)
+          @endif
+        </div>
+        <div class="pagination-links">
+          {{ $violations->links() }}
+        </div>
       </div>
-      <div class="pagination-links">
-        {{ $violations->links() }}
-      </div>
+    </div>
+
+    <!-- 📅 VIOLATION APPOINTMENTS TABLE -->
+    <div id="violationAppointmentsTable" class="table-wrapper" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Student Name</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($vappointments as $appt)
+          <tr
+            data-app-id="{{ $appt->violation_app_id }}"
+            data-status="{{ $appt->violation_app_status }}"
+            data-date="{{ $appt->violation_app_date }}"
+            data-time="{{ \Carbon\Carbon::parse($appt->violation_app_time)->format('h:i A') }}"
+          >
+            <td>{{ $appt->violation_app_id }}</td>
+            <td>
+              {{ $appt->violation->student->student_fname ?? 'N/A' }}
+              {{ $appt->violation->student->student_lname ?? '' }}
+            </td>
+            <td>{{ $appt->violation_app_status }}</td>
+            <td>{{ $appt->violation_app_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($appt->violation_app_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editAppointmentBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="6" style="text-align:center;">No appointments found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 📝 VIOLATION ANECDOTALS TABLE -->
+    <div id="violationAnecdotalsTable" class="table-wrapper" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Student Name</th>
+            <th>Solution</th>
+            <th>Recommendation</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($vanecdotals as $anec)
+          <tr
+            data-anec-id="{{ $anec->violation_anec_id }}"
+            data-solution="{{ $anec->violation_anec_solution }}"
+            data-recommendation="{{ $anec->violation_anec_recommendation }}"
+            data-date="{{ $anec->violation_anec_date }}"
+            data-time="{{ \Carbon\Carbon::parse($anec->violation_anec_time)->format('h:i A') }}"
+          >
+            <td>{{ $anec->violation_anec_id }}</td>
+            <td>
+              {{ $anec->violation->student->student_fname ?? 'N/A' }}
+              {{ $anec->violation->student->student_lname ?? '' }}
+            </td>
+            <td>{{ $anec->violation_anec_solution }}</td>
+            <td>{{ $anec->violation_anec_recommendation }}</td>
+            <td>{{ $anec->violation_anec_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($anec->violation_anec_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editAnecdotalBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="7" style="text-align:center;">No anecdotal records found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ✏️ Edit Violation Modal -->
+  <!-- ✏️ Edit Modal -->
   <div class="modal" id="editViolationModal">
     <div class="modal-content">
       <button class="close-btn" id="closeViolationEditModal">✖</button>
-      <h2>Edit Violation</h2>
+      <h2>Edit Record</h2>
 
       <form id="editViolationForm" method="POST" action="">
         @csrf
         @method('PUT')
 
-        <input type="hidden" name="violation_id" id="edit_violation_id">
-        <input type="hidden" name="violator_id" id="edit_student_id">
-        <input type="hidden" name="offense_sanc_id" id="edit_offense_sanc_id">
+        <input type="hidden" name="record_id" id="edit_record_id">
 
         <div class="form-grid">
-          <!-- Student -->
           <div class="form-group">
-            <label>Student Name</label>
-            <input type="text" id="studentSearch" placeholder="Search student name..." autocomplete="off" required>
-            <ul id="studentResults" class="search-results"></ul>
+            <label>Details</label>
+            <textarea id="edit_details" name="details"></textarea>
           </div>
-
-          <!-- Offense & Sanction -->
-          <div class="form-group">
-            <label>Offense & Sanction</label>
-            <input type="text" id="edit_offense_search" placeholder="Search offense..." autocomplete="off" required>
-            <ul id="offenseResults" class="search-results"></ul>
-          </div>
-
-          <!-- Incident -->
-          <div class="form-group">
-            <label>Incident</label>
-            <input type="text" name="violation_incident" id="edit_violation_incident" required>
-          </div>
-
-          <!-- Date -->
           <div class="form-group">
             <label>Date</label>
-            <input type="date" name="violation_date" id="edit_violation_date" required>
+            <input type="date" id="edit_date" name="date" required>
           </div>
-
-          <!-- Time -->
           <div class="form-group">
             <label>Time</label>
-            <input type="time" name="violation_time" id="edit_violation_time" required>
+            <input type="time" id="edit_time" name="time" required>
           </div>
         </div>
 
@@ -174,100 +237,80 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const editButtons = document.querySelectorAll('.editViolationBtn');
+document.addEventListener('DOMContentLoaded', () => {
   const editModal = document.getElementById('editViolationModal');
-  const closeEditModal = document.getElementById('closeViolationEditModal');
-  const cancelEditBtn = document.getElementById('cancelViolationEditBtn');
   const editForm = document.getElementById('editViolationForm');
+  const closeModal = document.getElementById('closeViolationEditModal');
+  const cancelBtn = document.getElementById('cancelViolationEditBtn');
 
-  const studentSearch = document.getElementById('studentSearch');
-  const studentResults = document.getElementById('studentResults');
-  const studentIdInput = document.getElementById('edit_student_id');
+  function openModal(action, data) {
+    editForm.action = action;
+    document.getElementById('edit_record_id').value = data.id || '';
+    document.getElementById('edit_details').value = data.details || '';
+    document.getElementById('edit_date').value = data.date || '';
+    document.getElementById('edit_time').value = convertTo24Hour(data.time || '');
+    editModal.style.display = 'flex';
+  }
 
-  const offenseSearch = document.getElementById('edit_offense_search');
-  const offenseResults = document.getElementById('offenseResults');
-  const offenseIdInput = document.getElementById('edit_offense_sanc_id');
+  function convertTo24Hour(timeStr) {
+    if (!timeStr.includes(' ')) return timeStr;
+    const [time, mod] = timeStr.split(' ');
+    let [h, m] = time.split(':');
+    h = parseInt(h);
+    if (mod === 'PM' && h !== 12) h += 12;
+    if (mod === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m}`;
+  }
 
-  // Open edit modal
-  editButtons.forEach(btn => {
-    btn.addEventListener('click', function () {
-      const row = this.closest('tr');
-      const violationId = row.children[1].innerText.trim();
-
-      // Populate hidden inputs from row data attributes
-      studentIdInput.value = row.dataset.studentId;
-      offenseIdInput.value = row.dataset.offenseId;
-
-      // Populate form fields
-      studentSearch.value = row.dataset.studentName;
-      offenseSearch.value = `${row.dataset.offenseType} - ${row.dataset.sanction}`;
-      editForm.querySelector('#edit_violation_incident').value = row.dataset.incident;
-      editForm.querySelector('#edit_violation_date').value = row.dataset.date;
-      editForm.querySelector('#edit_violation_time').value = convertTo24Hour(row.dataset.time);
-      editForm.querySelector('#edit_violation_id').value = violationId;
-
-      editForm.action = `/prefect/violations/update/${violationId}`; // Must match your route
-      editModal.style.display = 'flex';
+  document.querySelectorAll('.editViolationBtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const row = e.target.closest('tr');
+      openModal(`/prefect/violations/update/${row.dataset.violationId}`, {
+        id: row.dataset.violationId,
+        details: row.dataset.incident,
+        date: row.dataset.date,
+        time: row.dataset.time
+      });
     });
   });
 
-  function convertTo24Hour(timeStr) {
-    const [time, modifier] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':');
-    hours = parseInt(hours, 10);
-    if (modifier === 'PM' && hours !== 12) hours += 12;
-    if (modifier === 'AM' && hours === 12) hours = 0;
-    return `${hours.toString().padStart(2, '0')}:${minutes}`;
-  }
-
-  // Close modal
-  [closeEditModal, cancelEditBtn].forEach(btn =>
-    btn.addEventListener('click', () => editModal.style.display = 'none')
-  );
-
-  // Live student search
-  studentSearch.addEventListener('input', async function() {
-    const query = this.value.trim();
-    studentResults.innerHTML = '';
-    if (query.length < 2) return;
-
-    try {
-      const res = await fetch(`/prefect/students/search?query=${query}`);
-      const students = await res.json();
-      students.forEach(s => {
-        const li = document.createElement('li');
-        li.textContent = `${s.student_fname} ${s.student_lname}`;
-        li.addEventListener('click', () => {
-          studentSearch.value = li.textContent;
-          studentIdInput.value = s.student_id;
-          studentResults.innerHTML = '';
-        });
-        studentResults.appendChild(li);
+  document.querySelectorAll('.editAppointmentBtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const row = e.target.closest('tr');
+      openModal(`/prefect/violation-appointments/update/${row.dataset.appId}`, {
+        id: row.dataset.appId,
+        details: row.dataset.status,
+        date: row.dataset.date,
+        time: row.dataset.time
       });
-    } catch (err) { console.error(err); }
+    });
   });
 
-  // Live offense search
-  offenseSearch.addEventListener('input', async function() {
-    const query = this.value.trim();
-    offenseResults.innerHTML = '';
-    if (query.length < 2) return;
-
-    try {
-      const res = await fetch(`/prefect/offenses/search?query=${query}`);
-      const offenses = await res.json();
-      offenses.forEach(o => {
-        const li = document.createElement('li');
-        li.textContent = `${o.offense_type} - ${o.sanction_consequences}`;
-        li.addEventListener('click', () => {
-          offenseSearch.value = li.textContent;
-          offenseIdInput.value = o.offense_sanc_id;
-          offenseResults.innerHTML = '';
-        });
-        offenseResults.appendChild(li);
+  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const row = e.target.closest('tr');
+      openModal(`/prefect/violation-anecdotals/update/${row.dataset.anecId}`, {
+        id: row.dataset.anecId,
+        details: `${row.dataset.solution} | ${row.dataset.recommendation}`,
+        date: row.dataset.date,
+        time: row.dataset.time
       });
-    } catch (err) { console.error(err); }
+    });
+  });
+
+  [closeModal, cancelBtn].forEach(btn => btn.addEventListener('click', () => editModal.style.display = 'none'));
+
+  const sections = {
+    violationRecords: document.getElementById('violationRecordsTable'),
+    violationAppointments: document.getElementById('violationAppointmentsTable'),
+    violationAnecdotals: document.getElementById('violationAnecdotalsTable')
+  };
+  Object.keys(sections).forEach(key => {
+    document.getElementById(key).addEventListener('click', e => {
+      e.preventDefault();
+      Object.values(sections).forEach(sec => sec.style.display = 'none');
+      sections[key].style.display = 'block';
+    });
   });
 });
 </script>
