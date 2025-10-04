@@ -162,6 +162,286 @@ public function update(Request $request, $violationId)
 }
 
 
+    public function archive(Request $request)
+    {
+        $request->validate([
+            'violation_ids' => 'required|array',
+            'violation_ids.*' => 'exists:tbl_violation_record,violation_id',
+            'status' => 'required|in:inactive,cleared'
+        ]);
+
+        try {
+            ViolationRecord::whereIn('violation_id', $request->violation_ids)
+                   ->update(['status' => $request->status]);
+
+            return response()->json([
+                'success' => true, 
+                'message' => count($request->violation_ids) . ' violation(s) archived as ' . $request->status . ' successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error archiving violations: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get archived violations
+     */
+    public function getArchived()
+    {
+        try {
+            $archivedViolations = DB::table('tbl_violation_record')
+                ->join('tbl_student', 'tbl_violation_record.violator_id', '=', 'tbl_student.student_id')
+                ->join('tbl_offenses_with_sanction', 'tbl_violation_record.offense_sanc_id', '=', 'tbl_offenses_with_sanction.offense_sanc_id')
+                ->select(
+                    'tbl_violation_record.*',
+                    'tbl_student.student_fname',
+                    'tbl_student.student_lname',
+                    'tbl_offenses_with_sanction.offense_type'
+                )
+                ->whereIn('tbl_violation_record.status', ['inactive', 'cleared'])
+                ->orderBy('tbl_violation_record.updated_at', 'desc')
+                ->get();
+
+            return response()->json($archivedViolations);
+        } catch (\Exception $e) {
+            return response()->json([], 500);
+        }
+    }
+
+    /**
+     * Restore archived violations
+     */
+    public function restore(Request $request)
+    {
+        $request->validate([
+            'violation_ids' => 'required|array',
+            'violation_ids.*' => 'exists:tbl_violation_record,violation_id'
+        ]);
+
+        try {
+            ViolationRecord::whereIn('violation_id', $request->violation_ids)
+                   ->update(['status' => 'active']);
+
+            return response()->json([
+                'success' => true, 
+                'message' => count($request->violation_ids) . ' violation(s) restored successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error restoring violations: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Permanently delete multiple violations
+     */
+    public function destroyMultiple(Request $request)
+    {
+        $request->validate([
+            'violation_ids' => 'required|array',
+            'violation_ids.*' => 'exists:tbl_violation_record,violation_id'
+        ]);
+
+        try {
+            ViolationRecord::whereIn('violation_id', $request->violation_ids)->delete();
+            
+            return response()->json([
+                'success' => true, 
+                'message' => count($request->violation_ids) . ' violation(s) deleted permanently'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error deleting violations: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function archiveAppointments(Request $request)
+    {
+        $request->validate([
+            'appointment_ids' => 'required|array',
+            'appointment_ids.*' => 'exists:tbl_violation_appointment,violation_app_id',
+            'status' => 'required|in:Completed,Cancelled'
+        ]);
+
+        try {
+            ViolationAppointment::whereIn('violation_app_id', $request->appointment_ids)
+                       ->update(['violation_app_status' => $request->status]);
+
+            return response()->json([
+                'success' => true, 
+                'message' => count($request->appointment_ids) . ' appointment(s) archived as ' . $request->status . ' successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error archiving appointments: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Archive violation anecdotals
+     */
+    public function archiveAnecdotals(Request $request)
+    {
+        $request->validate([
+            'anecdotal_ids' => 'required|array',
+            'anecdotal_ids.*' => 'exists:tbl_violation_anecdotal,violation_anec_id',
+            'status' => 'required|in:completed,closed'
+        ]);
+
+        try {
+            ViolationAnecdotal::whereIn('violation_anec_id', $request->anecdotal_ids)
+                       ->update(['status' => $request->status]);
+
+            return response()->json([
+                'success' => true, 
+                'message' => count($request->anecdotal_ids) . ' anecdotal record(s) archived as ' . $request->status . ' successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error archiving anecdotal records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get archived violation appointments
+     */
+    public function getArchivedAppointments()
+    {
+        try {
+            $archivedAppointments = DB::table('tbl_violation_appointment')
+                ->join('tbl_violation_record', 'tbl_violation_appointment.violation_id', '=', 'tbl_violation_record.violation_id')
+                ->join('tbl_student', 'tbl_violation_record.violator_id', '=', 'tbl_student.student_id')
+                ->select(
+                    'tbl_violation_appointment.*',
+                    'tbl_student.student_fname',
+                    'tbl_student.student_lname'
+                )
+                ->whereIn('tbl_violation_appointment.violation_app_status', ['Completed', 'Cancelled'])
+                ->orderBy('tbl_violation_appointment.updated_at', 'desc')
+                ->get();
+
+            return response()->json($archivedAppointments);
+        } catch (\Exception $e) {
+            return response()->json([], 500);
+        }
+    }
+
+    /**
+     * Get archived violation anecdotals
+     */
+    public function getArchivedAnecdotals()
+    {
+        try {
+            $archivedAnecdotals = DB::table('tbl_violation_anecdotal')
+                ->join('tbl_violation_record', 'tbl_violation_anecdotal.violation_id', '=', 'tbl_violation_record.violation_id')
+                ->join('tbl_student', 'tbl_violation_record.violator_id', '=', 'tbl_student.student_id')
+                ->select(
+                    'tbl_violation_anecdotal.*',
+                    'tbl_student.student_fname',
+                    'tbl_student.student_lname'
+                )
+                ->whereIn('tbl_violation_anecdotal.status', ['completed', 'closed'])
+                ->orderBy('tbl_violation_anecdotal.updated_at', 'desc')
+                ->get();
+
+            return response()->json($archivedAnecdotals);
+        } catch (\Exception $e) {
+            return response()->json([], 500);
+        }
+    }
+
+    /**
+     * Restore multiple archived records
+     */
+    public function restoreMultiple(Request $request)
+    {
+        $request->validate([
+            'records' => 'required|array',
+            'records.*.id' => 'required',
+            'records.*.type' => 'required|in:violation,appointment,anecdotal'
+        ]);
+
+        try {
+            $restoredCount = 0;
+
+            foreach ($request->records as $record) {
+                if ($record['type'] === 'violation') {
+                    ViolationRecord::where('violation_id', $record['id'])
+                        ->update(['status' => 'active']);
+                    $restoredCount++;
+                } elseif ($record['type'] === 'appointment') {
+                    ViolationAppointment::where('violation_app_id', $record['id'])
+                        ->update(['violation_app_status' => 'Pending']);
+                    $restoredCount++;
+                } elseif ($record['type'] === 'anecdotal') {
+                    ViolationAnecdotal::where('violation_anec_id', $record['id'])
+                        ->update(['status' => 'active']);
+                    $restoredCount++;
+                }
+            }
+
+            return response()->json([
+                'success' => true, 
+                'message' => $restoredCount . ' record(s) restored successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error restoring records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete multiple archived records permanently
+     */
+    public function destroyMultipleArchived(Request $request)
+    {
+        $request->validate([
+            'records' => 'required|array',
+            'records.*.id' => 'required',
+            'records.*.type' => 'required|in:violation,appointment,anecdotal'
+        ]);
+
+        try {
+            $deletedCount = 0;
+
+            foreach ($request->records as $record) {
+                if ($record['type'] === 'violation') {
+                    ViolationRecord::where('violation_id', $record['id'])->delete();
+                    $deletedCount++;
+                } elseif ($record['type'] === 'appointment') {
+                    ViolationAppointment::where('violation_app_id', $record['id'])->delete();
+                    $deletedCount++;
+                } elseif ($record['type'] === 'anecdotal') {
+                    ViolationAnecdotal::where('violation_anec_id', $record['id'])->delete();
+                    $deletedCount++;
+                }
+            }
+
+            return response()->json([
+                'success' => true, 
+                'message' => $deletedCount . ' record(s) deleted permanently'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error deleting records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     // 🔍 Live Search Students
  public function searchStudents(Request $request)
@@ -204,8 +484,4 @@ public function update(Request $request, $violationId)
     {
         return view('prefect.create-violation'); // Blade file
     }
-
-
-
-
 }
