@@ -14,6 +14,7 @@ use App\Http\Controllers\Prefect\PComplaintController;
 use App\Http\Controllers\Prefect\POffenseSanctionController;
 use App\Http\Controllers\Prefect\PReportController;
 use App\Http\Controllers\Prefect\PViolationAnecdotalController;
+use App\Http\Controllers\Prefect\ProfileController;
 
 
 // Adviser Controllers
@@ -28,13 +29,14 @@ use App\Http\Controllers\Adviser\AReportController;
 use App\Http\Controllers\PParentController as ControllersPParentController;
 
 Route::get('/', function () {
-    return view('adviser.login');
+    return view('login');
 });
 
 
 // ===================== Authentication Routes =====================
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/', [AuthController::class, 'login'])->name('login');
+
 
 // ===================== Prefect Routes =====================
 Route::prefix('prefect')->group(function () {
@@ -45,6 +47,11 @@ Route::prefix('prefect')->group(function () {
     Route::middleware('auth:prefect')->group(function () {
         // Dashboard
         Route::get('/dashboard', [PDashboardController::class, 'dashboard'])->name('prefect.dashboard');
+
+       // Profile routes
+        Route::post('/send-verification-code', [ProfileController::class, 'sendVerificationCode'])->name('prefect.send-verification-code');
+        Route::post('/change-password', [ProfileController::class, 'changePassword'])->name('prefect.change-password');
+        Route::get('/profile-info', [ProfileController::class, 'getProfileInfo'])->name('prefect.profile-info');
 
         // Management Routes
         Route::get('/studentmanagement', [PStudentController::class, 'studentmanagement'])->name('student.management');
@@ -104,10 +111,6 @@ Route::prefix('prefect')->group(function () {
         // Store anecdotal records
         Route::post('/violation-anecdotal', [PViolationAnecdotalController::class, 'store'])
          ->name('violation-anecdotal.store');
-
-
-
-
 
 
         // Violation AJAX Routes
