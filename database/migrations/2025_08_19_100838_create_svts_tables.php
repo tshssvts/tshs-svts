@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('prefect_email', 255);
             $table->string('prefect_password', 255);
             $table->string('prefect_contactinfo', 255);
+            $table->string('profile_image')->nullable();
             $table->string('status', 50)->default('active');
             $table->timestamps();
         });
@@ -49,6 +50,7 @@ return new class extends Migration
             $table->string('adviser_email', 255);
             $table->string('adviser_password', 255);
             $table->string('adviser_contactinfo', 255);
+            $table->string('profile_image')->nullable();
             $table->string('adviser_section', 255);
             $table->string('adviser_gradelevel', 50);
             $table->string('status', 50)->default('active');

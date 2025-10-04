@@ -441,7 +441,7 @@
                     </span><br>
                     <strong>Email:</strong>
                     <span class="contact-info">
-                        <a href="mailto:tshs@gmail.com" class="contact-link">tshs@gmail.com</a>
+                        <a href="mailto:tshssvts@gmail.com" class="contact-link">tshssvts@gmail.com</a>
                     </span>
                 </p>
             </div>
@@ -466,12 +466,11 @@
                     type="email"
                     id="email"
                     name="email"
-                    placeholder="e.g. adviser@gmail.com"
+                    placeholder="e.g. example@gmail.com"
                     required
                     autocomplete="username"
                     pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                    title="Invalid email format. Example: adviser@gmail.com"
-                >
+                    title="Invalid email format. Example: example@gmail.com">
                 <small class="error-text" id="emailError">
                     @error('email')
                         {{ $message }}

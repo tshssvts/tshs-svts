@@ -23,7 +23,7 @@ class PLogoutController extends Controller
      return response()->json([
                 'success' => true,
                 'message' => 'Logout successful!',
-                'redirect' => route('adviser.login')
+                'redirect' => route('login')
             ]);
 }
 

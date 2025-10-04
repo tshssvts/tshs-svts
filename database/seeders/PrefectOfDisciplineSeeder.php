@@ -17,5 +17,23 @@ class PrefectOfDisciplineSeeder extends Seeder
             'prefect_password'    => bcrypt('password123'),
             'prefect_contactinfo' => '09171234567',
         ]);
+
+        PrefectOfDiscipline::create([
+            'prefect_fname'       => 'Kent Zyrone',
+            'prefect_lname'       => 'Flores',
+            'prefect_sex'         => 'Male',
+            'prefect_email'       => 'k.zyroneflores@gmail.com',
+            'prefect_password'    => bcrypt('prefect'),
+            'prefect_contactinfo' => '09093246917',
+        ]);
+
+        PrefectOfDiscipline::create([
+            'prefect_fname'       => 'Tagoloan Senior',
+            'prefect_lname'       => 'High School',
+            'prefect_sex'         => 'Other',
+            'prefect_email'       => 'tshssvts@gmail.com',
+            'prefect_password'    => bcrypt('prefect'),
+            'prefect_contactinfo' => '0913-123-4567',
+        ]);
     }
 }
