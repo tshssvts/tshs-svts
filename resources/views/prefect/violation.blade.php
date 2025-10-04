@@ -11,7 +11,9 @@
       <a href="{{ route('violations.create') }}" class="btn-primary" id="createBtn">
         <i class="fas fa-plus"></i> Add Violation
       </a>
-      <button class="btn-secondary" id="createAnecBtn">📝 Create Anecdotal</button>
+      <a href="{{ route('violation-anecdotal.create') }}" class="btn-secondary" id="createAnecBtn">
+        <i class="fas fa-plus"></i>📝 Create Anecdotal
+      </a>
       <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
     </div>
   </div>
