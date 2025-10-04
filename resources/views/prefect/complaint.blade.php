@@ -3,7 +3,7 @@
 @section('content')
 <div class="main-container">
 
-  <!-- Toolbar -->
+  <!-- ✅ Toolbar -->
   <div class="toolbar">
     <h2>Complaint Management</h2>
     <div class="actions">
@@ -16,258 +16,249 @@
     </div>
   </div>
 
-  <!-- Summary Cards -->
+  <!-- ✅ Summary Cards -->
   <div class="summary">
-    <div class="card">
-      <h2>55</h2>
-      <p>Monthly Complaints</p>
-    </div>
-    <div class="card">
-      <h2>12</h2>
-      <p>Weekly Complaints</p>
-    </div>
-    <div class="card">
-      <h2>11</h2>
-      <p> Daily Complaints</p>
-    </div>
-    <div class="card">
-      <h2>11</h2>
-      <p>Scheduled</p>
-    </div>
-    <div class="card">
-      <h2>11</h2>
-      <p>Completed</p>
-    </div>
-    </div>
+    <div class="card"><h2>{{ $monthlyComplaints }}</h2><p>This Month</p></div>
+    <div class="card"><h2>{{ $weeklyComplaints }}</h2><p>This Week</p></div>
+    <div class="card"><h2>{{ $dailyComplaints }}</h2><p>Today</p></div>
+  </div>
 
-
-  <!-- Bulk Action / Select Options -->
+  <!-- ✅ Bulk Actions / Tabs -->
   <div class="select-options">
     <div class="left-controls">
       <label for="selectAll" class="select-label">
-        <input type="checkbox" id="selectAll">
-        <span>Select All</span>
+        <input type="checkbox" id="selectAll"><span>Select All</span>
       </label>
 
       <div class="dropdown">
         <button class="btn-info dropdown-btn">⬇️ View Records</button>
         <div class="dropdown-content">
-          <a href="#" id="violationRecords">Violation Records</a>
-          <a href="#" id="violaitonAppointments">Violation Appointments</a>
-          <a href="#" id="violationAnecdotals">Violation Anecdotals</a>
+          <a href="#" id="complaintRecords">Complaint Records</a>
+          <a href="#" id="complaintAppointments">Complaint Appointments</a>
+          <a href="#" id="complaintAnecdotals">Complaint Anecdotals</a>
         </div>
       </div>
     </div>
 
     <div class="right-controls">
-      <button class="btn-danger" id="moveToTrashBtn">🗑️ Move Selected to Trash</button>
+      <button class="btn-appointment">Set Appointment</button>
+      <button class="btn-cleared">Cleared</button>
+      <button class="btn-danger">🗑️ Move Selected to Trash</button>
     </div>
   </div>
 
-  <!-- Complaint Table -->
   <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>ID</th>
-          <th>Complainant</th>
-          <th>Respondent</th>
-          <th>Offense Type</th>
-          <th>Sanction</th>
-                    <th>Incident</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Action</th>
-        </tr>
-      </thead>
 
-      <tbody id="tableBody">
-        @forelse($complaints as $complaint)
-        <tr
-            data-complainant="{{ $complaint->complainant->student_fname }} {{ $complaint->complainant->student_lname }}"
-            data-respondent="{{ $complaint->respondent->student_fname }} {{ $complaint->respondent->student_lname }}"
-            data-offense="{{ $complaint->offense->offense_type }}"
-            data-offense-id="{{ $complaint->offense_sanc_id }}"
-            data-sanction="{{ $complaint->offense->sanction_consequences }}"
-            data-incident="{{ $complaint->complaints_incident }}"
-            data-date="{{ $complaint->complaints_date }}"
-            data-time="{{ \Carbon\Carbon::parse($complaint->complaints_time)->format('H:i') }}"
-        >
-          <td><input type="checkbox" class="rowCheckbox"></td>
-          <td>{{ $complaint->complaints_id }}</td>
-          <td>{{ $complaint->complainant->student_fname }} {{ $complaint->complainant->student_lname }}</td>
-          <td>{{ $complaint->respondent->student_fname }} {{ $complaint->respondent->student_lname }}</td>
-          <td>{{ $complaint->offense->offense_type }}</td>
-          <td>{{ $complaint->offense->sanction_consequences }}</td>
-          <td>{{ $complaint->complaints_incident }}</td>
-          <td>{{ $complaint->complaints_date }}</td>
-          <td>{{ \Carbon\Carbon::parse($complaint->complaints_time)->format('h:i A') }}</td>
-          <td>
-            <button class="btn-primary editComplaintBtn">✏️ Edit</button>
-          </td>
-        </tr>
-        @empty
-        <tr>
-          <td colspan="9" style="text-align:center;">No complaints found</td>
-        </tr>
-        @endforelse
-      </tbody>
-    </table>
-  </div>
+    <!-- 📋 COMPLAINT RECORDS TABLE -->
+    <div id="complaintRecordsTable" class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th></th><th>ID</th><th>Complainant</th><th>Respondent</th>
+            <th>Offense Type</th><th>Sanction</th><th>Incident</th>
+            <th>Date</th><th>Time</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($complaints as $comp)
+          <tr
+            data-complaint-id="{{ $comp->complaints_id }}"
+            data-incident="{{ $comp->complaints_incident }}"
+            data-date="{{ $comp->complaints_date }}"
+            data-time="{{ \Carbon\Carbon::parse($comp->complaints_time)->format('h:i A') }}"
+          >
+            <td><input type="checkbox" class="rowCheckbox"></td>
+            <td>{{ $comp->complaints_id }}</td>
+            <td>{{ $comp->complainant_fname }} {{ $comp->complainant_lname }}</td>
+            <td>{{ $comp->respondent_fname }} {{ $comp->respondent_lname }}</td>
+            <td>{{ $comp->offense_type }}</td>
+            <td>{{ $comp->sanction_consequences }}</td>
+            <td>{{ $comp->complaints_incident }}</td>
+            <td>{{ $comp->complaints_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($comp->complaints_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editComplaintBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="10" style="text-align:center;">No complaints found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
 
-
-    <!-- Pagination -->
-  <div class="pagination-wrapper">
-    <div class="pagination-summary">
-      Showing {{ $complaints->firstItem() }} to {{ $complaints->lastItem() }} of {{ $complaints->total() }} results
-    </div>
-    <div class="pagination-links">
-      {{ $complaints->links() }}
-    </div>
-  </div>
-
-
-<!-- Edit Complaint Modal -->
-<div class="modal" id="editModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            ✏️ Edit Complaint
+      <div class="pagination-wrapper">
+        <div class="pagination-summary">
+          @if($complaints instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            Showing {{ $complaints->firstItem() ?? 0 }} to {{ $complaints->lastItem() ?? 0 }} of {{ $complaints->total() ?? 0 }} record(s)
+          @endif
         </div>
-        <form id="editComplaintForm" method="POST">
-            @csrf
-            @method('PUT')
-            <input type="hidden" id="editComplaintId" name="complaints_id">
-            <div class="modal-body">
-
-                <label>Complainant Name</label>
-                <input type="text" id="editComplainant" name="complainant_name" placeholder="Search complainant..." autocomplete="off" required>
-                <input type="hidden" id="editComplainantId" name="complainant_id">
-                <div id="complainantResults" class="search-results"></div>
-
-                <label>Respondent Name</label>
-                <input type="text" id="editRespondent" name="respondent_name" placeholder="Search respondent..." autocomplete="off" required>
-                <input type="hidden" id="editRespondentId" name="respondent_id">
-                <div id="respondentResults" class="search-results"></div>
-
-                <label>Offense Type</label>
-                <input type="text" id="editOffense" name="offense_name" placeholder="Search offense..." autocomplete="off" required>
-                <input type="hidden" id="editOffenseId" name="offense_sanc_id">
-                <div id="offenseResults" class="search-results"></div>
-
-                <label>Sanction</label>
-                <input type="text" id="editSanction" name="sanction_consequences" readonly>
-
-                <label>Incident Details</label>
-                <textarea id="editIncident" name="complaints_incident" required></textarea>
-
-                <label>Date</label>
-                <input type="date" id="editDate" name="complaints_date" required>
-
-                <label>Time</label>
-                <input type="time" id="editTime" name="complaints_time" required>
-
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn-primary">💾 Save Changes</button>
-                <button type="button" class="btn-close">❌ Close</button>
-            </div>
-        </form>
+        <div class="pagination-links">{{ $complaints->links() }}</div>
+      </div>
     </div>
-</div>
+
+    <!-- 📅 COMPLAINT APPOINTMENTS TABLE -->
+    <div id="complaintAppointmentsTable" class="table-wrapper" style="display:none;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Complainant</th><th>Respondent</th><th>Status</th><th>Date</th><th>Time</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          @forelse($cappointments as $appt)
+          <tr
+            data-app-id="{{ $appt->comp_app_id }}"
+            data-status="{{ $appt->comp_app_status }}"
+            data-date="{{ $appt->comp_app_date }}"
+            data-time="{{ \Carbon\Carbon::parse($appt->comp_app_time)->format('h:i A') }}"
+          >
+            <td>{{ $appt->comp_app_id }}</td>
+            <td>{{ $appt->complaint->complainant->student_fname ?? 'N/A' }} {{ $appt->complaint->complainant->student_lname ?? '' }}</td>
+            <td>{{ $appt->complaint->respondent->student_fname ?? 'N/A' }} {{ $appt->complaint->respondent->student_lname ?? '' }}</td>
+            <td>{{ $appt->comp_app_status }}</td>
+            <td>{{ $appt->comp_app_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($appt->comp_app_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editAppointmentBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="7" style="text-align:center;">No appointments found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 📝 COMPLAINT ANECDOTALS TABLE -->
+    <div id="complaintAnecdotalsTable" class="table-wrapper" style="display:none;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Complainant</th><th>Respondent</th><th>Solution</th><th>Recommendation</th><th>Date</th><th>Time</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          @forelse($canecdotals as $anec)
+          <tr
+            data-anec-id="{{ $anec->comp_anec_id }}"
+            data-solution="{{ $anec->comp_anec_solution }}"
+            data-recommendation="{{ $anec->comp_anec_recommendation }}"
+            data-date="{{ $anec->comp_anec_date }}"
+            data-time="{{ \Carbon\Carbon::parse($anec->comp_anec_time)->format('h:i A') }}"
+          >
+            <td>{{ $anec->comp_anec_id }}</td>
+            <td>{{ $anec->complaint->complainant->student_fname ?? 'N/A' }} {{ $anec->complaint->complainant->student_lname ?? '' }}</td>
+            <td>{{ $anec->complaint->respondent->student_fname ?? 'N/A' }} {{ $anec->complaint->respondent->student_lname ?? '' }}</td>
+            <td>{{ $anec->comp_anec_solution }}</td>
+            <td>{{ $anec->comp_anec_recommendation }}</td>
+            <td>{{ $anec->comp_anec_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($anec->comp_anec_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editAnecdotalBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="8" style="text-align:center;">No anecdotal records found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ✏️ Edit Modal -->
+  <div class="modal" id="editComplaintModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeComplaintEditModal">✖</button>
+      <h2>Edit Record</h2>
+
+      <form id="editComplaintForm" method="POST" action="">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="record_id" id="edit_record_id">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Details</label>
+            <textarea id="edit_details" name="details"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="edit_date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="edit_time" name="time" required>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="button" class="btn-secondary" id="cancelComplaintEditBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
-   // =======================
-    // Open Edit Modal
-    // =======================
-    document.querySelectorAll('.editComplaintBtn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const row = btn.closest('tr');
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('editComplaintModal');
+  const form = document.getElementById('editComplaintForm');
+  const close = document.getElementById('closeComplaintEditModal');
+  const cancel = document.getElementById('cancelComplaintEditBtn');
 
-            const complaintId = row.cells[1].innerText;
-            const complainantName = row.dataset.complainant;
-            const respondentName = row.dataset.respondent;
-            const offenseName = row.dataset.offense;
-            const offenseId = row.dataset.offenseId;
-            const sanction = row.dataset.sanction;
-            const incident = row.dataset.incident;
-            const date = row.dataset.date;
-            const time = row.dataset.time;
+  const openModal = (action, data) => {
+    form.action = action;
+    document.getElementById('edit_record_id').value = data.id || '';
+    document.getElementById('edit_details').value = data.details || '';
+    document.getElementById('edit_date').value = data.date || '';
+    document.getElementById('edit_time').value = convertTo24Hour(data.time || '');
+    modal.style.display = 'flex';
+  };
 
-            document.getElementById('editComplaintId').value = complaintId;
-            document.getElementById('editComplainant').value = complainantName;
-            document.getElementById('editRespondent').value = respondentName;
-            document.getElementById('editOffense').value = offenseName;
-            document.getElementById('editOffenseId').value = offenseId;
-            document.getElementById('editSanction').value = sanction;
-            document.getElementById('editIncident').value = incident;
-            document.getElementById('editDate').value = date;
-            document.getElementById('editTime').value = time;
+  const convertTo24Hour = t => {
+    if (!t.includes(' ')) return t;
+    const [time, mod] = t.split(' ');
+    let [h, m] = time.split(':'); h = +h;
+    if (mod === 'PM' && h !== 12) h += 12;
+    if (mod === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2,'0')}:${m}`;
+  };
 
-            document.getElementById('editComplaintForm').action = `/prefect/complaints/${complaintId}`;
-            document.getElementById('editModal').style.display = 'flex';
-        });
+  document.querySelectorAll('.editComplaintBtn').forEach(btn => btn.addEventListener('click', e => {
+    const r = e.target.closest('tr');
+    openModal(`/prefect/complaints/update/${r.dataset.complaintId}`, {
+      id: r.dataset.complaintId,
+      details: r.dataset.incident,
+      date: r.dataset.date,
+      time: r.dataset.time
     });
+  }));
 
-    // Close Modal
-    document.querySelectorAll('#editModal .btn-close').forEach(btn => {
-        btn.addEventListener('click', () => {
-            btn.closest('.modal').style.display = 'none';
-        });
+  document.querySelectorAll('.editAppointmentBtn').forEach(btn => btn.addEventListener('click', e => {
+    const r = e.target.closest('tr');
+    openModal(`/prefect/complaint-appointments/update/${r.dataset.appId}`, {
+      id: r.dataset.appId,
+      details: r.dataset.status,
+      date: r.dataset.date,
+      time: r.dataset.time
     });
+  }));
 
-    // =======================
-    // Live Search Function
-    // =======================
-    function liveSearch(inputId, resultsId, url, hiddenInputId = null, callback = null) {
-        const input = document.getElementById(inputId);
-        const results = document.getElementById(resultsId);
-        const hiddenInput = hiddenInputId ? document.getElementById(hiddenInputId) : null;
+  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => btn.addEventListener('click', e => {
+    const r = e.target.closest('tr');
+    openModal(`/prefect/complaint-anecdotals/update/${r.dataset.anecId}`, {
+      id: r.dataset.anecId,
+      details: `${r.dataset.solution} | ${r.dataset.recommendation}`,
+      date: r.dataset.date,
+      time: r.dataset.time
+    });
+  }));
 
-        input.addEventListener('input', () => {
-            const query = input.value;
-            if (query.length < 1) {
-                results.innerHTML = '';
-                return;
-            }
+  [close, cancel].forEach(b => b.addEventListener('click', () => modal.style.display = 'none'));
 
-            fetch(`${url}?query=${query}`)
-                .then(res => res.text())
-                .then(html => {
-                    results.innerHTML = html;
-
-                    results.querySelectorAll('div').forEach(item => {
-                        item.addEventListener('click', () => {
-                            input.value = item.innerText;
-                            if (hiddenInput) hiddenInput.value = item.dataset.id;
-
-
-                                   // For complainant/respondent
-                            if(inputId === 'editComplainant') document.getElementById('editComplainantId').value = item.dataset.id;
-                            if(inputId === 'editRespondent') document.getElementById('editRespondentId').value = item.dataset.id;
-
-                            results.innerHTML = '';
-
-                            if (callback) callback(item);
-                        });
-                    });
-                });
-        });
-    }
-// Student live search
-liveSearch('editComplainant', 'complainantResults', '{{ route("prefect.students.search") }}', 'editComplainantId');
-liveSearch('editRespondent', 'respondentResults', '{{ route("prefect.students.search") }}', 'editRespondentId');
-
-// Offense live search
-liveSearch('editOffense', 'offenseResults', '{{ route("prefect.offenses.search") }}', 'editOffenseId', (item) => {
-    // Get sanction automatically
-    fetch(`{{ route("complaints.get-sanction") }}?offense_id=${item.dataset.id}`)
-        .then(res => res.text())
-        .then(sanction => {
-            document.getElementById('editSanction').value = sanction;
-        });
+  const sections = {
+    complaintRecords: document.getElementById('complaintRecordsTable'),
+    complaintAppointments: document.getElementById('complaintAppointmentsTable'),
+    complaintAnecdotals: document.getElementById('complaintAnecdotalsTable')
+  };
+  Object.keys(sections).forEach(key => {
+    document.getElementById(key).addEventListener('click', e => {
+      e.preventDefault();
+      Object.values(sections).forEach(s => s.style.display = 'none');
+      sections[key].style.display = 'block';
+    });
+  });
 });
-
 </script>
 @endsection
