@@ -15,6 +15,8 @@ use App\Http\Controllers\Prefect\POffenseSanctionController;
 use App\Http\Controllers\Prefect\PReportController;
 use App\Http\Controllers\Prefect\PViolationAnecdotalController;
 use App\Http\Controllers\Prefect\ProfileController;
+use App\Http\Controllers\Prefect\PComplaintAnecdotalController;
+
 
 
 // Adviser Controllers
@@ -54,7 +56,7 @@ Route::prefix('prefect')->group(function () {
         Route::get('/profile-info', [ProfileController::class, 'getProfileInfo'])->name('prefect.profile-info');
         Route::post('/upload-profile-image', [ProfileController::class, 'uploadProfileImage'])->name('prefect.upload-profile-image');
         Route::post('/remove-profile-image', [ProfileController::class, 'removeProfileImage'])->name('prefect.remove-profile-image');
-        
+
         // Management Routes
         Route::get('/studentmanagement', [PStudentController::class, 'studentmanagement'])->name('student.management');
         Route::get('/violation', [PViolationController::class, 'index'])->name('prefect.violation');
@@ -99,7 +101,18 @@ Route::prefix('prefect')->group(function () {
         Route::get('/violations/create', [PViolationController::class, 'create'])->name('violations.create');
         Route::post('/violations/store', [PViolationController::class, 'store'])->name('violations.store');
         Route::put('/violations/update/{violationId}', [PViolationController::class, 'update'])->name('violations.update');
-
+        // Violation Archive Routes
+        Route::post('/violations/archive', [PViolationController::class, 'archive'])->name('violations.archive');
+        Route::get('/violations/archived', [PViolationController::class, 'getArchived'])->name('violations.getArchived');
+        Route::post('/violations/restore', [PViolationController::class, 'restore'])->name('violations.restore');
+        Route::post('/violations/destroy-multiple', [PViolationController::class, 'destroyMultiple'])->name('violations.destroyMultiple');
+        // Archive Routes for different types
+        Route::post('/violation-appointments/archive', [PViolationController::class, 'archiveAppointments'])->name('violation.appointments.archive');
+        Route::post('/violation-anecdotals/archive', [PViolationController::class, 'archiveAnecdotals'])->name('violation.anecdotals.archive');
+        Route::get('/violation-appointments/archived', [PViolationController::class, 'getArchivedAppointments'])->name('violation.appointments.archived');
+        Route::get('/violation-anecdotals/archived', [PViolationController::class, 'getArchivedAnecdotals'])->name('violation.anecdotals.archived');
+        Route::post('/violations/restore-multiple', [PViolationController::class, 'restoreMultiple'])->name('violations.restore.multiple');
+        Route::post('/violations/destroy-multiple-archived', [PViolationController::class, 'destroyMultipleArchived'])->name('violations.destroy.multiple.archived');
 
         // Violation Anecdotal Routes
         // Display the create anecdotal form
@@ -131,6 +144,14 @@ Route::prefix('prefect')->group(function () {
         Route::post('/complaints/search-offenses', [PComplaintController::class, 'searchOffenses'])->name('complaints.search-offenses');
         Route::get('/complaints/search-offenses1', [PComplaintController::class, 'searchOffenses'])->name('prefect.offenses.search');
         Route::get('/complaints/get-sanction', [PComplaintController::class, 'getSanction'])->name('complaints.get-sanction');
+
+         // Violation Anecdotal Routes
+        // Display the create anecdotal form
+        Route::get('/complaint-anecdotal/create', [PComplaintAnecdotalController::class, 'createCAnecdotal'])
+         ->name('complaint-anecdotal.create');
+
+
+
 
         // Report Routes
         Route::get('/reportgenerate', [PReportController::class, 'reportgenerate'])->name('report.generate');

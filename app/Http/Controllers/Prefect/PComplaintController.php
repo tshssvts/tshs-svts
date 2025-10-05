@@ -7,8 +7,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Complaints; // Make sure you have a Complaint model
+use App\Models\ComplaintsAppointment; // Make sure you have a Complaint model
+use App\Models\ComplaintsAnecdotal; // Make sure you have a Complaint model
+
 use App\Models\OffensesWithSanction; // Make sure you have a Complaint model
+
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 
 class PComplaintController extends Controller
@@ -18,15 +23,78 @@ class PComplaintController extends Controller
     {
         return view('prefect.create-complaints');
     }
-
-
-    public function index()
+public function index()
 {
-    $complaints = Complaints::with(['complainant', 'respondent', 'offense'])->paginate(10);
-        $offenses = OffensesWithSanction::all();
+    // ✅ Load Anecdotal + Appointment models with relationships
+    $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])->get();
+    $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])->get();
 
-    return view('prefect.complaint', compact('complaints','offenses'));
+    // ✅ Get Actual Complaint Date Range
+    $mostRecentComplaintDate = DB::table('tbl_complaints')->max('complaints_date');
+    $earliestComplaintDate = DB::table('tbl_complaints')->min('complaints_date');
+
+    $referenceDate = $mostRecentComplaintDate ? Carbon::parse($mostRecentComplaintDate) : Carbon::today();
+
+    // ✅ Date Ranges
+    $today = $referenceDate->copy();
+    $startOfWeek = $referenceDate->copy()->startOfWeek();
+    $endOfWeek = $referenceDate->copy()->endOfWeek();
+    $startOfMonth = $referenceDate->copy()->startOfMonth();
+    $endOfMonth = $referenceDate->copy()->endOfMonth();
+
+    // ✅ Summary Counts
+    $dailyComplaints = DB::table('tbl_complaints')
+        ->whereDate('complaints_date', $today)
+        ->count();
+
+    $weeklyComplaints = DB::table('tbl_complaints')
+        ->whereBetween('complaints_date', [$startOfWeek, $endOfWeek])
+        ->count();
+
+    $monthlyComplaints = DB::table('tbl_complaints')
+        ->whereBetween('complaints_date', [$startOfMonth, $endOfMonth])
+        ->count();
+
+    // ✅ Fetch Complaint Records
+    $complaints = DB::table('tbl_complaints as c')
+        ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
+        ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
+        ->join('tbl_offenses_with_sanction as o', 'o.offense_sanc_id', '=', 'c.offense_sanc_id')
+        ->select(
+            'c.complaints_id',
+            'c.complaints_incident',
+            'c.complaints_date',
+            'c.complaints_time',
+            'c.status',
+            'comp.student_fname as complainant_fname',
+            'comp.student_lname as complainant_lname',
+            'resp.student_fname as respondent_fname',
+            'resp.student_lname as respondent_lname',
+            'o.offense_type',
+            'o.sanction_consequences'
+        )
+        ->orderBy('c.complaints_date', 'desc')
+        ->paginate(10);
+
+    return view('prefect.complaint', compact(
+        'complaints',
+        'cappointments',
+        'canecdotals',
+        'mostRecentComplaintDate',
+        'earliestComplaintDate',
+        'referenceDate',
+        'today',
+        'startOfWeek',
+        'endOfWeek',
+        'startOfMonth',
+        'endOfMonth',
+        'dailyComplaints',
+        'weeklyComplaints',
+        'monthlyComplaints'
+    ));
 }
+
+
 
 
  public function store(Request $request)

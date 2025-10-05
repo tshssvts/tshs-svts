@@ -23,10 +23,10 @@ class PViolationAnecdotalController extends Controller
 public function searchViolations(Request $request)
 {
     try {
-        \Log::info('=== SEARCH VIOLATIONS START ===');
+        Log::info('=== SEARCH VIOLATIONS START ===');
 
         $query = $request->input('query');
-        \Log::info('Query received:', ['query' => $query]);
+        Log::info('Query received:', ['query' => $query]);
 
         if (empty($query)) {
             return response()->json([]);
@@ -47,7 +47,7 @@ public function searchViolations(Request $request)
             ->limit(10)
             ->get();
 
-        \Log::info('Violations found:', ['count' => $violations->count()]);
+        Log::info('Violations found:', ['count' => $violations->count()]);
 
         // Use a Set to track unique student names
         $uniqueStudents = [];
@@ -80,13 +80,13 @@ public function searchViolations(Request $request)
             ];
         }
 
-        \Log::info('Final results to return:', ['results_count' => count($results)]);
+        Log::info('Final results to return:', ['results_count' => count($results)]);
 
         return response()->json($results);
 
     } catch (\Exception $e) {
-        \Log::error('Error in searchViolations: ' . $e->getMessage());
-        \Log::error('Error trace: ' . $e->getTraceAsString());
+        Log::error('Error in searchViolations: ' . $e->getMessage());
+        Log::error('Error trace: ' . $e->getTraceAsString());
         return response()->json(['error' => 'Search failed: ' . $e->getMessage()], 500);
     }
 }
