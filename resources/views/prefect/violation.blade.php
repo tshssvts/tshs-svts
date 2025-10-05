@@ -107,6 +107,7 @@
               data-date="{{ $violation->violation_date }}"
               data-status="{{ $violation->status }}"
               data-time="{{ \Carbon\Carbon::parse($violation->violation_time)->format('h:i A') }}"
+              class="clickable-row"
             >
               <td><input type="checkbox" class="rowCheckbox violationCheckbox" value="{{ $violation->violation_id }}"></td>
               <td>{{ $violation->violation_id }}</td>
@@ -122,7 +123,7 @@
                 </span>
               </td>
               <td><button class="btn-primary editViolationBtn">✏️ Edit</button></td>
-              
+
             </tr>
             @endif
           @empty
@@ -244,6 +245,69 @@
           @endforelse
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- 👁️ Violation Details Modal -->
+  <div class="modal" id="violationDetailsModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeViolationDetailsModal">✖</button>
+      <h2>Violation Details</h2>
+
+      <div class="violation-details-container">
+        <div class="detail-section">
+          <h3>Student Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Student ID:</label>
+              <span id="detail-student-id">-</span>
+            </div>
+            <div class="detail-item">
+              <label>Student Name:</label>
+              <span id="detail-student-name">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Violation Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Violation ID:</label>
+              <span id="detail-violation-id">-</span>
+            </div>
+            <div class="detail-item">
+              <label>Incident:</label>
+              <span id="detail-incident">-</span>
+            </div>
+            <div class="detail-item">
+              <label>Offense Type:</label>
+              <span id="detail-offense-type">-</span>
+            </div>
+            <div class="detail-item">
+              <label>Sanction:</label>
+              <span id="detail-sanction">-</span>
+            </div>
+            <div class="detail-item">
+              <label>Date:</label>
+              <span id="detail-date">-</span>
+            </div>
+            <div class="detail-item">
+              <label>Time:</label>
+              <span id="detail-time">-</span>
+            </div>
+            <div class="detail-item">
+              <label>Status:</label>
+              <span id="detail-status" class="status-badge">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-sms" id="sendSmsBtn">📱 SEND SMS</button>
+        <button class="btn-primary" id="viewAppointmentsBtn">📅 VIEW APPOINTMENTS</button>
+      </div>
     </div>
   </div>
 
@@ -441,6 +505,87 @@
 
 </div>
 
+<style>
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.clickable-row:hover {
+  background-color: #f5f5f5;
+}
+
+.violation-details-container {
+  margin: 20px 0;
+}
+
+.detail-section {
+  margin-bottom: 25px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.detail-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 8px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-item label {
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.detail-item span {
+  color: #333;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn-sms {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-sms:hover {
+  background-color: #218838;
+}
+</style>
+
 <script>
 // Get CSRF Token
 function getCsrfToken() {
@@ -451,6 +596,103 @@ const csrfToken = getCsrfToken();
 
 // Current active table type
 let currentTableType = 'violationRecords';
+
+// 👁️ Violation Details Modal Functionality
+const violationDetailsModal = document.getElementById('violationDetailsModal');
+const closeViolationDetailsModal = document.getElementById('closeViolationDetailsModal');
+const sendSmsBtn = document.getElementById('sendSmsBtn');
+const viewAppointmentsBtn = document.getElementById('viewAppointmentsBtn');
+
+// Function to open violation details modal
+function openViolationDetailsModal(violationData) {
+    // Populate the modal with violation data
+    document.getElementById('detail-student-id').textContent = violationData.studentId || '-';
+    document.getElementById('detail-student-name').textContent = violationData.studentName || '-';
+    document.getElementById('detail-violation-id').textContent = violationData.violationId || '-';
+    document.getElementById('detail-incident').textContent = violationData.incident || '-';
+    document.getElementById('detail-offense-type').textContent = violationData.offenseType || '-';
+    document.getElementById('detail-sanction').textContent = violationData.sanction || '-';
+    document.getElementById('detail-date').textContent = violationData.date || '-';
+    document.getElementById('detail-time').textContent = violationData.time || '-';
+
+    // Set status with appropriate badge
+    const statusElement = document.getElementById('detail-status');
+    statusElement.textContent = violationData.status || '-';
+    statusElement.className = 'status-badge ' + (violationData.status === 'active' ? 'status-active' : 'status-inactive');
+
+    // Show the modal
+    violationDetailsModal.style.display = 'flex';
+}
+
+// Add click event listeners to violation record rows
+document.addEventListener('DOMContentLoaded', function() {
+    const violationRows = document.querySelectorAll('#violationRecordsTable tbody tr.clickable-row');
+
+    violationRows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't trigger if clicking on checkbox or edit button
+            if (e.target.type === 'checkbox' || e.target.classList.contains('editViolationBtn')) {
+                return;
+            }
+
+            const violationData = {
+                studentId: this.dataset.studentId,
+                studentName: this.dataset.studentName,
+                violationId: this.dataset.violationId,
+                incident: this.dataset.incident,
+                offenseType: this.dataset.offenseType,
+                sanction: this.dataset.sanction,
+                date: this.dataset.date,
+                time: this.dataset.time,
+                status: this.dataset.status
+            };
+
+            openViolationDetailsModal(violationData);
+        });
+    });
+});
+
+// Close violation details modal
+closeViolationDetailsModal.addEventListener('click', function() {
+    violationDetailsModal.style.display = 'none';
+});
+
+// Send SMS button functionality
+sendSmsBtn.addEventListener('click', function() {
+    const studentName = document.getElementById('detail-student-name').textContent;
+    const violationId = document.getElementById('detail-violation-id').textContent;
+
+    alert(`SMS would be sent for violation ${violationId} - ${studentName}`);
+    // Here you would typically integrate with your SMS service
+    // Example: sendSMS(violationId, studentName);
+});
+
+// View Appointments button functionality
+viewAppointmentsBtn.addEventListener('click', function() {
+    const violationId = document.getElementById('detail-violation-id').textContent;
+    const studentName = document.getElementById('detail-student-name').textContent;
+
+    alert(`Viewing appointments for violation ${violationId} - ${studentName}`);
+    // Here you would typically navigate to appointments page or load appointments in a separate modal
+    // Example: window.location.href = `/appointments?violation_id=${violationId}`;
+});
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modals = [
+        'violationDetailsModal',
+        'violationRecordsArchiveModal',
+        'violationAppointmentsArchiveModal',
+        'violationAnecdotalsArchiveModal'
+    ];
+
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
 
 // 🔍 Search Functionality for Main Tables
 document.getElementById('searchInput').addEventListener('input', function() {
@@ -480,14 +722,14 @@ document.getElementById('selectAll').addEventListener('change', function() {
 // 🗑️ Move to Trash (Archive as Inactive)
 document.getElementById('moveToTrashBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one violation.');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to move ${violationIds.length} violation(s) to archive as Inactive?`)) {
         return;
     }
@@ -500,14 +742,14 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 violation_ids: violationIds,
                 status: 'inactive'
             })
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${violationIds.length} violation(s) moved to archive as Inactive.`);
             // Remove the archived rows from the main table
@@ -515,10 +757,10 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                 const row = document.querySelector(`tr[data-violation-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Update UI
             document.getElementById('selectAll').checked = false;
-            
+
             // Reload to update counts
             setTimeout(() => {
                 location.reload();
@@ -535,14 +777,14 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
 // ✅ Mark as Cleared (Archive as Cleared)
 document.getElementById('markAsClearedBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one violation.');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to mark ${violationIds.length} violation(s) as Cleared?`)) {
         return;
     }
@@ -555,14 +797,14 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 violation_ids: violationIds,
                 status: 'cleared'
             })
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${violationIds.length} violation(s) marked as Cleared and moved to archive.`);
             // Remove the cleared rows from the main table
@@ -570,10 +812,10 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
                 const row = document.querySelector(`tr[data-violation-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Update UI
             document.getElementById('selectAll').checked = false;
-            
+
             // Reload to update counts
             setTimeout(() => {
                 location.reload();
@@ -591,14 +833,14 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
 // ✅ Mark Appointment as Completed
 document.getElementById('markAppointmentCompletedBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one appointment.');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to mark ${appointmentIds.length} appointment(s) as Completed?`)) {
         return;
     }
@@ -611,14 +853,14 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 appointment_ids: appointmentIds,
                 status: 'Completed'
             })
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${appointmentIds.length} appointment(s) marked as Completed and moved to archive.`);
             // Remove the completed rows from the main table
@@ -626,10 +868,10 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
                 const row = document.querySelector(`tr[data-app-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Update UI
             document.getElementById('selectAll').checked = false;
-            
+
             // Reload to update counts
             setTimeout(() => {
                 location.reload();
@@ -646,14 +888,14 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
 // 🗑️ Move Appointment to Trash (Archive as Cancelled)
 document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one appointment.');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to move ${appointmentIds.length} appointment(s) to archive as Cancelled?`)) {
         return;
     }
@@ -666,14 +908,14 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 appointment_ids: appointmentIds,
                 status: 'Cancelled'
             })
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${appointmentIds.length} appointment(s) moved to archive as Cancelled.`);
             // Remove the archived rows from the main table
@@ -681,10 +923,10 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
                 const row = document.querySelector(`tr[data-app-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Update UI
             document.getElementById('selectAll').checked = false;
-            
+
             // Reload to update counts
             setTimeout(() => {
                 location.reload();
@@ -702,14 +944,14 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
 // ✅ Mark Anecdotal as Completed
 document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one anecdotal record.');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to mark ${anecdotalIds.length} anecdotal record(s) as Completed?`)) {
         return;
     }
@@ -722,14 +964,14 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 anecdotal_ids: anecdotalIds,
                 status: 'completed'
             })
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`);
             // Remove the completed rows from the main table
@@ -737,10 +979,10 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
                 const row = document.querySelector(`tr[data-anec-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Update UI
             document.getElementById('selectAll').checked = false;
-            
+
             // Reload to update counts
             setTimeout(() => {
                 location.reload();
@@ -757,14 +999,14 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
 // 🗑️ Move Anecdotal to Trash (Archive as Closed)
 document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one anecdotal record.');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to move ${anecdotalIds.length} anecdotal record(s) to archive as Closed?`)) {
         return;
     }
@@ -777,14 +1019,14 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 anecdotal_ids: anecdotalIds,
                 status: 'closed'
             })
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`);
             // Remove the archived rows from the main table
@@ -792,10 +1034,10 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
                 const row = document.querySelector(`tr[data-anec-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Update UI
             document.getElementById('selectAll').checked = false;
-            
+
             // Reload to update counts
             setTimeout(() => {
                 location.reload();
@@ -815,36 +1057,36 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
 document.getElementById('archiveBtn').addEventListener('click', async function() {
     try {
         console.log('Loading archived data for:', currentTableType);
-        
+
         if (currentTableType === 'violationRecords') {
             // Load archived violation records
             const violationResponse = await fetch('/prefect/violations/archived');
             console.log('Violation response status:', violationResponse.status);
             const archivedViolations = await violationResponse.json();
             console.log('Archived violations:', archivedViolations);
-            
+
             // Populate violation records table
             populateArchiveTable('archiveViolationRecordsBody', archivedViolations, 'violation');
             document.getElementById('violationRecordsArchiveModal').style.display = 'flex';
-            
+
         } else if (currentTableType === 'violationAppointments') {
             // Load archived appointments
             const appointmentResponse = await fetch('/prefect/violation-appointments/archived');
             console.log('Appointment response status:', appointmentResponse.status);
             const archivedAppointments = await appointmentResponse.json();
             console.log('Archived appointments:', archivedAppointments);
-            
+
             // Populate appointments table
             populateArchiveTable('archiveViolationAppointmentsBody', archivedAppointments, 'appointment');
             document.getElementById('violationAppointmentsArchiveModal').style.display = 'flex';
-            
+
         } else if (currentTableType === 'violationAnecdotals') {
             // Load archived anecdotals
             const anecdotalResponse = await fetch('/prefect/violation-anecdotals/archived');
             console.log('Anecdotal response status:', anecdotalResponse.status);
             const archivedAnecdotals = await anecdotalResponse.json();
             console.log('Archived anecdotals:', archivedAnecdotals);
-            
+
             // Populate anecdotals table
             populateArchiveTable('archiveViolationAnecdotalsBody', archivedAnecdotals, 'anecdotal');
             document.getElementById('violationAnecdotalsArchiveModal').style.display = 'flex';
@@ -859,7 +1101,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
 function populateArchiveTable(tableBodyId, data, type) {
     const tableBody = document.getElementById(tableBodyId);
     tableBody.innerHTML = '';
-    
+
     if (!data || data.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;">⚠️ No archived ${type} records found</td></tr>`;
         return;
@@ -867,7 +1109,7 @@ function populateArchiveTable(tableBodyId, data, type) {
 
     data.forEach(item => {
         const row = document.createElement('tr');
-        
+
         if (type === 'violation') {
             row.setAttribute('data-record-id', item.violation_id);
             row.setAttribute('data-record-type', 'violation');
@@ -906,7 +1148,7 @@ function populateArchiveTable(tableBodyId, data, type) {
                 <td>${new Date(item.updated_at).toLocaleDateString()}</td>
             `;
         }
-        
+
         tableBody.appendChild(row);
     });
 }
@@ -947,7 +1189,7 @@ document.getElementById('violationRecordsStatusFilter').addEventListener('change
     const filter = this.value;
     const tableBody = document.getElementById('archiveViolationRecordsBody');
     const rows = tableBody.querySelectorAll('tr');
-    
+
     if (filter !== 'all') {
         rows.forEach(row => {
             const status = row.querySelector('.status-badge').innerText.toLowerCase();
@@ -962,7 +1204,7 @@ document.getElementById('violationAppointmentsStatusFilter').addEventListener('c
     const filter = this.value;
     const tableBody = document.getElementById('archiveViolationAppointmentsBody');
     const rows = tableBody.querySelectorAll('tr');
-    
+
     if (filter !== 'all') {
         rows.forEach(row => {
             const status = row.querySelector('.status-badge').innerText.toLowerCase();
@@ -977,7 +1219,7 @@ document.getElementById('violationAnecdotalsStatusFilter').addEventListener('cha
     const filter = this.value;
     const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
     const rows = tableBody.querySelectorAll('tr');
-    
+
     if (filter !== 'all') {
         rows.forEach(row => {
             const status = row.querySelector('.status-badge').innerText.toLowerCase();
@@ -1017,7 +1259,7 @@ document.getElementById('selectAllViolationAnecdotalsArchived').addEventListener
 document.getElementById('restoreViolationRecordsBtn').addEventListener('click', async function() {
     const tableBody = document.getElementById('archiveViolationRecordsBody');
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one record to restore.');
         return;
@@ -1027,7 +1269,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
         id: cb.value,
         type: cb.dataset.type
     }));
-    
+
     if (!confirm(`Are you sure you want to restore ${records.length} record(s)?`)) {
         return;
     }
@@ -1044,7 +1286,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${records.length} record(s) restored successfully.`);
             // Remove the restored rows from archive table
@@ -1052,7 +1294,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
                 const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                 if (row) row.remove();
             });
-            
+
             // Reload the page to show restored records in main table
             location.reload();
         } else {
@@ -1067,7 +1309,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
 document.getElementById('restoreViolationAppointmentsBtn').addEventListener('click', async function() {
     const tableBody = document.getElementById('archiveViolationAppointmentsBody');
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one record to restore.');
         return;
@@ -1077,7 +1319,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
         id: cb.value,
         type: cb.dataset.type
     }));
-    
+
     if (!confirm(`Are you sure you want to restore ${records.length} record(s)?`)) {
         return;
     }
@@ -1094,7 +1336,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${records.length} record(s) restored successfully.`);
             // Remove the restored rows from archive table
@@ -1102,7 +1344,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
                 const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                 if (row) row.remove();
             });
-            
+
             // Reload the page to show restored records in main table
             location.reload();
         } else {
@@ -1117,7 +1359,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
 document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click', async function() {
     const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one record to restore.');
         return;
@@ -1127,7 +1369,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
         id: cb.value,
         type: cb.dataset.type
     }));
-    
+
     if (!confirm(`Are you sure you want to restore ${records.length} record(s)?`)) {
         return;
     }
@@ -1144,7 +1386,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${records.length} record(s) restored successfully.`);
             // Remove the restored rows from archive table
@@ -1152,7 +1394,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
                 const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                 if (row) row.remove();
             });
-            
+
             // Reload the page to show restored records in main table
             location.reload();
         } else {
@@ -1168,7 +1410,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
 document.getElementById('deleteViolationRecordsBtn').addEventListener('click', async function() {
     const tableBody = document.getElementById('archiveViolationRecordsBody');
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one record to delete permanently.');
         return;
@@ -1182,7 +1424,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
         id: cb.value,
         type: cb.dataset.type
     }));
-    
+
     try {
         const response = await fetch('/prefect/violations/destroy-multiple-archived', {
             method: 'POST',
@@ -1195,7 +1437,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${records.length} record(s) deleted permanently.`);
             // Remove the deleted rows from archive table
@@ -1203,7 +1445,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
                 const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                 if (row) row.remove();
             });
-            
+
             // If no more archived records in current table, show message
             const remainingRows = tableBody.querySelectorAll('tr');
             if (remainingRows.length === 0) {
@@ -1221,7 +1463,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
 document.getElementById('deleteViolationAppointmentsBtn').addEventListener('click', async function() {
     const tableBody = document.getElementById('archiveViolationAppointmentsBody');
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one record to delete permanently.');
         return;
@@ -1235,7 +1477,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
         id: cb.value,
         type: cb.dataset.type
     }));
-    
+
     try {
         const response = await fetch('/prefect/violations/destroy-multiple-archived', {
             method: 'POST',
@@ -1248,7 +1490,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${records.length} record(s) deleted permanently.`);
             // Remove the deleted rows from archive table
@@ -1256,7 +1498,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
                 const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                 if (row) row.remove();
             });
-            
+
             // If no more archived records in current table, show message
             const remainingRows = tableBody.querySelectorAll('tr');
             if (remainingRows.length === 0) {
@@ -1274,7 +1516,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
 document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click', async function() {
     const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one record to delete permanently.');
         return;
@@ -1288,7 +1530,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
         id: cb.value,
         type: cb.dataset.type
     }));
-    
+
     try {
         const response = await fetch('/prefect/violations/destroy-multiple-archived', {
             method: 'POST',
@@ -1301,7 +1543,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${records.length} record(s) deleted permanently.`);
             // Remove the deleted rows from archive table
@@ -1309,7 +1551,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
                 const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                 if (row) row.remove();
             });
-            
+
             // If no more archived records in current table, show message
             const remainingRows = tableBody.querySelectorAll('tr');
             if (remainingRows.length === 0) {
@@ -1335,22 +1577,6 @@ document.getElementById('closeViolationAppointmentsArchive').addEventListener('c
 
 document.getElementById('closeViolationAnecdotalsArchive').addEventListener('click', function() {
     document.getElementById('violationAnecdotalsArchiveModal').style.display = 'none';
-});
-
-// Close modals when clicking outside
-document.addEventListener('click', function(event) {
-    const modals = [
-        'violationRecordsArchiveModal',
-        'violationAppointmentsArchiveModal',
-        'violationAnecdotalsArchiveModal'
-    ];
-    
-    modals.forEach(modalId => {
-        const modal = document.getElementById(modalId);
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
 });
 
 // Switch between main tables and show appropriate action buttons
@@ -1435,14 +1661,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // Hide all tables and action buttons
       Object.values(sections).forEach(sec => sec.style.display = 'none');
       Object.values(actionButtons).forEach(btn => btn.style.display = 'none');
-      
+
       // Show selected table and action buttons
       sections[key].style.display = 'block';
       actionButtons[key].style.display = 'flex';
-      
+
       // Update current table type
       currentTableType = key;
-      
+
       // Reset select all checkbox
       document.getElementById('selectAll').checked = false;
     });

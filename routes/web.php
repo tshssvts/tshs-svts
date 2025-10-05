@@ -147,9 +147,12 @@ Route::prefix('prefect')->group(function () {
 
          // Violation Anecdotal Routes
         // Display the create anecdotal form
-        Route::get('/complaint-anecdotal/create', [PComplaintAnecdotalController::class, 'createCAnecdotal'])
-         ->name('complaint-anecdotal.create');
+    Route::get('/complaint-anecdotal/create', [PComplaintAnecdotalController::class, 'createCAnecdotal'])->name('complaint-anecdotal.create');
+    Route::post('/complaint-anecdotal/store', [PComplaintAnecdotalController::class, 'store'])->name('complaint-anecdotal.store');
 
+    // 🔍 Search Routes (GET)
+    Route::get('/complaint-anecdotal/search-complaints', [PComplaintAnecdotalController::class, 'searchComplaints'])->name('complaint-anecdotal.search-complaints');
+    Route::get('/complaint-anecdotal/search-respondents', [PComplaintAnecdotalController::class, 'searchRespondents'])->name('complaint-anecdotal.search-respondents');
 
 
 

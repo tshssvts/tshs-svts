@@ -44,8 +44,10 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    let anecdotalCount = 0;
+    const respondentSearchUrl = "{{ route('complaint-anecdotal.search-respondents') }}";
     const complaintSearchUrl = "{{ route('complaint-anecdotal.search-complaints') }}";
+
+    let anecdotalCount = 0;
 
     // Initialize with one anecdotal form
     document.addEventListener('DOMContentLoaded', function() {
@@ -74,20 +76,27 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="complaint_search_${anecdotalCount}">Complaint Record * <span class="note">(comma-separated for multiple)</span></label>
-                    <input type="text" id="complaint_search_${anecdotalCount}" class="form-control complaint-search-input" placeholder="e.g. Shawn Laurence, Kent Zyrone, Jayvee Charles" data-ids="" autocomplete="off">
-                    <input type="hidden" id="complaints_id_${anecdotalCount}" name="anecdotal[${anecdotalCount-1}][complaints_id]" class="complaint-id-input" required>
+                    <label for="complaint_search_${anecdotalCount}">Complaint Record * <span class="note">(search student or offense)</span></label>
+                    <input type="text" id="complaint_search_${anecdotalCount}" class="form-control complaint-search-input" placeholder="e.g. Shawn Laurence" data-ids="" autocomplete="off">
+                    <input type="hidden" id="complaint_id_${anecdotalCount}" name="anecdotal[${anecdotalCount-1}][complaint_id]" class="complaint-id-input" required>
                     <div class="search-results complaint-results" id="complaint_results_${anecdotalCount}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="respondent_search_${anecdotalCount}">Respondent * <span class="note">(comma-separated for multiple)</span></label>
+                    <input type="text" id="respondent_search_${anecdotalCount}" class="form-control respondent-search-input" placeholder="e.g. John Doe" data-ids="" autocomplete="off">
+                    <input type="hidden" id="respondents_id_${anecdotalCount}" name="anecdotal[${anecdotalCount-1}][respondents_id]" class="respondent-id-input" required>
+                    <div class="search-results respondent-results" id="respondent_results_${anecdotalCount}"></div>
                 </div>
 
                 <div class="form-group full-width">
                     <label for="comp_anec_solution_${anecdotalCount}">Solution Implemented *</label>
-                    <textarea id="comp_anec_solution_${anecdotalCount}" name="anecdotal[${anecdotalCount-1}][comp_anec_solution]" class="form-control" rows="4" placeholder="Describe the solution or intervention implemented..." required></textarea>
+                    <textarea id="comp_anec_solution_${anecdotalCount}" name="anecdotal[${anecdotalCount-1}][comp_anec_solution]" class="form-control" rows="4" required></textarea>
                 </div>
 
                 <div class="form-group full-width">
                     <label for="comp_anec_recommendation_${anecdotalCount}">Recommendations *</label>
-                    <textarea id="comp_anec_recommendation_${anecdotalCount}" name="anecdotal[${anecdotalCount-1}][comp_anec_recommendation]" class="form-control" rows="4" placeholder="Provide recommendations for future prevention..." required></textarea>
+                    <textarea id="comp_anec_recommendation_${anecdotalCount}" name="anecdotal[${anecdotalCount-1}][comp_anec_recommendation]" class="form-control" rows="4" required></textarea>
                 </div>
 
                 <div class="form-group">
@@ -114,106 +123,121 @@
 
         anecdotalWrapper.appendChild(newAnecdotal);
 
-        // Attach search functionality to the new form
-        attachSearchListeners(newAnecdotal, anecdotalCount);
+        attachComplaintSearchListeners(newAnecdotal);
+        attachRespondentListeners(newAnecdotal);
     }
 
-    // Attach search functionality to complaint field
-    function attachSearchListeners(container, anecdotalIndex) {
-        const complaintSearch = container.querySelector('.complaint-search-input');
-        const complaintIdInput = container.querySelector('.complaint-id-input');
-        const complaintResults = container.querySelector('.complaint-results');
+    // ✅ Complaint Search Logic (Based on working violation logic)
+    function attachComplaintSearchListeners(container) {
+        const searchInput = container.querySelector('.complaint-search-input');
+        const hiddenInput = container.querySelector('.complaint-id-input');
+        const resultsBox = container.querySelector('.complaint-results');
 
-        // Complaint search functionality - Multiple selection
-        complaintSearch.addEventListener('input', function() {
-            let parts = this.value.split(",");
-            let query = parts[parts.length - 1].trim();
-
-            console.log('Complaint search query:', query);
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
 
             if (query.length < 2) {
-                complaintResults.innerHTML = '';
+                resultsBox.innerHTML = '';
                 return;
             }
 
-            complaintResults.innerHTML = '<div class="no-results">Searching...</div>';
+            resultsBox.innerHTML = '<div class="no-results">Searching...</div>';
 
-            $.ajax({
-                url: complaintSearchUrl,
-                method: 'POST',
-                data: {
-                    query: query,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(data) {
-                    console.log('Complaint search SUCCESS:', data);
-                    complaintResults.innerHTML = '';
+            fetch(`${complaintSearchUrl}?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Complaint search data:', data);
+                    resultsBox.innerHTML = '';
 
                     if (!data || data.length === 0) {
-                        complaintResults.innerHTML = '<div class="no-results">No complaint records found.</div>';
+                        resultsBox.innerHTML = '<div class="no-results">No records found.</div>';
                         return;
                     }
 
-                    const selectedIds = (complaintSearch.dataset.ids || "").split(",").filter(id => id.trim() !== "");
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'search-result-item';
+                        div.textContent = `${item.student_name} - ${item.offense_type} (${item.complaint_date ?? 'No date'})`;
+                        div.addEventListener('click', () => {
+                            searchInput.value = item.student_name;
+                            hiddenInput.value = item.complaint_id;
+                            resultsBox.innerHTML = '';
+                            searchInput.style.borderColor = '#ddd';
+                        });
+                        resultsBox.appendChild(div);
+                    });
+                })
+                .catch(err => {
+                    console.error('Search error:', err);
+                    resultsBox.innerHTML = '<div class="no-results">Search failed. Try again.</div>';
+                });
+        });
 
-                    data.forEach(complaint => {
-                        if (selectedIds.includes(complaint.complaints_id.toString())) return;
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+                resultsBox.innerHTML = '';
+            }
+        });
+    }
 
+    // ✅ Respondent Search Logic (Unchanged)
+    function attachRespondentListeners(container) {
+        const respondentSearch = container.querySelector('.respondent-search-input');
+        const respondentIdInput = container.querySelector('.respondent-id-input');
+        const respondentResults = container.querySelector('.respondent-results');
+
+        respondentSearch.addEventListener('input', function() {
+            let query = this.value.trim();
+
+            if (query.length < 2) {
+                respondentResults.innerHTML = '';
+                return;
+            }
+
+            respondentResults.innerHTML = '<div class="no-results">Searching...</div>';
+
+            $.ajax({
+                url: respondentSearchUrl,
+                method: 'POST',
+                data: { query, _token: '{{ csrf_token() }}' },
+                success: function(data) {
+                    respondentResults.innerHTML = '';
+                    if (!data || data.length === 0) {
+                        respondentResults.innerHTML = '<div class="no-results">No respondents found.</div>';
+                        return;
+                    }
+
+                    data.forEach(res => {
                         const item = document.createElement('div');
                         item.className = 'search-result-item';
-                        item.textContent = `${complaint.student_name} - ${complaint.complaint_type} (${complaint.complaint_date})`;
-                        item.dataset.id = complaint.complaints_id;
-                        item.dataset.studentName = complaint.student_name;
-
-                        item.addEventListener('click', function() {
-                            const currentIds = (complaintSearch.dataset.ids || "").split(",").filter(id => id.trim() !== "");
-                            const currentNames = complaintSearch.value.split(",").map(n => n.trim()).filter(n => n !== "");
-
-                            if (!currentIds.includes(complaint.complaints_id.toString())) {
-                                const lastIndex = currentNames.length - 1;
-                                if (currentNames[lastIndex].toLowerCase().includes(query.toLowerCase())) {
-                                    currentNames[lastIndex] = complaint.student_name;
-                                } else {
-                                    currentNames.push(complaint.student_name);
-                                }
-
-                                complaintSearch.value = currentNames.join(", ");
-                                currentIds.push(complaint.complaints_id.toString());
-                                complaintSearch.dataset.ids = currentIds.join(",");
-
-                                if (currentIds.length === 1) {
-                                    complaintIdInput.value = complaint.complaints_id;
-                                }
-                            }
-
-                            complaintResults.innerHTML = '';
-                            complaintIdInput.style.borderColor = '#ddd';
-                            complaintSearch.style.borderColor = '#ddd';
+                        item.textContent = `${res.student_fname} ${res.student_lname}`;
+                        item.addEventListener('click', () => {
+                            respondentSearch.value = `${res.student_fname} ${res.student_lname}`;
+                            respondentIdInput.value = res.student_id;
+                            respondentResults.innerHTML = '';
+                            respondentSearch.style.borderColor = '#ddd';
                         });
-
-                        complaintResults.appendChild(item);
+                        respondentResults.appendChild(item);
                     });
                 },
-                error: function(xhr, status, error) {
-                    console.error('❌ Complaint search ERROR:', error);
-                    complaintResults.innerHTML = '<div class="no-results">Search failed. Try again.</div>';
+                error: function() {
+                    respondentResults.innerHTML = '<div class="no-results">Search failed. Try again.</div>';
                 }
             });
         });
 
-        // Close search results when clicking outside
         document.addEventListener('click', function(e) {
-            if (!complaintSearch.contains(e.target) && !complaintResults.contains(e.target)) {
-                complaintResults.innerHTML = '';
+            if (!respondentSearch.contains(e.target) && !respondentResults.contains(e.target)) {
+                respondentResults.innerHTML = '';
             }
         });
     }
 
-    // Remove anecdotal form
-    function removeAnecdotal(button) {
-        const containers = document.querySelectorAll('.student-container');
-        if (containers.length > 1) {
-            button.closest('.student-container').remove();
+    // ✅ Remove anecdotal
+    function removeAnecdotal(btn) {
+        const all = document.querySelectorAll('.student-container');
+        if (all.length > 1) {
+            btn.closest('.student-container').remove();
             updateAnecdotalNumbers();
             updateLayout();
         } else {
@@ -223,94 +247,17 @@
 
     function updateAnecdotalNumbers() {
         const containers = document.querySelectorAll('.student-container');
-        containers.forEach((container, index) => {
-            const title = container.querySelector('.student-title');
-            title.textContent = `Complaint Anecdotal #${index + 1}`;
-
-            const inputs = container.querySelectorAll('input, select, textarea');
-            inputs.forEach(input => {
-                const name = input.getAttribute('name');
-                if (name) input.setAttribute('name', name.replace(/\[\d+\]/, `[${index}]`));
-                const id = input.getAttribute('id');
-                if (id) input.setAttribute('id', id.replace(/\d+$/, index + 1));
-            });
-
-            const labels = container.querySelectorAll('label');
-            labels.forEach(label => {
-                const forAttr = label.getAttribute('for');
-                if (forAttr) label.setAttribute('for', forAttr.replace(/\d+$/, index + 1));
-            });
+        containers.forEach((c, i) => {
+            c.querySelector('.student-title').textContent = `Complaint Anecdotal #${i + 1}`;
         });
         anecdotalCount = containers.length;
     }
 
     function updateLayout() {
-        const containers = document.querySelectorAll('.student-container');
         const wrapper = document.getElementById('anecdotalWrapper');
-
-        containers.forEach(container => {
-            container.style.flex = '1 1 400px';
-            container.style.maxWidth = '600px';
-        });
-
+        const containers = document.querySelectorAll('.student-container');
         wrapper.style.justifyContent = containers.length === 1 ? 'center' : 'flex-start';
     }
-
-    // Validation
-    document.getElementById('anecdotalForm').addEventListener('submit', function(e) {
-        const containers = document.querySelectorAll('.student-container');
-        let isValid = true;
-
-        containers.forEach((container, index) => {
-            const complaintId = container.querySelector(`input[name="anecdotal[${index}][complaints_id]"]`);
-            const searchInput = container.querySelector('.complaint-search-input');
-            const solution = container.querySelector(`textarea[name="anecdotal[${index}][comp_anec_solution]"]`);
-            const recommendation = container.querySelector(`textarea[name="anecdotal[${index}][comp_anec_recommendation]"]`);
-            const date = container.querySelector(`input[name="anecdotal[${index}][comp_anec_date]"]`);
-            const time = container.querySelector(`input[name="anecdotal[${index}][comp_anec_time]"]`);
-
-            if (!complaintId.value || !solution.value || !recommendation.value || !date.value || !time.value) {
-                isValid = false;
-                if (!complaintId.value) {
-                    complaintId.style.borderColor = '#e74c3c';
-                    searchInput.style.borderColor = '#e74c3c';
-                }
-                if (!solution.value) solution.style.borderColor = '#e74c3c';
-                if (!recommendation.value) recommendation.style.borderColor = '#e74c3c';
-                if (!date.value) date.style.borderColor = '#e74c3c';
-                if (!time.value) time.style.borderColor = '#e74c3c';
-            }
-        });
-
-        if (!isValid) {
-            e.preventDefault();
-            alert('Please fill in all required fields (marked with *) before submitting.');
-        }
-    });
-
-    // Remove error border when typing
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('form-control')) {
-            e.target.style.borderColor = '#ddd';
-            if (e.target.classList.contains('complaint-search-input')) {
-                e.target.closest('.form-group').querySelector('.complaint-id-input').style.borderColor = '#ddd';
-            }
-        }
-    });
-
-    // Search filtering
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase();
-        const containers = document.querySelectorAll('.student-container');
-
-        containers.forEach(container => {
-            const searchVal = container.querySelector('.complaint-search-input').value.toLowerCase();
-            const sol = container.querySelector('textarea[name*="[comp_anec_solution]"]').value.toLowerCase();
-            const rec = container.querySelector('textarea[name*="[comp_anec_recommendation]"]').value.toLowerCase();
-
-            container.style.display = (searchVal.includes(term) || sol.includes(term) || rec.includes(term)) ? 'block' : 'none';
-        });
-    });
 </script>
 
 @endsection
