@@ -20,4 +20,5 @@ class PComplaintAnecdotalController extends Controller
     {
         return view('prefect.create-CAnecdotal');
     }
+    
 }
