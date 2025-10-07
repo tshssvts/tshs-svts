@@ -25,29 +25,29 @@
       align-items: center;
       gap: 10px;
     }
-    
+
     .alert-success {
       background-color: #d4edda;
       color: #155724;
       border: 1px solid #c3e6cb;
     }
-    
+
     .alert-error {
       background-color: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
-    
+
     .profile-image-container {
       position: relative;
       display: inline-block;
       cursor: pointer;
     }
-    
+
     .profile-image-container:hover .profile-image-overlay {
       display: flex !important;
     }
-    
+
     .profile-image-overlay {
       position: absolute;
       top: 0;
@@ -85,8 +85,14 @@
         <li class="{{ request()->routeIs('prefect.violation') ? 'active' : '' }}">
             <a href="{{ route('prefect.violation') }}"><i class="fas fa-book"></i> Violations</a>
         </li>
+               <li class="{{ request()->routeIs('prefect.violationAnecdotal') ? 'active' : '' }}">
+            <a href="{{ route('prefect.violationAnecdotal') }}"><i class="fas fa-book"></i> Violations Anecdotal</a>
+        </li>
         <li class="{{ request()->routeIs('prefect.complaints') ? 'active' : '' }}">
             <a href="{{ route('prefect.complaints') }}"><i class="fas fa-comments"></i> Complaints</a>
+        </li>
+        <li class="{{ request()->routeIs('prefect.complaintsAnecdotal') ? 'active' : '' }}">
+            <a href="{{ route('prefect.complaintsAnecdotal') }}"><i class="fas fa-comments"></i> Complaints Anecdotal</a>
         </li>
         <li class="{{ request()->routeIs('offenses.sanctions') ? 'active' : '' }}">
             <a href="{{ route('offenses.sanctions') }}"><i class="fas fa-exclamation-triangle"></i> Offense & Sanctions</a>
@@ -120,7 +126,7 @@
                 <!-- Profile Picture Section -->
                 <div class="profile-picture-section" style="text-align: center; margin-bottom: 20px;">
                     <div class="profile-image-container" style="position: relative; display: inline-block;">
-                        <img id="profile-image-preview" src="/images/user.jpg" alt="Profile" 
+                        <img id="profile-image-preview" src="/images/user.jpg" alt="Profile"
                             style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #3498db;">
                         <div class="profile-image-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center;">
                             <i class="fas fa-camera" style="color: white; font-size: 24px;"></i>
@@ -128,11 +134,11 @@
                     </div>
                     <div style="margin-top: 10px;">
                         <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
-                        <button type="button" onclick="document.getElementById('profile-image-input').click()" 
+                        <button type="button" onclick="document.getElementById('profile-image-input').click()"
                                 class="btn-send-code" style="margin: 5px;">
                             <i class="fas fa-upload"></i> Upload Photo
                         </button>
-                        <button type="button" onclick="removeProfileImage()" 
+                        <button type="button" onclick="removeProfileImage()"
                                 class="btn-cancel" style="margin: 5px; padding: 8px 15px;">
                             <i class="fas fa-trash"></i> Remove
                         </button>
@@ -168,7 +174,7 @@
             <div id="password-tab" class="tab-content">
                 <form id="changePasswordForm">
                     @csrf
-                    
+
                     <!-- Step 1: Request Verification -->
                     <div id="verification-step-1">
                         <div class="verification-section">
@@ -176,7 +182,7 @@
                                 <i class="fas fa-shield-alt"></i> Email Verification Required
                             </h4>
                             <p style="margin: 0 0 15px 0; font-size: 13px; color: #5a6c7d;">
-                                For security purposes, we need to verify your identity before changing your password. 
+                                For security purposes, we need to verify your identity before changing your password.
                                 A verification code will be sent to your email address.
                             </p>
                             <button type="button" class="btn-send-code" onclick="sendVerificationCode()" id="send-code-btn">
@@ -193,11 +199,11 @@
                                 <i class="fas fa-envelope"></i> Enter Verification Code
                             </h4>
                             <p style="margin: 0 0 15px 0; font-size: 13px; color: #5a6c7d;">
-                                Please check your email <strong id="user-email">Loading...</strong> 
+                                Please check your email <strong id="user-email">Loading...</strong>
                                 and enter the 6-digit verification code below.
                             </p>
                             <div class="verification-code">
-                                <input type="text" id="verification_code" name="verification_code" 
+                                <input type="text" id="verification_code" name="verification_code"
                                        maxlength="6" placeholder="000000" required>
                             </div>
                             <div class="countdown" id="code-countdown"></div>
@@ -244,7 +250,7 @@
         </div>
     </div>
 </div>
-            
+
 
 <!-- Main content area -->
 <main class="main-content">
@@ -254,7 +260,7 @@
         </div>
         <div class="header-right">
             <div class="user-info" onclick="toggleProfileDropdown()">
-                <img id="header-profile-image" src="/images/user.jpg" alt="User" 
+                <img id="header-profile-image" src="/images/user.jpg" alt="User"
                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #3498db;">
                 <span id="header-user-name">Loading...</span>
                 <i class="fas fa-caret-down"></i>

@@ -14,6 +14,53 @@ use App\Models\Student;
 
 class PComplaintAnecdotalController extends Controller
 {
+ public function index()
+    {
+        // Get complaint anecdotal records with related data
+        $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])
+            ->whereIn('status', ['active', 'in_progress'])
+            ->orderBy('comp_anec_date', 'desc')
+            ->orderBy('comp_anec_time', 'desc')
+            ->paginate(10);
+
+        // Calculate summary counts
+        $now = Carbon::now();
+
+        $monthlyAnecdotals = ComplaintsAnecdotal::whereIn('status', ['active', 'in_progress'])
+            ->whereYear('comp_anec_date', $now->year)
+            ->whereMonth('comp_anec_date', $now->month)
+            ->count();
+
+        $weeklyAnecdotals = ComplaintsAnecdotal::whereIn('status', ['active', 'in_progress'])
+            ->whereBetween('comp_anec_date', [
+                $now->copy()->startOfWeek()->format('Y-m-d'),
+                $now->copy()->endOfWeek()->format('Y-m-d')
+            ])
+            ->count();
+
+        $dailyAnecdotals = ComplaintsAnecdotal::whereIn('status', ['active', 'in_progress'])
+            ->whereDate('comp_anec_date', $now->format('Y-m-d'))
+            ->count();
+
+        return view('prefect.complaintAnecdotal', compact(
+            'canecdotals',
+            'monthlyAnecdotals',
+            'weeklyAnecdotals',
+            'dailyAnecdotals'
+        ));
+    }
+
+    public function create()
+    {
+        // Get active complaints to associate with anecdotal records
+        $complaints = Complaints::with(['complainant', 'respondent'])
+            ->where('status', 'active')
+            ->orderBy('complaints_date', 'desc')
+            ->get();
+
+        return view('prefect.complaintsAnecdotal_create', compact('complaints'));
+    }
+
     /**
      * Display the form for creating complaint anecdotal records.
      */

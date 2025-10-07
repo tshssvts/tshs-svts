@@ -12,9 +12,6 @@
       <a href="{{ route('violations.create') }}" class="btn-primary" id="createBtn">
         <i class="fas fa-plus"></i> Add Violation
       </a>
-      <a href="{{ route('violation-anecdotal.create') }}" class="btn-secondary" id="createAnecBtn">
-        <i class="fas fa-plus"></i>📝 Create Anecdotal
-      </a>
       <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
     </div>
   </div>
@@ -48,7 +45,6 @@
         <div class="dropdown-content">
           <a href="#" id="violationRecords">Violation Records</a>
           <a href="#" id="violationAppointments">Violation Appointments</a>
-          <a href="#" id="violationAnecdotals">Violation Anecdotals</a>
         </div>
       </div>
     </div>
@@ -57,19 +53,15 @@
       <!-- Violation Records Buttons -->
       <div id="violationRecordsActions" class="action-buttons">
         <button class="btn-cleared" id="markAsClearedBtn">Cleared</button>
-        <button class="btn-danger" id="moveToTrashBtn">🗑️ Move Selected to Trash</button>
+        <button class="btn-schedule" id="setScheduleBtn">📅 Set Schedule</button>
+        <button class="btn-anecdotal" id="createAnecdotalBtn">📝 Create Anecdotal</button>
+        <button class="btn-danger" id="moveToTrashBtn">🗑️ Move to Trash</button>
       </div>
 
       <!-- Violation Appointments Buttons -->
       <div id="violationAppointmentsActions" class="action-buttons" style="display:none;">
         <button class="btn-cleared" id="markAppointmentCompletedBtn">Mark as Completed</button>
         <button class="btn-danger" id="moveAppointmentToTrashBtn">🗑️ Move Selected to Trash</button>
-      </div>
-
-      <!-- Violation Anecdotals Buttons -->
-      <div id="violationAnecdotalsActions" class="action-buttons" style="display:none;">
-        <button class="btn-cleared" id="markAnecdotalCompletedBtn">Mark as Completed</button>
-        <button class="btn-danger" id="moveAnecdotalToTrashBtn">🗑️ Move Selected to Trash</button>
       </div>
     </div>
   </div>
@@ -123,7 +115,6 @@
                 </span>
               </td>
               <td><button class="btn-primary editViolationBtn">✏️ Edit</button></td>
-
             </tr>
             @endif
           @empty
@@ -190,58 +181,6 @@
             @endif
           @empty
           <tr><td colspan="7" style="text-align:center;">No active appointments found</td></tr>
-          @endforelse
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 📝 VIOLATION ANECDOTALS TABLE -->
-    <div id="violationAnecdotalsTable" class="table-wrapper" style="display:none;">
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>ID</th>
-            <th>Student Name</th>
-            <th>Solution</th>
-            <th>Recommendation</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          @forelse($vanecdotals as $anec)
-            @if($anec->status === 'active' || $anec->status === 'in_progress')
-            <tr
-              data-anec-id="{{ $anec->violation_anec_id }}"
-              data-solution="{{ $anec->violation_anec_solution }}"
-              data-recommendation="{{ $anec->violation_anec_recommendation }}"
-              data-date="{{ $anec->violation_anec_date }}"
-              data-time="{{ \Carbon\Carbon::parse($anec->violation_anec_time)->format('h:i A') }}"
-              data-status="{{ $anec->status }}"
-            >
-              <td><input type="checkbox" class="rowCheckbox anecdotalCheckbox" value="{{ $anec->violation_anec_id }}"></td>
-              <td>{{ $anec->violation_anec_id }}</td>
-              <td>
-                {{ $anec->violation->student->student_fname ?? 'N/A' }}
-                {{ $anec->violation->student->student_lname ?? '' }}
-              </td>
-              <td>{{ $anec->violation_anec_solution }}</td>
-              <td>{{ $anec->violation_anec_recommendation }}</td>
-              <td>{{ $anec->violation_anec_date }}</td>
-              <td>{{ \Carbon\Carbon::parse($anec->violation_anec_time)->format('h:i A') }}</td>
-              <td>
-                <span class="status-badge {{ $anec->status === 'active' ? 'status-active' : 'status-in-progress' }}">
-                  {{ ucfirst($anec->status) }}
-                </span>
-              </td>
-              <td><button class="btn-primary editAnecdotalBtn">✏️ Edit</button></td>
-            </tr>
-            @endif
-          @empty
-          <tr><td colspan="9" style="text-align:center;">No active anecdotal records found</td></tr>
           @endforelse
         </tbody>
       </table>
@@ -345,6 +284,99 @@
       </form>
     </div>
   </div>
+<!-- 📅 Set Schedule Modal -->
+<div class="modal" id="setScheduleModal">
+    <div class="modal-content">
+        <button class="close-btn" id="closeScheduleModal">✖</button>
+        <h2>Set Schedule for Selected Violations</h2>
+
+        <form id="setScheduleForm" method="POST" action="{{ route('prefect.storeMultipleAppointments') }}">
+            @csrf
+
+            <div class="selected-violations">
+                <h3>Selected Violations:</h3>
+                <div id="selectedViolationsList" class="selected-list">
+                    <!-- Selected violations will be listed here -->
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="schedule_date">Appointment Date</label>
+                    <input type="date" id="schedule_date" name="schedule_date" required min="{{ date('Y-m-d') }}">
+                </div>
+                <div class="form-group">
+                    <label for="schedule_time">Appointment Time</label>
+                    <input type="time" id="schedule_time" name="schedule_time" required>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn-primary">📅 Create Appointments</button>
+                <button type="button" class="btn-secondary" id="cancelScheduleBtn">❌ Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- 📝 Create Anecdotal Modal -->
+<div class="modal" id="createAnecdotalModal">
+    <div class="modal-content">
+        <button class="close-btn" id="closeAnecdotalModal">✖</button>
+        <h2>Create Anecdotal Record for Selected Violations</h2>
+
+<form id="createAnecdotalForm" method="POST" action="{{ route('prefect.storeMultipleAnecdotals') }}">
+                @csrf
+
+            <div class="selected-violations">
+                <h3>Selected Violations:</h3>
+                <div id="selectedViolationsForAnecdotal" class="selected-list">
+                    <!-- Selected violations for anecdotal will be listed here -->
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="anecdotal_date">Anecdotal Date</label>
+                    <input type="date" id="anecdotal_date" name="anecdotal_date" required value="{{ date('Y-m-d') }}">
+                </div>
+                <div class="form-group">
+                    <label for="anecdotal_time">Anecdotal Time</label>
+                    <input type="time" id="anecdotal_time" name="anecdotal_time" required value="{{ date('H:i') }}">
+                </div>
+                <div class="form-group full-width">
+                    <label for="violation_anec_solution">Solution</label>
+                    <textarea id="violation_anec_solution" name="violation_anec_solution" placeholder="Describe the solution implemented..." required rows="4"></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label for="violation_anec_recommendation">Recommendation</label>
+                    <textarea id="violation_anec_recommendation" name="violation_anec_recommendation" placeholder="Provide recommendations for future prevention..." required rows="4"></textarea>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn-primary">📝 Create Anecdotal Records</button>
+                <button type="button" class="btn-secondary" id="cancelAnecdotalBtn">❌ Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ✅ Anecdotal Success Modal -->
+<div class="modal" id="anecdotalSuccessModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>✅ Anecdotal Records Created Successfully</h2>
+        </div>
+        <div class="modal-body">
+            <p id="successMessage"></p>
+            <div class="success-actions">
+                <button class="btn-print" id="printAnecdotalBtn">🖨️ Print Records</button>
+                <button class="btn-primary" id="closeSuccessModal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
   <!-- 🗃️ VIOLATION RECORDS ARCHIVE MODAL -->
   <div class="modal" id="violationRecordsArchiveModal">
@@ -451,58 +483,6 @@
     </div>
   </div>
 
-  <!-- 🗃️ VIOLATION ANECDOTALS ARCHIVE MODAL -->
-  <div class="modal" id="violationAnecdotalsArchiveModal">
-    <div class="modal-content">
-      <div class="modal-header">🗃️ Archived Violation Anecdotals</div>
-      <div class="modal-body">
-        <div class="modal-actions">
-          <label class="select-all-label">
-            <input type="checkbox" id="selectAllViolationAnecdotalsArchived">
-            <span>Select All</span>
-          </label>
-          <div class="filter-container">
-            <select id="violationAnecdotalsStatusFilter" class="filter-select">
-              <option value="all">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-          <div class="search-container">
-            <input type="search" id="violationAnecdotalsArchiveSearch" placeholder="🔍 Search archived anecdotals..." class="search-input">
-          </div>
-        </div>
-
-        <div class="archive-table-container">
-          <div id="archiveViolationAnecdotalsTable" class="archive-table-wrapper">
-            <table class="archive-table">
-              <thead>
-                <tr>
-                  <th>✔</th>
-                  <th>ID</th>
-                  <th>Student Name</th>
-                  <th>Solution</th>
-                  <th>Recommendation</th>
-                  <th>Status</th>
-                  <th>Date Archived</th>
-                </tr>
-              </thead>
-              <tbody id="archiveViolationAnecdotalsBody">
-                <!-- Archived violation anecdotals will be loaded here via AJAX -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn-secondary" id="restoreViolationAnecdotalsBtn">🔄 Restore</button>
-          <button class="btn-danger" id="deleteViolationAnecdotalsBtn">🗑️ Delete</button>
-          <button class="btn-close" id="closeViolationAnecdotalsArchive">❌ Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <style>
@@ -584,6 +564,72 @@
 .btn-sms:hover {
   background-color: #218838;
 }
+
+.btn-schedule {
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-schedule:hover {
+  background-color: #e0a800;
+}
+
+.btn-anecdotal {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-anecdotal:hover {
+  background-color: #138496;
+}
+
+.selected-violations {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.selected-list {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.selected-violation-item {
+  padding: 8px 12px;
+  margin-bottom: 5px;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
+}
 </style>
 
 <script>
@@ -597,6 +643,461 @@ const csrfToken = getCsrfToken();
 // Current active table type
 let currentTableType = 'violationRecords';
 
+// ==================== NEW FUNCTIONALITY: SET SCHEDULE ====================
+document.getElementById('setScheduleBtn').addEventListener('click', function() {
+    const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
+
+    if (!selectedCheckboxes.length) {
+        alert('Please select at least one violation to schedule.');
+        return;
+    }
+
+    // Get selected violation data
+    const selectedViolations = Array.from(selectedCheckboxes).map(cb => {
+        const row = cb.closest('tr');
+        return {
+            violation_id: row.dataset.violationId,
+            student_name: row.dataset.studentName,
+            incident: row.dataset.incident
+        };
+    });
+
+    // Populate selected violations list
+    const selectedList = document.getElementById('selectedViolationsList');
+    selectedList.innerHTML = '';
+
+    selectedViolations.forEach(violation => {
+        const item = document.createElement('div');
+        item.className = 'selected-violation-item';
+        item.innerHTML = `
+            <strong>${violation.student_name}</strong> - ${violation.incident}
+            <input type="hidden" name="violation_ids[]" value="${violation.violation_id}">
+        `;
+        selectedList.appendChild(item);
+    });
+
+    // Show the modal
+    document.getElementById('setScheduleModal').style.display = 'flex';
+});
+
+// Close Set Schedule Modal
+document.getElementById('closeScheduleModal').addEventListener('click', function() {
+    document.getElementById('setScheduleModal').style.display = 'none';
+});
+
+document.getElementById('cancelScheduleBtn').addEventListener('click', function() {
+    document.getElementById('setScheduleModal').style.display = 'none';
+});
+
+// ==================== CREATE ANECDOTAL FUNCTIONALITY ====================
+document.getElementById('createAnecdotalBtn').addEventListener('click', function() {
+    const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
+
+    if (!selectedCheckboxes.length) {
+        alert('Please select at least one violation to create anecdotal record.');
+        return;
+    }
+
+    // Get selected violation data
+    const selectedViolations = Array.from(selectedCheckboxes).map(cb => {
+        const row = cb.closest('tr');
+        return {
+            violation_id: row.dataset.violationId,
+            student_name: row.dataset.studentName,
+            incident: row.dataset.incident,
+            offense_type: row.dataset.offenseType,
+            sanction: row.dataset.sanction
+        };
+    });
+
+    // Populate selected violations list
+    const selectedList = document.getElementById('selectedViolationsForAnecdotal');
+    selectedList.innerHTML = '';
+
+    selectedViolations.forEach(violation => {
+        const item = document.createElement('div');
+        item.className = 'selected-violation-item';
+        item.innerHTML = `
+            <strong>${violation.student_name}</strong><br>
+            <small>Incident: ${violation.incident}</small><br>
+            <small>Offense: ${violation.offense_type}</small>
+            <input type="hidden" name="violation_ids[]" value="${violation.violation_id}">
+        `;
+        selectedList.appendChild(item);
+    });
+
+    // Show the modal
+    document.getElementById('createAnecdotalModal').style.display = 'flex';
+});
+
+// Close Create Anecdotal Modal
+document.getElementById('closeAnecdotalModal').addEventListener('click', function() {
+    document.getElementById('createAnecdotalModal').style.display = 'none';
+});
+
+document.getElementById('cancelAnecdotalBtn').addEventListener('click', function() {
+    document.getElementById('createAnecdotalModal').style.display = 'none';
+});
+
+// Handle anecdotal form submission
+document.getElementById('createAnecdotalForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+        submitBtn.disabled = true;
+
+        const response = await fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show success modal
+            document.getElementById('createAnecdotalModal').style.display = 'none';
+            document.getElementById('successMessage').textContent = result.message;
+            document.getElementById('anecdotalSuccessModal').style.display = 'flex';
+
+            // Store created anecdotal data for printing
+            window.lastCreatedAnecdotals = result.data;
+        } else {
+            if (result.errors) {
+    let messages = Object.values(result.errors).flat().join('\n');
+    alert('Validation failed:\n' + messages);
+    console.error(result.errors);
+} else {
+    alert('Error: ' + (result.message || 'Unknown error'));
+}
+
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating anecdotal records.');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
+// Print Anecdotal Records
+document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
+    if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
+        alert('No anecdotal records to print.');
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    const printContent = generateAnecdotalPrintContent(window.lastCreatedAnecdotals);
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Anecdotal Records</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                .anecdotal-record { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; page-break-inside: avoid; }
+                .record-header { background: #f5f5f5; padding: 10px; margin: -15px -15px 15px -15px; border-bottom: 1px solid #ddd; }
+                .field { margin-bottom: 10px; }
+                .field label { font-weight: bold; display: inline-block; width: 150px; }
+                @media print {
+                    .no-print { display: none; }
+                    .anecdotal-record { page-break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            ${printContent}
+            <div class="no-print" style="margin-top: 20px; text-align: center;">
+                <button onclick="window.print()">Print</button>
+                <button onclick="window.close()">Close</button>
+            </div>
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+});
+
+// Close Success Modal
+document.getElementById('closeSuccessModal').addEventListener('click', function() {
+    document.getElementById('anecdotalSuccessModal').style.display = 'none';
+    location.reload(); // Reload to show the new anecdotal records
+});
+
+// Function to generate print content
+// Function to generate formal print content for complaints
+function generateAnecdotalPrintContent(anecdotals) {
+    let content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Complaint Anecdotal Record</title>
+            <style>
+                body {
+                    font-family: 'Times New Roman', serif;
+                    margin: 0;
+                    padding: 0;
+                    line-height: 1.4;
+                    color: #000;
+                }
+                .container {
+                    max-width: 8.5in;
+                    margin: 0 auto;
+                    padding: 0.5in;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 2px solid #000;
+                    padding-bottom: 15px;
+                }
+                .header h1 {
+                    font-size: 16px;
+                    font-weight: bold;
+                    margin: 5px 0;
+                    text-transform: uppercase;
+                }
+                .header p {
+                    font-size: 12px;
+                    margin: 2px 0;
+                }
+                .title {
+                    text-align: center;
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin: 25px 0;
+                    text-decoration: underline;
+                }
+                .section {
+                    margin-bottom: 25px;
+                }
+                .section-title {
+                    font-weight: bold;
+                    font-size: 14px;
+                    margin-bottom: 8px;
+                    border-bottom: 1px solid #000;
+                    padding-bottom: 3px;
+                }
+                .incident-content {
+                    min-height: 100px;
+                    border: 1px solid #000;
+                    padding: 10px;
+                    margin-bottom: 15px;
+                    font-size: 12px;
+                    line-height: 1.6;
+                }
+                .signature-section {
+                    margin-top: 60px;
+                }
+                .signature-line {
+                    border-top: 1px solid #000;
+                    margin-top: 40px;
+                    padding-top: 5px;
+                    font-size: 12px;
+                }
+                .signature-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 40px;
+                    margin-top: 20px;
+                }
+                .signature-item {
+                    text-align: center;
+                }
+                .date-section {
+                    margin-top: 30px;
+                    font-size: 12px;
+                }
+                .no-print {
+                    display: none;
+                }
+                @media print {
+                    body { margin: 0; padding: 0; }
+                    .container { padding: 0.5in; }
+                    .no-print { display: none !important; }
+                    .page-break { page-break-before: always; }
+                }
+                @page {
+                    margin: 0.5in;
+                    size: letter;
+                }
+            </style>
+        </head>
+        <body>
+    `;
+
+    anecdotals.forEach((anecdotal, index) => {
+        // Get the complaint incident from the stored data
+        const incident = anecdotal.complaint?.complaints_incident || anecdotal.incident || 'No incident details available.';
+        const complainantName = anecdotal.complaint?.complainant?.student_fname + ' ' + anecdotal.complaint?.complainant?.student_lname || 'Unknown Complainant';
+        const respondentName = anecdotal.complaint?.respondent?.student_fname + ' ' + anecdotal.complaint?.respondent?.student_lname || 'Unknown Respondent';
+        const prefectName = 'Prefect of Discipline'; // You can get this from your auth user
+
+        content += `
+            <div class="container">
+                <div class="header">
+                    <h1>Republic of the Philippines</h1>
+                    <h1>Department of Education</h1>
+                    <p>RECORD'S DIVISION OF MIRANDA ORIGINAL</p>
+                    <h1>TABORQAM SENIOR HIGH SCHOOL</h1>
+                    <h1>ANECDOTAL RECORD</h1>
+                    <p>Prefect of Discipline</p>
+                    <div class="date-section">
+                        Date: ${new Date(anecdotal.comp_anec_date).toLocaleDateString()}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">INCIDENT:</div>
+                    <div class="incident-content">
+                        ${incident}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">RECOMMENDATION:</div>
+                    <div class="incident-content">
+                        ${anecdotal.comp_anec_recommendation}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">SOLUTION:</div>
+                    <div class="incident-content">
+                        ${anecdotal.comp_anec_solution}
+                    </div>
+                </div>
+
+                <div class="signature-section">
+                    <div class="signature-grid">
+                        <div class="signature-item">
+                            <div class="signature-line"></div>
+                            <div>Complainant's name and signature</div>
+                            <div style="margin-top: 5px; font-weight: bold;">${complainantName}</div>
+                        </div>
+                        <div class="signature-item">
+                            <div class="signature-line"></div>
+                            <div>Respondent's name and signature</div>
+                            <div style="margin-top: 5px; font-weight: bold;">${respondentName}</div>
+                        </div>
+                        <div class="signature-item">
+                            <div class="signature-line"></div>
+                            <div>Parent/Guardian's signature</div>
+                            <div style="margin-top: 5px; font-weight: bold;">Parent/Guardian</div>
+                        </div>
+                        <div class="signature-item">
+                            <div class="signature-line"></div>
+                            <div>Prefect of Discipline In-charge</div>
+                            <div style="margin-top: 5px; font-weight: bold;">${prefectName}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add page break for multiple records
+        if (index < anecdotals.length - 1) {
+            content += `<div class="page-break"></div>`;
+        }
+    });
+
+    content += `
+            <div class="no-print" style="position: fixed; top: 20px; right: 20px; background: white; padding: 10px; border: 1px solid #000;">
+                <button onclick="window.print()" style="padding: 10px 20px; margin: 5px;">Print</button>
+                <button onclick="window.close()" style="padding: 10px 20px; margin: 5px;">Close</button>
+            </div>
+        </body>
+        </html>
+    `;
+
+    return content;
+}
+
+// Close Create Anecdotal Modal
+document.getElementById('closeAnecdotalModal').addEventListener('click', function() {
+    document.getElementById('createAnecdotalModal').style.display = 'none';
+});
+
+document.getElementById('cancelAnecdotalBtn').addEventListener('click', function() {
+    document.getElementById('createAnecdotalModal').style.display = 'none';
+});
+
+// Handle form submissions for new modals
+document.getElementById('setScheduleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    try {
+        const response = await fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Appointments scheduled successfully!');
+            document.getElementById('setScheduleModal').style.display = 'none';
+            // Optionally reload the page or update UI
+            location.reload();
+        } else {
+            alert('Error: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error scheduling appointments.');
+    }
+});
+
+document.getElementById('createAnecdotalForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    try {
+        const response = await fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Anecdotal records created successfully!');
+            document.getElementById('createAnecdotalModal').style.display = 'none';
+            // Optionally reload the page or update UI
+            location.reload();
+        } else {
+            alert('Error: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating anecdotal records.');
+    }
+});
+
+// ... (rest of your existing JavaScript code remains the same)
 // 👁️ Violation Details Modal Functionality
 const violationDetailsModal = document.getElementById('violationDetailsModal');
 const closeViolationDetailsModal = document.getElementById('closeViolationDetailsModal');
@@ -683,7 +1184,8 @@ document.addEventListener('click', function(event) {
         'violationDetailsModal',
         'violationRecordsArchiveModal',
         'violationAppointmentsArchiveModal',
-        'violationAnecdotalsArchiveModal'
+        'setScheduleModal',
+        'createAnecdotalModal'
     ];
 
     modals.forEach(modalId => {
@@ -940,117 +1442,6 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
     }
 });
 
-// ==================== VIOLATION ANECDOTALS FUNCTIONALITY ====================
-// ✅ Mark Anecdotal as Completed
-document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', async function() {
-    const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
-
-    if (!selectedCheckboxes.length) {
-        alert('Please select at least one anecdotal record.');
-        return;
-    }
-
-    const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-
-    if (!confirm(`Are you sure you want to mark ${anecdotalIds.length} anecdotal record(s) as Completed?`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/prefect/violation-anecdotals/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                anecdotal_ids: anecdotalIds,
-                status: 'completed'
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            alert(`${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`);
-            // Remove the completed rows from the main table
-            anecdotalIds.forEach(id => {
-                const row = document.querySelector(`tr[data-anec-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            // Update UI
-            document.getElementById('selectAll').checked = false;
-
-            // Reload to update counts
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error marking anecdotal records as completed.');
-    }
-});
-
-// 🗑️ Move Anecdotal to Trash (Archive as Closed)
-document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', async function() {
-    const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
-
-    if (!selectedCheckboxes.length) {
-        alert('Please select at least one anecdotal record.');
-        return;
-    }
-
-    const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-
-    if (!confirm(`Are you sure you want to move ${anecdotalIds.length} anecdotal record(s) to archive as Closed?`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/prefect/violation-anecdotals/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                anecdotal_ids: anecdotalIds,
-                status: 'closed'
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            alert(`${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`);
-            // Remove the archived rows from the main table
-            anecdotalIds.forEach(id => {
-                const row = document.querySelector(`tr[data-anec-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            // Update UI
-            document.getElementById('selectAll').checked = false;
-
-            // Reload to update counts
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error moving anecdotal records to archive.');
-    }
-});
-
 // ==================== ARCHIVE MODAL FUNCTIONALITY ====================
 
 // 🗃️ Archive Button - Opens appropriate archive modal based on current table
@@ -1079,17 +1470,6 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
             // Populate appointments table
             populateArchiveTable('archiveViolationAppointmentsBody', archivedAppointments, 'appointment');
             document.getElementById('violationAppointmentsArchiveModal').style.display = 'flex';
-
-        } else if (currentTableType === 'violationAnecdotals') {
-            // Load archived anecdotals
-            const anecdotalResponse = await fetch('/prefect/violation-anecdotals/archived');
-            console.log('Anecdotal response status:', anecdotalResponse.status);
-            const archivedAnecdotals = await anecdotalResponse.json();
-            console.log('Archived anecdotals:', archivedAnecdotals);
-
-            // Populate anecdotals table
-            populateArchiveTable('archiveViolationAnecdotalsBody', archivedAnecdotals, 'anecdotal');
-            document.getElementById('violationAnecdotalsArchiveModal').style.display = 'flex';
         }
     } catch (error) {
         console.error('Error loading archived data:', error);
@@ -1135,18 +1515,6 @@ function populateArchiveTable(tableBodyId, data, type) {
                 <td>${item.violation_app_time}</td>
                 <td>${new Date(item.updated_at).toLocaleDateString()}</td>
             `;
-        } else if (type === 'anecdotal') {
-            row.setAttribute('data-record-id', item.violation_anec_id);
-            row.setAttribute('data-record-type', 'anecdotal');
-            row.innerHTML = `
-                <td><input type="checkbox" class="archiveCheckbox" value="${item.violation_anec_id}" data-type="anecdotal"></td>
-                <td>${item.violation_anec_id}</td>
-                <td>${item.student_fname} ${item.student_lname}</td>
-                <td>${item.violation_anec_solution}</td>
-                <td>${item.violation_anec_recommendation}</td>
-                <td><span class="status-badge ${item.status === 'completed' ? 'status-cleared' : 'status-inactive'}">${item.status}</span></td>
-                <td>${new Date(item.updated_at).toLocaleDateString()}</td>
-            `;
         }
 
         tableBody.appendChild(row);
@@ -1167,16 +1535,6 @@ document.getElementById('violationRecordsArchiveSearch').addEventListener('input
 document.getElementById('violationAppointmentsArchiveSearch').addEventListener('input', function() {
     const filter = this.value.toLowerCase();
     const tableBody = document.getElementById('archiveViolationAppointmentsBody');
-    const rows = tableBody.querySelectorAll('tr');
-    rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(filter) ? '' : 'none';
-    });
-});
-
-document.getElementById('violationAnecdotalsArchiveSearch').addEventListener('input', function() {
-    const filter = this.value.toLowerCase();
-    const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
     const rows = tableBody.querySelectorAll('tr');
     rows.forEach(row => {
         const text = row.innerText.toLowerCase();
@@ -1215,21 +1573,6 @@ document.getElementById('violationAppointmentsStatusFilter').addEventListener('c
     }
 });
 
-document.getElementById('violationAnecdotalsStatusFilter').addEventListener('change', function() {
-    const filter = this.value;
-    const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
-    const rows = tableBody.querySelectorAll('tr');
-
-    if (filter !== 'all') {
-        rows.forEach(row => {
-            const status = row.querySelector('.status-badge').innerText.toLowerCase();
-            row.style.display = status === filter.toLowerCase() ? '' : 'none';
-        });
-    } else {
-        rows.forEach(row => row.style.display = '');
-    }
-});
-
 // Select All for each archive modal
 document.getElementById('selectAllViolationRecordsArchived').addEventListener('change', function() {
     const tableBody = document.getElementById('archiveViolationRecordsBody');
@@ -1241,14 +1584,6 @@ document.getElementById('selectAllViolationRecordsArchived').addEventListener('c
 
 document.getElementById('selectAllViolationAppointmentsArchived').addEventListener('change', function() {
     const tableBody = document.getElementById('archiveViolationAppointmentsBody');
-    const checkboxes = tableBody.querySelectorAll('.archiveCheckbox');
-    checkboxes.forEach(cb => {
-        cb.checked = this.checked;
-    });
-});
-
-document.getElementById('selectAllViolationAnecdotalsArchived').addEventListener('change', function() {
-    const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
     const checkboxes = tableBody.querySelectorAll('.archiveCheckbox');
     checkboxes.forEach(cb => {
         cb.checked = this.checked;
@@ -1308,56 +1643,6 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
 
 document.getElementById('restoreViolationAppointmentsBtn').addEventListener('click', async function() {
     const tableBody = document.getElementById('archiveViolationAppointmentsBody');
-    const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-
-    if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to restore.');
-        return;
-    }
-
-    const records = Array.from(selectedCheckboxes).map(cb => ({
-        id: cb.value,
-        type: cb.dataset.type
-    }));
-
-    if (!confirm(`Are you sure you want to restore ${records.length} record(s)?`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/prefect/violations/restore-multiple', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            alert(`${records.length} record(s) restored successfully.`);
-            // Remove the restored rows from archive table
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
-
-            // Reload the page to show restored records in main table
-            location.reload();
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error restoring records.');
-    }
-});
-
-document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click', async function() {
-    const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
@@ -1513,59 +1798,6 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
     }
 });
 
-document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click', async function() {
-    const tableBody = document.getElementById('archiveViolationAnecdotalsBody');
-    const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
-
-    if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to delete permanently.');
-        return;
-    }
-
-    if (!confirm('WARNING: This will permanently delete these records. This action cannot be undone!')) {
-        return;
-    }
-
-    const records = Array.from(selectedCheckboxes).map(cb => ({
-        id: cb.value,
-        type: cb.dataset.type
-    }));
-
-    try {
-        const response = await fetch('/prefect/violations/destroy-multiple-archived', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            alert(`${records.length} record(s) deleted permanently.`);
-            // Remove the deleted rows from archive table
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
-
-            // If no more archived records in current table, show message
-            const remainingRows = tableBody.querySelectorAll('tr');
-            if (remainingRows.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
-            }
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting records.');
-    }
-});
-
 // Close Archive Modals
 document.getElementById('closeViolationRecordsArchive').addEventListener('click', function() {
     document.getElementById('violationRecordsArchiveModal').style.display = 'none';
@@ -1573,10 +1805,6 @@ document.getElementById('closeViolationRecordsArchive').addEventListener('click'
 
 document.getElementById('closeViolationAppointmentsArchive').addEventListener('click', function() {
     document.getElementById('violationAppointmentsArchiveModal').style.display = 'none';
-});
-
-document.getElementById('closeViolationAnecdotalsArchive').addEventListener('click', function() {
-    document.getElementById('violationAnecdotalsArchiveModal').style.display = 'none';
 });
 
 // Switch between main tables and show appropriate action buttons
@@ -1629,30 +1857,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const row = e.target.closest('tr');
-      openModal(`/prefect/violation-anecdotals/update/${row.dataset.anecId}`, {
-        id: row.dataset.anecId,
-        details: `${row.dataset.solution} | ${row.dataset.recommendation}`,
-        date: row.dataset.date,
-        time: row.dataset.time
-      });
-    });
-  });
-
   [closeModal, cancelBtn].forEach(btn => btn.addEventListener('click', () => editModal.style.display = 'none'));
 
   const sections = {
     violationRecords: document.getElementById('violationRecordsTable'),
-    violationAppointments: document.getElementById('violationAppointmentsTable'),
-    violationAnecdotals: document.getElementById('violationAnecdotalsTable')
+    violationAppointments: document.getElementById('violationAppointmentsTable')
   };
 
   const actionButtons = {
     violationRecords: document.getElementById('violationRecordsActions'),
-    violationAppointments: document.getElementById('violationAppointmentsActions'),
-    violationAnecdotals: document.getElementById('violationAnecdotalsActions')
+    violationAppointments: document.getElementById('violationAppointmentsActions')
   };
 
   Object.keys(sections).forEach(key => {
