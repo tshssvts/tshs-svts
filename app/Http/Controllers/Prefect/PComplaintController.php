@@ -101,7 +101,7 @@ public function index()
     {
         Log::info('=== COMPLAINT STORE METHOD STARTED ===');
         Log::info('Full Request Data:', $request->all());
-        
+
         try {
             DB::beginTransaction();
 
@@ -111,7 +111,7 @@ public function index()
 
             // Get all complaints data
             $complaintsData = $request->input('complaints', []);
-            
+
             Log::info('Complaints Data Structure:', $complaintsData);
             Log::info('Number of complaints to process:', ['count' => count($complaintsData)]);
 
@@ -125,7 +125,7 @@ public function index()
             // Loop through each complaint
             foreach ($complaintsData as $complaintIndex => $complaint) {
                 Log::info("Processing complaint index: {$complaintIndex}", $complaint);
-                
+
                 $complainant_id = $complaint['complainant_id'] ?? null;
                 $respondent_id = $complaint['respondent_id'] ?? null;
                 $offense_sanc_id = $complaint['offense_sanc_id'] ?? null;
@@ -155,12 +155,12 @@ public function index()
                     Log::warning("Complainant does not exist: {$complainant_id}");
                     continue;
                 }
-                
+
                 if (!$respondentExists) {
                     Log::warning("Respondent does not exist: {$respondent_id}");
                     continue;
                 }
-                
+
                 if (!$offenseExists) {
                     Log::warning("Offense does not exist: {$offense_sanc_id}");
                     continue;
@@ -169,7 +169,7 @@ public function index()
                 // Get student names for success message
                 $complainant = DB::table('tbl_student')->where('student_id', $complainant_id)->first();
                 $respondent = DB::table('tbl_student')->where('student_id', $respondent_id)->first();
-                
+
                 $complainantName = $complainant ? $complainant->student_fname . ' ' . $complainant->student_lname : 'Unknown';
                 $respondentName = $respondent ? $respondent->student_fname . ' ' . $respondent->student_lname : 'Unknown';
 
@@ -191,7 +191,7 @@ public function index()
                     Log::info("Complaint created successfully with ID: {$newComplaint->id}");
                     $savedCount++;
                     $messages[] = "✅ {$complainantName} vs {$respondentName}";
-                    
+
                 } catch (\Exception $e) {
                     Log::error("Failed to create complaint record: " . $e->getMessage());
                     continue;
@@ -203,7 +203,7 @@ public function index()
             Log::info("Complaint storage completed. Saved: {$savedCount}, Attempted: " . count($complaintsData));
 
             if ($savedCount === 0) {
-                return back()->with('error', 
+                return back()->with('error',
                     'No complaints were saved. Please check that:<br>'
                     . '1. All students exist in the database<br>'
                     . '2. The offense exists in the database<br>'
@@ -356,6 +356,98 @@ public function index()
                      ->with('success', 'Complaint updated successfully.');
 }
 
+// Add these store methods to your controller
 
+// Store multiple anecdotal records
+public function storeMultipleAnecdotals(Request $request)
+{
+    $request->validate([
+        'complaint_ids' => 'required|array',
+        'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
+        'comp_anec_solution' => 'required|string',
+        'comp_anec_recommendation' => 'required|string',
+        'anecdotal_date' => 'required|date',
+        'anecdotal_time' => 'required',
+    ]);
 
+    $complaintIds = $request->complaint_ids;
+
+    try {
+        DB::beginTransaction();
+
+        $createdAnecdotals = [];
+
+        foreach ($complaintIds as $complaintId) {
+            $anecdotal = ComplaintsAnecdotal::create([
+                'complaints_id' => $complaintId,
+                'comp_anec_solution' => $request->comp_anec_solution,
+                'comp_anec_recommendation' => $request->comp_anec_recommendation,
+                'comp_anec_date' => $request->anecdotal_date,
+                'comp_anec_time' => $request->anecdotal_time,
+                'status' => 'active'
+            ]);
+
+            // Load relationships for the response
+            $anecdotal->load(['complaint.complainant', 'complaint.respondent']);
+            $createdAnecdotals[] = $anecdotal;
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anecdotal records created successfully!',
+            'data' => $createdAnecdotals
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating anecdotal records: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// Store multiple appointment records
+public function storeMultipleAppointments(Request $request)
+{
+    $request->validate([
+        'complaint_ids' => 'required|array',
+        'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
+        'comp_app_date' => 'required|date',
+        'comp_app_time' => 'required',
+        'comp_app_status' => 'required|string',
+    ]);
+
+    $complaintIds = $request->complaint_ids;
+
+    try {
+        DB::beginTransaction();
+
+        foreach ($complaintIds as $complaintId) {
+            ComplaintsAppointment::create([
+                'complaints_id' => $complaintId,
+                'comp_app_date' => $request->comp_app_date,
+                'comp_app_time' => $request->comp_app_time,
+                'comp_app_status' => $request->comp_app_status,
+                'status' => 'active'
+            ]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Appointments created successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating appointments: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

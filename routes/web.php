@@ -69,6 +69,18 @@ Route::prefix('prefect')->group(function () {
         Route::get('/adviser', [PAdviserController::class, 'index'])->name('prefect.adviser');
         Route::get('/offensesandsanctions', [POffenseSanctionController::class, 'index'])->name('offenses.sanctions');
 
+
+        Route::get('/violationAnecdotal', [PViolationAnecdotalController::class, 'index'])->name('prefect.violationAnecdotal');
+        Route::get('/complaintAnecdotal', [PComplaintAnecdotalController::class, 'index'])->name('prefect.complaintsAnecdotal');
+        // In your routes file
+Route::post('/violation-appointments/store-multiple', [PViolationController::class, 'storeMultipleAppointments'])->name('prefect.storeMultipleAppointments');
+Route::post('/violation-anecdotals/store-multiple', [PViolationController::class, 'storeMultipleAnecdotals'])->name('prefect.storeMultipleAnecdotals');
+// Complaint Anecdotal Routes
+Route::post('/complaint-anecdotals/store', [PComplaintController::class, 'storeMultipleAnecdotals'])->name('complaint-anecdotals.store');
+
+// Complaint Appointment Routes
+Route::post('/complaint-appointments/store', [PComplaintController::class, 'storeMultipleAppointments'])->name('complaint-appointments.store');
+
         // Student Routes
         Route::get('/create/student', [PStudentController::class, 'createStudent'])->name('create.student');
         Route::post('/students/store', [PStudentController::class, 'store'])->name('students.store');
@@ -152,9 +164,12 @@ Route::prefix('prefect')->group(function () {
 
          // Violation Anecdotal Routes
         // Display the create anecdotal form
-        Route::get('/complaint-anecdotal/create', [PComplaintAnecdotalController::class, 'createCAnecdotal'])
-         ->name('complaint-anecdotal.create');
+    Route::get('/complaint-anecdotal/create', [PComplaintAnecdotalController::class, 'createCAnecdotal'])->name('complaint-anecdotal.create');
+    Route::post('/complaint-anecdotal/store', [PComplaintAnecdotalController::class, 'store'])->name('complaint-anecdotal.store');
 
+    // 🔍 Search Routes (GET)
+    Route::get('/complaint-anecdotal/search-complaints', [PComplaintAnecdotalController::class, 'searchComplaints'])->name('complaint-anecdotal.search-complaints');
+    Route::get('/complaint-anecdotal/search-respondents', [PComplaintAnecdotalController::class, 'searchRespondents'])->name('complaint-anecdotal.search-respondents');
 
 
 

@@ -16,6 +16,42 @@ use App\Models\ViolationAnecdotal; // Make sure to import this
 
 class PViolationAnecdotalController extends Controller
 {
+
+     public function index()
+    {
+        // Get anecdotal records with related data
+        $vanecdotals = ViolationAnecdotal::with(['violation.student'])
+            ->whereIn('status', ['active', 'in_progress'])
+            ->orderBy('violation_anec_date', 'desc')
+            ->orderBy('violation_anec_time', 'desc')
+            ->paginate(10);
+
+        // Calculate summary counts
+        $now = Carbon::now();
+
+        $monthlyAnecdotals = ViolationAnecdotal::whereIn('status', ['active', 'in_progress'])
+            ->whereYear('violation_anec_date', $now->year)
+            ->whereMonth('violation_anec_date', $now->month)
+            ->count();
+
+        $weeklyAnecdotals = ViolationAnecdotal::whereIn('status', ['active', 'in_progress'])
+            ->whereBetween('violation_anec_date', [
+                $now->startOfWeek()->format('Y-m-d'),
+                $now->endOfWeek()->format('Y-m-d')
+            ])
+            ->count();
+
+        $dailyAnecdotals = ViolationAnecdotal::whereIn('status', ['active', 'in_progress'])
+            ->whereDate('violation_anec_date', $now->format('Y-m-d'))
+            ->count();
+
+        return view('prefect.violationAnecdotal', compact(
+            'vanecdotals',
+            'monthlyAnecdotals',
+            'weeklyAnecdotals',
+            'dailyAnecdotals'
+        ));
+    }
     public function createVAnecdotal()
     {
         return view('prefect.create-VAnecdotal');

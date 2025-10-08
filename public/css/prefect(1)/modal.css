@@ -335,3 +335,102 @@
     font-size: 0.8rem;
   }
 }
+/* Add these styles to your existing CSS */
+
+/* Success Modal Styles */
+.success-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.btn-print {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+}
+
+.btn-print:hover {
+    background-color: #138496;
+}
+
+/* Print-specific styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .anecdotal-record {
+        page-break-inside: avoid;
+        border: 1px solid #000 !important;
+        margin-bottom: 20px !important;
+    }
+
+    .record-header {
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+
+/* Success message styling */
+.modal-body p {
+    text-align: center;
+    font-size: 1.1em;
+    margin: 20px 0;
+    color: #28a745;
+    font-weight: bold;
+}
+
+/* Form improvements */
+.form-grid .full-width textarea {
+    min-height: 100px;
+}
+
+.selected-violation-item {
+    background: #f8f9fa;
+    border-left: 4px solid #17a2b8;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.selected-violation-item strong {
+    color: #17a2b8;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.selected-violation-item small {
+    color: #6c757d;
+    display: block;
+    line-height: 1.4;
+}
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.status-inactive {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.status-cleared {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.status-active {
+    background-color: #17a2b8;
+    color: #fff;
+}
