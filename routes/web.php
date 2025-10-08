@@ -39,6 +39,11 @@ Route::get('/', function () {
 // ===================== Authentication Routes =====================
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/', [AuthController::class, 'login'])->name('login');
+// Password reset routes
+Route::post('/password/forgot', [AuthController::class, 'sendPasswordResetCode'])->name('password.forgot');
+Route::post('/password/verify-code', [AuthController::class, 'verifyResetCode'])->name('password.verify-code');
+Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.reset');
+
 
 
 // ===================== Prefect Routes =====================
