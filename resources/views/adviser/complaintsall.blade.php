@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.editComplaintBtn').forEach(btn => btn.addEventListener('click', e => {
     const r = e.target.closest('tr');
-    openModal(`/prefect/complaints/update/${r.dataset.complaintId}`, {
+    openModal(`/adviser/complaints/update/${r.dataset.complaintId}`, {
       id: r.dataset.complaintId,
       details: r.dataset.incident,
       date: r.dataset.date,
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.editAppointmentBtn').forEach(btn => btn.addEventListener('click', e => {
     const r = e.target.closest('tr');
-    openModal(`/prefect/complaint-appointments/update/${r.dataset.appId}`, {
+    openModal(`/adviser/complaint-appointments/update/${r.dataset.appId}`, {
       id: r.dataset.appId,
       details: r.dataset.status,
       date: r.dataset.date,
@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.editAnecdotalBtn').forEach(btn => btn.addEventListener('click', e => {
     const r = e.target.closest('tr');
-    openModal(`/prefect/complaint-anecdotals/update/${r.dataset.anecId}`, {
+    openModal(`/adviser/complaint-anecdotals/update/${r.dataset.anecId}`, {
       id: r.dataset.anecId,
       details: r.dataset.solution,
       date: r.dataset.date,

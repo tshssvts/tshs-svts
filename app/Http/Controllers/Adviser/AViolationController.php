@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -20,16 +21,33 @@ class AViolationController extends Controller
 {
 
 
-        public function violationrecord()
-    {
-        // $adviserId = Auth::guard('adviser')->id();
+public function violationrecord()
+{
+    $adviserId = Auth::guard('adviser')->id();
 
-      $vappointments = ViolationAppointment::with(['violation.student'])->get();
-$vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
+    // Get student IDs under this adviser
+    $studentIds = Student::where('adviser_id', $adviserId)->pluck('student_id');
 
-    // Get the actual dates from your violation records
-    $mostRecentViolationDate = DB::table('tbl_violation_record')->max('violation_date');
-    $earliestViolationDate = DB::table('tbl_violation_record')->min('violation_date');
+    $vappointments = ViolationAppointment::with(['violation.student'])
+        ->whereHas('violation.student', function($query) use ($adviserId) {
+            $query->where('adviser_id', $adviserId);
+        })
+        ->get();
+
+    $vanecdotals = ViolationAnecdotal::with(['violation.student'])
+        ->whereHas('violation.student', function($query) use ($adviserId) {
+            $query->where('adviser_id', $adviserId);
+        })
+        ->get();
+
+    // Get the actual dates from your violation records for students under this adviser
+    $mostRecentViolationDate = DB::table('tbl_violation_record')
+        ->whereIn('violator_id', $studentIds) // Changed to violator_id
+        ->max('violation_date');
+
+    $earliestViolationDate = DB::table('tbl_violation_record')
+        ->whereIn('violator_id', $studentIds) // Changed to violator_id
+        ->min('violation_date');
 
     // Use the most recent violation date for calculations, or today if no records exist
     $referenceDate = $mostRecentViolationDate ? Carbon::parse($mostRecentViolationDate) : Carbon::today();
@@ -41,27 +59,32 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
     $startOfMonth = $referenceDate->copy()->startOfMonth();
     $endOfMonth = $referenceDate->copy()->endOfMonth();
 
-    // ✅ Summary Counts
+    // ✅ Summary Counts - filtered by adviser's students
     $dailyViolations = DB::table('tbl_violation_record')
+        ->whereIn('violator_id', $studentIds) // Changed to violator_id
         ->whereDate('violation_date', $today)
         ->count();
 
     $weeklyViolations = DB::table('tbl_violation_record')
+        ->whereIn('violator_id', $studentIds) // Changed to violator_id
         ->whereBetween('violation_date', [$startOfWeek, $endOfWeek])
         ->count();
 
     $monthlyViolations = DB::table('tbl_violation_record')
+        ->whereIn('violator_id', $studentIds) // Changed to violator_id
         ->whereBetween('violation_date', [$startOfMonth, $endOfMonth])
         ->count();
 
-    // ✅ Fetch Main Violation Records
+    // ✅ Fetch Main Violation Records - only for adviser's students
     $violations = ViolationRecord::with(['student', 'offense'])
+        ->whereIn('violator_id', $studentIds) // Changed to violator_id
         ->orderBy('violation_date', 'desc')
         ->paginate(30);
 
-    // ✅ Fetch Violation Appointments
+    // ✅ Fetch Violation Appointments - only for adviser's students
     $appointments = DB::table('tbl_violation_appointment')
         ->join('tbl_violation_record', 'tbl_violation_appointment.violation_id', '=', 'tbl_violation_record.violation_id')
+        ->whereIn('tbl_violation_record.violator_id', $studentIds) // Changed to violator_id
         ->select(
             'tbl_violation_appointment.*',
             'tbl_violation_record.violation_incident'
@@ -69,9 +92,10 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
         ->orderBy('tbl_violation_appointment.violation_app_date', 'desc')
         ->paginate(30);
 
-    // ✅ Fetch Violation Anecdotals
+    // ✅ Fetch Violation Anecdotals - only for adviser's students
     $anecdotals = DB::table('tbl_violation_anecdotal')
         ->join('tbl_violation_record', 'tbl_violation_anecdotal.violation_id', '=', 'tbl_violation_record.violation_id')
+        ->whereIn('tbl_violation_record.violator_id', $studentIds) // Changed to violator_id
         ->select(
             'tbl_violation_anecdotal.*',
             'tbl_violation_record.violation_incident'
@@ -82,12 +106,12 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
     // ✅ Fetch Offenses (if needed for dropdowns)
     $offenses = OffensesWithSanction::all();
 
-return view('adviser.violationrecord', compact(
+    return view('adviser.violationrecord', compact(
         'violations',
         'appointments',
         'anecdotals',
-                'vanecdotals',
-                        'vappointments',
+        'vanecdotals',
+        'vappointments',
         'offenses',
         'mostRecentViolationDate',
         'earliestViolationDate',
@@ -101,9 +125,7 @@ return view('adviser.violationrecord', compact(
         'weeklyViolations',
         'monthlyViolations'
     ));
-
-    }
-
+}
 
 public function store(Request $request)
 {
@@ -485,23 +507,27 @@ public function update(Request $request, $violationId)
 
 
     // 🔍 Live Search Students
- public function searchStudents(Request $request)
-    {
-        $query = $request->input('query', '');
-        $students = DB::table('tbl_student')
-            ->where('student_fname', 'like', "%$query%")
-            ->orWhere('student_lname', 'like', "%$query%")
-            ->limit(10)
-            ->get();
+public function searchStudents(Request $request)
+{
+    $adviserId = Auth::guard('adviser')->id();
+    $query = $request->input('query', '');
 
-        $html = '';
-        foreach ($students as $student) {
-            $name = $student->student_fname . ' ' . $student->student_lname;
-            $html .= "<div class='student-item' data-id='{$student->student_id}'>$name</div>";
-        }
-        return $html ?: '<div>No students found</div>';
+    $students = DB::table('tbl_student')
+        ->where('adviser_id', $adviserId) // Only students under logged-in adviser
+        ->where(function($q) use ($query) {
+            $q->where('student_fname', 'like', "%$query%")
+            ->orWhere('student_lname', 'like', "%$query%");
+        })
+        ->limit(10)
+        ->get();
+
+    $html = '';
+    foreach ($students as $student) {
+        $name = $student->student_fname . ' ' . $student->student_lname;
+        $html .= "<div class='student-item' data-id='{$student->student_id}'>$name</div>";
     }
-
+    return $html ?: '<div>No students found</div>';
+}
     // Search offenses
     public function searchOffenses(Request $request)
     {

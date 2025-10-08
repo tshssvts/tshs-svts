@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('edit_parent_status').value = status.toLowerCase();
 
       // Set form action
-      editForm.action = `{{ url('prefect/parents/update') }}/${parentId}`;
+      editForm.action = `{{ url('adviser/parents/update') }}/${parentId}`;
 
       // Show modal
       editModal.style.display = 'flex';

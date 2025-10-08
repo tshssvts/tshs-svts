@@ -8,7 +8,7 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth; // Assuming Prefect is authenticated
 use App\Models\OffensesWithSanction;
 use App\Models\ViolationRecord;
@@ -24,51 +24,71 @@ class AStudentController extends Controller
 
 public function studentlist()
 {
-     $adviserId = Auth::guard('adviser')->id();
+    $adviserId = Auth::guard('adviser')->id();
 
-    // // Active and Cleared students
-     $totalStudents = DB::table('tbl_student')->count();
+    // Get students only for the logged-in adviser
+    $students = Student::where('adviser_id', $adviserId)
+                      ->where('status', 'active')
+                      ->paginate(10);
 
-        // Grade 11 students (join adviser to check gradelevel)
-        $grade11Students = DB::table('tbl_student')
-            ->join('tbl_adviser', 'tbl_student.adviser_id', '=', 'tbl_adviser.adviser_id')
-            ->where('tbl_adviser.adviser_gradelevel', '11')
-            ->count();
+    // Get sections only for the logged-in adviser
+    $sections = Adviser::where('adviser_id', $adviserId)
+                      ->select('adviser_section')
+                      ->distinct()
+                      ->pluck('adviser_section');
 
-        // Grade 12 students
-        $grade12Students = DB::table('tbl_student')
-            ->join('tbl_adviser', 'tbl_student.adviser_id', '=', 'tbl_adviser.adviser_id')
-            ->where('tbl_adviser.adviser_gradelevel', '12')
-            ->count();
+    // Summary Cards Data - filtered by logged-in adviser
+    $totalStudents = Student::where('adviser_id', $adviserId)
+                           ->where('status', 'active')
+                           ->count();
 
-        // Only show active students in main table
-        $students = Student::where('status', 'active')->paginate(10);
-        $sections = Adviser::select('adviser_section')->distinct()->pluck('adviser_section');
+    $activeStudents = $totalStudents; // Same as totalStudents since we're filtering active
 
-        // Summary Cards Data
-        $totalStudents = Student::where('status', 'active')->count();
-        $activeStudents = Student::where('status', 'active')->count();
-        $completedStudents = Student::where('status', 'completed')->count();
-        $maleStudents = Student::where('student_sex', 'male')->where('status', 'active')->count();
-        $femaleStudents = Student::where('student_sex', 'female')->where('status', 'active')->count();
-        $otherStudents = Student::where('student_sex', 'other')->where('status', 'active')->count();
-        $violationsToday = ViolationRecord::whereDate('violation_date', now())->count();
-        $pendingAppointments = ViolationAppointment::where('violation_app_status', 'Pending')->count();
+    $completedStudents = Student::where('adviser_id', $adviserId)
+                               ->where('status', 'completed')
+                               ->count();
 
-    return view('adviser.studentlist', compact('totalStudents','grade11Students','grade12Students',
-            'students',
-            'sections',
-            'totalStudents',
-            'activeStudents',
-            'completedStudents',
-            'maleStudents',
-            'femaleStudents',
-            'otherStudents',
-            'violationsToday',
-            'pendingAppointments'
-        ));
+    $maleStudents = Student::where('adviser_id', $adviserId)
+                          ->where('student_sex', 'male')
+                          ->where('status', 'active')
+                          ->count();
+
+    $femaleStudents = Student::where('adviser_id', $adviserId)
+                            ->where('student_sex', 'female')
+                            ->where('status', 'active')
+                            ->count();
+
+    $otherStudents = Student::where('adviser_id', $adviserId)
+                           ->where('student_sex', 'other')
+                           ->where('status', 'active')
+                           ->count();
+
+    // Grade level counts for the logged-in adviser
+    $adviserGradeLevel = Adviser::where('adviser_id', $adviserId)
+                               ->value('adviser_gradelevel');
+
+    $grade11Students = ($adviserGradeLevel == '11') ? $totalStudents : 0;
+    $grade12Students = ($adviserGradeLevel == '12') ? $totalStudents : 0;
+
+    // Violations and appointments for students under this adviser
+    $studentIds = Student::where('adviser_id', $adviserId)->pluck('student_id');
+
+
+
+    return view('adviser.studentlist', compact(
+        'totalStudents',
+        'grade11Students',
+        'grade12Students',
+        'students',
+        'sections',
+        'activeStudents',
+        'completedStudents',
+        'maleStudents',
+        'femaleStudents',
+        'otherStudents',
+
+    ));
 }
-
 
 
     public function createStudent(Request $request){
@@ -169,40 +189,39 @@ public function archive(Request $request)
                 'message' => 'Error deleting students: ' . $e->getMessage()
             ], 500);
         }
-    }
+    }public function store(Request $request)
+{
+    // Get the logged-in adviser's ID
+    $adviserId = Auth::guard('adviser')->id();
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'students' => 'required|array|min:1',
-            'students.*.student_fname' => 'required|string|max:255',
-            'students.*.student_lname' => 'required|string|max:255',
-            'students.*.student_sex' => 'nullable|string|in:male,female,other',
-            'students.*.student_birthdate' => 'required|date',
-            'students.*.student_address' => 'required|string|max:255',
-            'students.*.student_contactinfo' => 'required|string|max:50',
-            'students.*.parent_id' => 'required|exists:tbl_parent,parent_id',
-            'students.*.adviser_id' => 'required|exists:tbl_adviser,adviser_id',
-            'students.*.status' => 'nullable|string|in:active,inactive,transferred,graduated',
+    $validated = $request->validate([
+        'students' => 'required|array|min:1',
+        'students.*.student_fname' => 'required|string|max:255',
+        'students.*.student_lname' => 'required|string|max:255',
+        'students.*.student_sex' => 'nullable|string|in:male,female,other',
+        'students.*.student_birthdate' => 'required|date',
+        'students.*.student_address' => 'required|string|max:255',
+        'students.*.student_contactinfo' => 'required|string|max:50',
+        'students.*.parent_id' => 'required|exists:tbl_parent,parent_id', // PARENT IS INCLUDED HERE
+        'students.*.status' => 'nullable|string|in:active,inactive,transferred,graduated',
+    ]);
+
+    foreach ($validated['students'] as $studentData) {
+        Student::create([
+            'student_fname' => $studentData['student_fname'],
+            'student_lname' => $studentData['student_lname'],
+            'student_sex' => $studentData['student_sex'] ?? null,
+            'student_birthdate' => $studentData['student_birthdate'],
+            'student_address' => $studentData['student_address'],
+            'student_contactinfo' => $studentData['student_contactinfo'],
+            'parent_id' => $studentData['parent_id'], // PARENT IS ASSIGNED HERE
+            'adviser_id' => $adviserId, // Automatically assign logged-in adviser
+            'status' => $studentData['status'] ?? 'active',
         ]);
-
-        foreach ($validated['students'] as $studentData) {
-            Student::create([
-                'student_fname' => $studentData['student_fname'],
-                'student_lname' => $studentData['student_lname'],
-                'student_sex' => $studentData['student_sex'] ?? null,
-                'student_birthdate' => $studentData['student_birthdate'],
-                'student_address' => $studentData['student_address'],
-                'student_contactinfo' => $studentData['student_contactinfo'],
-                'parent_id' => $studentData['parent_id'],
-                'adviser_id' => $studentData['adviser_id'],
-                'status' => $studentData['status'] ?? 'active',
-            ]);
-        }
-
-        return redirect()->route('student.list')->with('success', 'Students saved successfully!');
     }
 
+    return redirect()->route('student.list')->with('success', 'Students saved successfully!');
+}
     public function update(Request $request, $id)
     {
         $request->validate([

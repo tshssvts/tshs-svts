@@ -20,15 +20,40 @@ class AComplaintController extends Controller
 {
 public function complaintsall()
 {
-    // $adviserId = Auth::guard('adviser')->id();
+    $adviserId = Auth::guard('adviser')->id();
 
- // ✅ Load Anecdotal + Appointment models with relationships
-    $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])->get();
-    $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])->get();
+    // Get student IDs under this adviser
+    $studentIds = Student::where('adviser_id', $adviserId)->pluck('student_id');
 
-    // ✅ Get Actual Complaint Date Range
-    $mostRecentComplaintDate = DB::table('tbl_complaints')->max('complaints_date');
-    $earliestComplaintDate = DB::table('tbl_complaints')->min('complaints_date');
+    // ✅ Load Anecdotal + Appointment models with relationships - filtered by adviser
+    $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])
+        ->whereHas('complaint.complainant', function($query) use ($adviserId) {
+            $query->where('adviser_id', $adviserId);
+        })
+        ->orWhereHas('complaint.respondent', function($query) use ($adviserId) {
+            $query->where('adviser_id', $adviserId);
+        })
+        ->get();
+
+    $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])
+        ->whereHas('complaint.complainant', function($query) use ($adviserId) {
+            $query->where('adviser_id', $adviserId);
+        })
+        ->orWhereHas('complaint.respondent', function($query) use ($adviserId) {
+            $query->where('adviser_id', $adviserId);
+        })
+        ->get();
+
+    // ✅ Get Actual Complaint Date Range - filtered by adviser's students
+    $mostRecentComplaintDate = DB::table('tbl_complaints')
+        ->whereIn('complainant_id', $studentIds)
+        ->orWhereIn('respondent_id', $studentIds)
+        ->max('complaints_date');
+
+    $earliestComplaintDate = DB::table('tbl_complaints')
+        ->whereIn('complainant_id', $studentIds)
+        ->orWhereIn('respondent_id', $studentIds)
+        ->min('complaints_date');
 
     $referenceDate = $mostRecentComplaintDate ? Carbon::parse($mostRecentComplaintDate) : Carbon::today();
 
@@ -39,24 +64,40 @@ public function complaintsall()
     $startOfMonth = $referenceDate->copy()->startOfMonth();
     $endOfMonth = $referenceDate->copy()->endOfMonth();
 
-    // ✅ Summary Counts
+    // ✅ Summary Counts - filtered by adviser's students
     $dailyComplaints = DB::table('tbl_complaints')
+        ->where(function($query) use ($studentIds, $today) {
+            $query->whereIn('complainant_id', $studentIds)
+                  ->orWhereIn('respondent_id', $studentIds);
+        })
         ->whereDate('complaints_date', $today)
         ->count();
 
     $weeklyComplaints = DB::table('tbl_complaints')
+        ->where(function($query) use ($studentIds) {
+            $query->whereIn('complainant_id', $studentIds)
+                  ->orWhereIn('respondent_id', $studentIds);
+        })
         ->whereBetween('complaints_date', [$startOfWeek, $endOfWeek])
         ->count();
 
     $monthlyComplaints = DB::table('tbl_complaints')
+        ->where(function($query) use ($studentIds) {
+            $query->whereIn('complainant_id', $studentIds)
+                  ->orWhereIn('respondent_id', $studentIds);
+        })
         ->whereBetween('complaints_date', [$startOfMonth, $endOfMonth])
         ->count();
 
-    // ✅ Fetch Complaint Records
+    // ✅ Fetch Complaint Records - only where complainant OR respondent is under this adviser
     $complaints = DB::table('tbl_complaints as c')
         ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
         ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
         ->join('tbl_offenses_with_sanction as o', 'o.offense_sanc_id', '=', 'c.offense_sanc_id')
+        ->where(function($query) use ($adviserId) {
+            $query->where('comp.adviser_id', $adviserId)
+                  ->orWhere('resp.adviser_id', $adviserId);
+        })
         ->select(
             'c.complaints_id',
             'c.complaints_incident',
@@ -72,6 +113,7 @@ public function complaintsall()
         )
         ->orderBy('c.complaints_date', 'desc')
         ->paginate(10);
+
     return view('adviser.complaintsall', compact(
         'complaints',
         'cappointments',
@@ -88,7 +130,6 @@ public function complaintsall()
         'weeklyComplaints',
         'monthlyComplaints'
     ));
-
 }
 
 
@@ -190,26 +231,32 @@ public function store(Request $request)
         }
     }
 
+
     /**
      * Search students for complainant/respondent.
      */
-    public function searchStudents(Request $request)
-    {
-        $query = $request->input('query', '');
-        $students = DB::table('tbl_student')
-            ->where('student_fname', 'like', "%$query%")
-            ->orWhere('student_lname', 'like', "%$query%")
-            ->limit(10)
-            ->get();
+    // 🔍 Live Search Students - Only for logged-in adviser's students
+public function searchStudents(Request $request)
+{
+    $adviserId = Auth::guard('adviser')->id();
+    $query = $request->input('query', '');
 
-        $html = '';
-        foreach ($students as $student) {
-            $name = $student->student_fname . ' ' . $student->student_lname;
-            $html .= "<div class='student-item' data-id='{$student->student_id}'>$name</div>";
-        }
+    $students = DB::table('tbl_student')
+        ->where('adviser_id', $adviserId) // Filter by logged-in adviser
+        ->where(function($q) use ($query) {
+            $q->where('student_fname', 'like', "%$query%")
+              ->orWhere('student_lname', 'like', "%$query%");
+        })
+        ->limit(10)
+        ->get();
 
-        return $html ?: '<div>No students found</div>';
+    $html = '';
+    foreach ($students as $student) {
+        $name = $student->student_fname . ' ' . $student->student_lname;
+        $html .= "<div class='student-item' data-id='{$student->student_id}'>$name</div>";
     }
+    return $html ?: '<div>No students found</div>';
+}
 
     /**
      * Search offenses for complaints.

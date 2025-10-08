@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_student_status').value = status.toLowerCase();
 
             // Set form action dynamically
-            editForm.action = `/prefect/students/update/${studentId}`;
+            editForm.action = `/adviser/students/update/${studentId}`;
 
             // Show modal
             editModal.style.display = 'flex';

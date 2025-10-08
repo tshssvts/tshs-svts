@@ -1565,7 +1565,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     }
 
     try {
-        const response = await fetch('/prefect/violations/archive', {
+        const response = await fetch('/adviser/violations/archive', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1620,7 +1620,7 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
     }
 
     try {
-        const response = await fetch('/prefect/violations/archive', {
+        const response = await fetch('/adviser/violations/archive', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1676,7 +1676,7 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
     }
 
     try {
-        const response = await fetch('/prefect/violation-appointments/archive', {
+        const response = await fetch('/adviser/violation-appointments/archive', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1731,7 +1731,7 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
     }
 
     try {
-        const response = await fetch('/prefect/violation-appointments/archive', {
+        const response = await fetch('/adviser/violation-appointments/archive', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1787,7 +1787,7 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
     }
 
     try {
-        const response = await fetch('/prefect/violation-anecdotals/archive', {
+        const response = await fetch('/adviser/violation-anecdotals/archive', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1842,7 +1842,7 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
     }
 
     try {
-        const response = await fetch('/prefect/violation-anecdotals/archive', {
+        const response = await fetch('/adviser/violation-anecdotals/archive', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1890,7 +1890,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
 
         if (currentTableType === 'violationRecords') {
             // Load archived violation records
-            const violationResponse = await fetch('/prefect/violations/archived');
+            const violationResponse = await fetch('/adviser/violations/archived');
             console.log('Violation response status:', violationResponse.status);
             const archivedViolations = await violationResponse.json();
             console.log('Archived violations:', archivedViolations);
@@ -1901,7 +1901,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
 
         } else if (currentTableType === 'violationAppointments') {
             // Load archived appointments
-            const appointmentResponse = await fetch('/prefect/violation-appointments/archived');
+            const appointmentResponse = await fetch('/adviser/violation-appointments/archived');
             console.log('Appointment response status:', appointmentResponse.status);
             const archivedAppointments = await appointmentResponse.json();
             console.log('Archived appointments:', archivedAppointments);
@@ -1911,7 +1911,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
             document.getElementById('violationAppointmentsArchiveModal').style.display = 'flex';
         } else if (currentTableType === 'violationAnecdotals') {
             // Load archived anecdotals
-            const anecdotalResponse = await fetch('/prefect/violation-anecdotals/archived');
+            const anecdotalResponse = await fetch('/adviser/violation-anecdotals/archived');
             console.log('Anecdotal response status:', anecdotalResponse.status);
             const archivedAnecdotals = await anecdotalResponse.json();
             console.log('Archived anecdotals:', archivedAnecdotals);
@@ -2104,7 +2104,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
     }
 
     try {
-        const response = await fetch('/prefect/violations/restore-multiple', {
+        const response = await fetch('/adviser/violations/restore-multiple', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2154,7 +2154,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
     }
 
     try {
-        const response = await fetch('/prefect/violations/restore-multiple', {
+        const response = await fetch('/adviser/violations/restore-multiple', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2204,7 +2204,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
     }
 
     try {
-        const response = await fetch('/prefect/violations/restore-multiple', {
+        const response = await fetch('/adviser/violations/restore-multiple', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2255,7 +2255,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
     }));
 
     try {
-        const response = await fetch('/prefect/violations/destroy-multiple-archived', {
+        const response = await fetch('/adviser/violations/destroy-multiple-archived', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2308,7 +2308,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
     }));
 
     try {
-        const response = await fetch('/prefect/violations/destroy-multiple-archived', {
+        const response = await fetch('/adviser/violations/destroy-multiple-archived', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2361,7 +2361,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
     }));
 
     try {
-        const response = await fetch('/prefect/violations/destroy-multiple-archived', {
+        const response = await fetch('/adviser/violations/destroy-multiple-archived', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2456,7 +2456,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.editViolationBtn').forEach(btn => {
     btn.addEventListener('click', e => {
       const row = e.target.closest('tr');
-      openViolationModal(`/prefect/violations/update/${row.dataset.violationId}`, {
+      openViolationModal(`/adviser/violations/update/${row.dataset.violationId}`, {
         id: row.dataset.violationId,
         details: row.dataset.incident,
         date: row.dataset.date,
@@ -2469,7 +2469,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.editAppointmentBtn').forEach(btn => {
     btn.addEventListener('click', e => {
       const row = e.target.closest('tr');
-      openViolationModal(`/prefect/violation-appointments/update/${row.dataset.appId}`, {
+      openViolationModal(`/adviser/violation-appointments/update/${row.dataset.appId}`, {
         id: row.dataset.appId,
         details: row.dataset.status,
         date: row.dataset.date,
@@ -2483,7 +2483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', e => {
       e.stopPropagation(); // Prevent triggering the row click event
       const row = e.target.closest('tr');
-      openAnecdotalModal(`/prefect/violation-anecdotals/update/${row.dataset.anecId}`, {
+      openAnecdotalModal(`/adviser/violation-anecdotals/update/${row.dataset.anecId}`, {
         id: row.dataset.anecId,
         solution: row.dataset.solution,
         recommendation: row.dataset.recommendation,

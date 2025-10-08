@@ -293,8 +293,8 @@ Route::prefix('adviser')->group(function () {
         Route::post('/violations/restore-multiple', [AViolationController::class, 'restoreMultiple'])->name('adviser.violations.restore.multiple');
         Route::post('/violations/destroy-multiple-archived', [AViolationController::class, 'destroyMultipleArchived'])->name('adviser.violations.destroy.multiple.archived');
         // Violation AJAX Routes
-        Route::post('/violations/search-students', [PViolationController::class, 'searchStudents'])->name('adviser.violations.search-students');
-        Route::post('/violations/search-offenses', [PViolationController::class, 'searchOffenses'])->name('adviser.violations.search-offenses');
+        Route::post('/violations/search-students', [AViolationController::class, 'searchStudents'])->name('adviser.violations.search-students');
+        Route::post('/violations/search-offenses', [AViolationController::class, 'searchOffenses'])->name('adviser.violations.search-offenses');
 
 
                 // Complaint Anecdotal Routes
