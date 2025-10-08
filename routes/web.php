@@ -74,13 +74,13 @@ Route::prefix('prefect')->group(function () {
         Route::get('/violationAnecdotal', [PViolationAnecdotalController::class, 'index'])->name('prefect.violationAnecdotal');
         Route::get('/complaintAnecdotal', [PComplaintAnecdotalController::class, 'index'])->name('prefect.complaintsAnecdotal');
         // In your routes file
-Route::post('/violation-appointments/store-multiple', [PViolationController::class, 'storeMultipleAppointments'])->name('prefect.storeMultipleAppointments');
-Route::post('/violation-anecdotals/store-multiple', [PViolationController::class, 'storeMultipleAnecdotals'])->name('prefect.storeMultipleAnecdotals');
-// Complaint Anecdotal Routes
-Route::post('/complaint-anecdotals/store', [PComplaintController::class, 'storeMultipleAnecdotals'])->name('complaint-anecdotals.store');
+        Route::post('/violation-appointments/store-multiple', [PViolationController::class, 'storeMultipleAppointments'])->name('prefect.storeMultipleAppointments');
+        Route::post('/violation-anecdotals/store-multiple', [PViolationController::class, 'storeMultipleAnecdotals'])->name('prefect.storeMultipleAnecdotals');
+        // Complaint Anecdotal Routes
+        Route::post('/complaint-anecdotals/store', [PComplaintController::class, 'storeMultipleAnecdotals'])->name('complaint-anecdotals.store');
 
-// Complaint Appointment Routes
-Route::post('/complaint-appointments/store', [PComplaintController::class, 'storeMultipleAppointments'])->name('complaint-appointments.store');
+        // Complaint Appointment Routes
+        Route::post('/complaint-appointments/store', [PComplaintController::class, 'storeMultipleAppointments'])->name('complaint-appointments.store');
 
         // Student Routes
         Route::get('/create/student', [PStudentController::class, 'createStudent'])->name('create.student');
@@ -177,9 +177,30 @@ Route::post('/complaint-appointments/store', [PComplaintController::class, 'stor
         // Report Routes
         Route::get('/reportgenerate', [PReportController::class, 'reportgenerate'])->name('report.generate');
         Route::get('/reports/data/{reportId}', [PReportController::class, 'generateReportData'])->name('prefect.reports.data');
+
+
+        // Archive routes Complaint Management
+        Route::get('/complaints/archive', [PComplaintController::class, 'getComplaintArchive'])->name('complaints.archive');
+        Route::get('/complaint-appointments/archive', [PComplaintController::class, 'getAppointmentArchive'])->name('complaint-appointments.archive');
+        Route::get('/complaint-anecdotals/archive', [PComplaintController::class, 'getAnecdotalArchive'])->name('complaint-anecdotals.archive');
+
+        // Status update routes Complaint Management
+        Route::post('/complaints/update-status/{id}', [PComplaintController::class, 'updateComplaintStatus'])->name('complaints.update-status');
+        Route::post('/complaint-appointments/update-status/{id}', [PComplaintController::class, 'updateAppointmentStatus'])->name('complaint-appointments.update-status');
+        Route::post('/complaint-anecdotals/update-status/{id}', [PComplaintController::class, 'updateAnecdotalStatus'])->name('complaint-anecdotals.update-status');
+        
+        // Restore routes Complaint Management
+        Route::post('/complaints/restore/{id}', [PComplaintController::class, 'restoreComplaint'])->name('complaints.restore');
+        Route::post('/complaint-appointments/restore/{id}', [PComplaintController::class, 'restoreAppointment'])->name('complaint-appointments.restore');
+        Route::post('/complaint-anecdotals/restore/{id}', [PComplaintController::class, 'restoreAnecdotal'])->name('complaint-anecdotals.restore');
+
+        // Permanent delete routes Complaint Management
+        Route::delete('/complaints/delete-permanent/{id}', [PComplaintController::class, 'deleteComplaintPermanent'])->name('complaints.delete-permanent');
+        Route::delete('/complaint-appointments/delete-permanent/{id}', [PComplaintController::class, 'deleteAppointmentPermanent'])->name('complaint-appointments.delete-permanent');
+        Route::delete('/complaint-anecdotals/delete-permanent/{id}', [PComplaintController::class, 'deleteAnecdotalPermanent'])->name('complaint-anecdotals.delete-permanent');
     });
 });
-
+    
 
 
 

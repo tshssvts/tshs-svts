@@ -528,4 +528,297 @@ class PComplaintController extends Controller
             ], 500);
         }
     }
+    /**
+ * Get archived complaint records
+ */
+public function getComplaintArchive()
+{
+    $archivedComplaints = DB::table('tbl_complaints as c')
+        ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
+        ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
+        ->join('tbl_offenses_with_sanction as o', 'o.offense_sanc_id', '=', 'c.offense_sanc_id')
+        ->select(
+            'c.complaints_id',
+            'c.complaints_incident',
+            'c.complaints_date',
+            'c.complaints_time',
+            'c.status',
+            'comp.student_fname as complainant_fname',
+            'comp.student_lname as complainant_lname',
+            'resp.student_fname as respondent_fname',
+            'resp.student_lname as respondent_lname',
+            'o.offense_type',
+            'o.sanction_consequences'
+        )
+        ->whereIn('c.status', ['cleared', 'inactive'])
+        ->orderBy('c.complaints_date', 'desc')
+        ->get();
+
+    return response()->json($archivedComplaints);
+}
+
+/**
+ * Get archived appointment records
+ */
+public function getAppointmentArchive()
+{
+    $archivedAppointments = DB::table('tbl_complaints_appointment as ca')
+        ->join('tbl_complaints as c', 'c.complaints_id', '=', 'ca.complaints_id')
+        ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
+        ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
+        ->select(
+            'ca.comp_app_id',
+            'ca.comp_app_status',
+            'ca.comp_app_date',
+            'ca.comp_app_time',
+            'ca.status',
+            'comp.student_fname as complainant_fname',
+            'comp.student_lname as complainant_lname',
+            'resp.student_fname as respondent_fname',
+            'resp.student_lname as respondent_lname'
+        )
+        ->whereIn('ca.status', ['cleared', 'inactive'])
+        ->orderBy('ca.comp_app_date', 'desc')
+        ->get();
+
+    return response()->json($archivedAppointments);
+}
+
+/**
+ * Get archived anecdotal records
+ */
+public function getAnecdotalArchive()
+{
+    $archivedAnecdotals = DB::table('tbl_complaints_anecdotal as ca')
+        ->join('tbl_complaints as c', 'c.complaints_id', '=', 'ca.complaints_id')
+        ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
+        ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
+        ->select(
+            'ca.comp_anec_id',
+            'ca.comp_anec_solution',
+            'ca.comp_anec_recommendation',
+            'ca.comp_anec_date',
+            'ca.comp_anec_time',
+            'ca.status',
+            'comp.student_fname as complainant_fname',
+            'comp.student_lname as complainant_lname',
+            'resp.student_fname as respondent_fname',
+            'resp.student_lname as respondent_lname'
+        )
+        ->whereIn('ca.status', ['cleared', 'inactive'])
+        ->orderBy('ca.comp_anec_date', 'desc')
+        ->get();
+
+    return response()->json($archivedAnecdotals);
+}
+
+/**
+ * Update complaint status
+ */
+public function updateComplaintStatus(Request $request, $id)
+{
+    try {
+        $complaint = Complaints::findOrFail($id);
+        $complaint->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Complaint status updated successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating complaint status: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Update appointment status
+ */
+public function updateAppointmentStatus(Request $request, $id)
+{
+    try {
+        $appointment = ComplaintsAppointment::findOrFail($id);
+        $appointment->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Appointment status updated successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating appointment status: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Update anecdotal status
+ */
+public function updateAnecdotalStatus(Request $request, $id)
+{
+    try {
+        $anecdotal = ComplaintsAnecdotal::findOrFail($id);
+        $anecdotal->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anecdotal status updated successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating anecdotal status: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Restore complaint record
+ */
+public function restoreComplaint($id)
+{
+    try {
+        $complaint = Complaints::findOrFail($id);
+        $complaint->update([
+            'status' => 'active'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Complaint restored successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error restoring complaint: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Restore appointment record
+ */
+public function restoreAppointment($id)
+{
+    try {
+        $appointment = ComplaintsAppointment::findOrFail($id);
+        $appointment->update([
+            'status' => 'active'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Appointment restored successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error restoring appointment: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Restore anecdotal record
+ */
+public function restoreAnecdotal($id)
+{
+    try {
+        $anecdotal = ComplaintsAnecdotal::findOrFail($id);
+        $anecdotal->update([
+            'status' => 'active'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anecdotal record restored successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error restoring anecdotal record: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Permanently delete complaint record
+ */
+public function deleteComplaintPermanent($id)
+{
+    try {
+        $complaint = Complaints::findOrFail($id);
+        $complaint->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Complaint permanently deleted!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting complaint: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Permanently delete appointment record
+ */
+public function deleteAppointmentPermanent($id)
+{
+    try {
+        $appointment = ComplaintsAppointment::findOrFail($id);
+        $appointment->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Appointment permanently deleted!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting appointment: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Permanently delete anecdotal record
+ */
+public function deleteAnecdotalPermanent($id)
+{
+    try {
+        $anecdotal = ComplaintsAnecdotal::findOrFail($id);
+        $anecdotal->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anecdotal record permanently deleted!'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting anecdotal record: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }
