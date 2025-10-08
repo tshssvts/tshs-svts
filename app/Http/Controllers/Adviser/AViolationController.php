@@ -8,10 +8,13 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Support\Facades\DB;
-
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth; // Assuming Prefect is authenticated
 use App\Models\OffensesWithSanction;
 use App\Models\ViolationRecord;
+use App\Models\ViolationAppointment;
+use App\Models\ViolationAnecdotal;
+
 
 class AViolationController extends Controller
 {
@@ -21,17 +24,83 @@ class AViolationController extends Controller
     {
         // $adviserId = Auth::guard('adviser')->id();
 
-        // $violations = ViolationRecord::with(['student', 'offense'])
-        //     ->whereHas('student', fn($q) => $q->where('adviser_id', $adviserId))
-        //     ->get();
+      $vappointments = ViolationAppointment::with(['violation.student'])->get();
+$vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
 
-        // $students = Student::where('adviser_id', $adviserId)->get();
-        // $offenses = OffensesWithSanction::all();
+    // Get the actual dates from your violation records
+    $mostRecentViolationDate = DB::table('tbl_violation_record')->max('violation_date');
+    $earliestViolationDate = DB::table('tbl_violation_record')->min('violation_date');
 
-        // return view('adviser.violationrecord', compact('violations', 'students', 'offenses'));
+    // Use the most recent violation date for calculations, or today if no records exist
+    $referenceDate = $mostRecentViolationDate ? Carbon::parse($mostRecentViolationDate) : Carbon::today();
 
-        $violations = ViolationRecord::with(['student.parent', 'student.adviser', 'offense'])->get();
-return view('adviser.violationrecord', compact('violations'));
+    // Calculate date ranges based on the actual violation dates
+    $today = $referenceDate->copy();
+    $startOfWeek = $referenceDate->copy()->startOfWeek();
+    $endOfWeek = $referenceDate->copy()->endOfWeek();
+    $startOfMonth = $referenceDate->copy()->startOfMonth();
+    $endOfMonth = $referenceDate->copy()->endOfMonth();
+
+    // ✅ Summary Counts
+    $dailyViolations = DB::table('tbl_violation_record')
+        ->whereDate('violation_date', $today)
+        ->count();
+
+    $weeklyViolations = DB::table('tbl_violation_record')
+        ->whereBetween('violation_date', [$startOfWeek, $endOfWeek])
+        ->count();
+
+    $monthlyViolations = DB::table('tbl_violation_record')
+        ->whereBetween('violation_date', [$startOfMonth, $endOfMonth])
+        ->count();
+
+    // ✅ Fetch Main Violation Records
+    $violations = ViolationRecord::with(['student', 'offense'])
+        ->orderBy('violation_date', 'desc')
+        ->paginate(30);
+
+    // ✅ Fetch Violation Appointments
+    $appointments = DB::table('tbl_violation_appointment')
+        ->join('tbl_violation_record', 'tbl_violation_appointment.violation_id', '=', 'tbl_violation_record.violation_id')
+        ->select(
+            'tbl_violation_appointment.*',
+            'tbl_violation_record.violation_incident'
+        )
+        ->orderBy('tbl_violation_appointment.violation_app_date', 'desc')
+        ->paginate(30);
+
+    // ✅ Fetch Violation Anecdotals
+    $anecdotals = DB::table('tbl_violation_anecdotal')
+        ->join('tbl_violation_record', 'tbl_violation_anecdotal.violation_id', '=', 'tbl_violation_record.violation_id')
+        ->select(
+            'tbl_violation_anecdotal.*',
+            'tbl_violation_record.violation_incident'
+        )
+        ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc')
+        ->paginate(30);
+
+    // ✅ Fetch Offenses (if needed for dropdowns)
+    $offenses = OffensesWithSanction::all();
+
+return view('adviser.violationrecord', compact(
+        'violations',
+        'appointments',
+        'anecdotals',
+                'vanecdotals',
+                        'vappointments',
+        'offenses',
+        'mostRecentViolationDate',
+        'earliestViolationDate',
+        'referenceDate',
+        'today',
+        'startOfWeek',
+        'endOfWeek',
+        'startOfMonth',
+        'endOfMonth',
+        'dailyViolations',
+        'weeklyViolations',
+        'monthlyViolations'
+    ));
 
     }
 

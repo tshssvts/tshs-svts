@@ -15,6 +15,57 @@
 </head>
 <body>
 
+
+<style>
+    /* Add these styles for alerts and image upload */
+    .alert {
+      padding: 12px 15px;
+      margin: 15px 0;
+      border-radius: 5px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .profile-image-container {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .profile-image-container:hover .profile-image-overlay {
+      display: flex !important;
+    }
+
+    .profile-image-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+  </style>
+
+
 <!-- Sidebar -->
   <div class="sidebar">
     <img src="/images/Logo.png" alt="Logo">
@@ -52,22 +103,166 @@
     <a href="{{ route('adviser.reports') }}"><i class="fas fa-chart-line"></i> Reports</a>
   </li>
 
-<li>
+{{-- <li>
   <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
     <i class="fas fa-sign-out-alt"></i> Logout
   </a>
-</li>
+</li> --}}
 
-<form id="logout-form" action="{{ route('adviser.logout') }}" method="POST" style="display: none;">
+{{-- <form id="logout-form" action="{{ route('adviser.logout') }}" method="POST" style="display: none;">
   @csrf
-</form>
-
-
+</form> --}}
 </ul>
-
   </div>
 
 
+
+<!-- Profile Settings Modal -->
+<div id="profileSettingsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-cog"></i> Profile Settings</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-tabs">
+                <button class="tab-btn active" onclick="openTab('profile-tab')">
+                    <i class="fas fa-user"></i> My Profile
+                </button>
+                <button class="tab-btn" onclick="openTab('password-tab')">
+                    <i class="fas fa-lock"></i> Change Password
+                </button>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="profile-tab" class="tab-content active">
+                <!-- Profile Picture Section -->
+                <div class="profile-picture-section" style="text-align: center; margin-bottom: 20px;">
+                    <div class="profile-image-container" style="position: relative; display: inline-block;">
+                        <img id="profile-image-preview" src="/images/user.jpg" alt="Profile"
+                            style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #3498db;">
+                        <div class="profile-image-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center;">
+                            <i class="fas fa-camera" style="color: white; font-size: 24px;"></i>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
+                        <button type="button" onclick="document.getElementById('profile-image-input').click()"
+                                class="btn-send-code" style="margin: 5px;">
+                            <i class="fas fa-upload"></i> Upload Photo
+                        </button>
+                        <button type="button" onclick="removeProfileImage()"
+                                class="btn-cancel" style="margin: 5px; padding: 8px 15px;">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                    <div id="profile-image-error" class="error-message" style="text-align: center;"></div>
+                </div>
+
+                <div class="profile-info">
+                    <div class="info-item">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value" id="profile-name">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value" id="profile-email">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Gender:</span>
+                        <span class="info-value" id="profile-gender">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Contact:</span>
+                        <span class="info-value" id="profile-contact">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value" id="profile-status">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password Tab -->
+            <div id="password-tab" class="tab-content">
+                <form id="changePasswordForm">
+                    @csrf
+
+                    <!-- Step 1: Request Verification -->
+                    <div id="verification-step-1">
+                        <div class="verification-section">
+                            <h4 style="margin: 0 0 10px 0; color: #2c3e50;">
+                                <i class="fas fa-shield-alt"></i> Email Verification Required
+                            </h4>
+                            <p style="margin: 0 0 15px 0; font-size: 13px; color: #5a6c7d;">
+                                For security purposes, we need to verify your identity before changing your password.
+                                A verification code will be sent to your email address.
+                            </p>
+                            <button type="button" class="btn-send-code" onclick="sendVerificationCode()" id="send-code-btn">
+                                <i class="fas fa-paper-plane"></i> Send Verification Code
+                            </button>
+                            <div class="countdown" id="countdown"></div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Enter Verification Code -->
+                    <div id="verification-step-2" style="display: none;">
+                        <div class="verification-section">
+                            <h4 style="margin: 0 0 10px 0; color: #2c3e50;">
+                                <i class="fas fa-envelope"></i> Enter Verification Code
+                            </h4>
+                            <p style="margin: 0 0 15px 0; font-size: 13px; color: #5a6c7d;">
+                                Please check your email <strong id="user-email">Loading...</strong>
+                                and enter the 6-digit verification code below.
+                            </p>
+                            <div class="verification-code">
+                                <input type="text" id="verification_code" name="verification_code"
+                                       maxlength="6" placeholder="000000" required>
+                            </div>
+                            <div class="countdown" id="code-countdown"></div>
+                            <button type="button" class="btn-send-code" onclick="sendVerificationCode()" id="resend-code-btn" style="margin-top: 10px;" disabled>
+                                <i class="fas fa-redo"></i> Resend Code (<span id="resend-timer">60</span>s)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Set New Password -->
+                    <div id="verification-step-3" style="display: none;">
+                        <div class="form-group">
+                            <label for="new_password">New Password</label>
+                            <div class="password-input-container">
+                                <input type="password" id="new_password" name="new_password" required>
+                                <button type="button" class="toggle-password" onclick="togglePassword('new_password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <span class="error-message" id="new_password_error"></span>
+                            <div class="success-message" id="password-strength"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="new_password_confirmation">Confirm New Password</label>
+                            <div class="password-input-container">
+                                <input type="password" id="new_password_confirmation" name="new_password_confirmation" required>
+                                <button type="button" class="toggle-password" onclick="togglePassword('new_password_confirmation')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <span class="error-message" id="new_password_confirmation_error"></span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" onclick="closeProfileModal()">Cancel</button>
+                            <button type="submit" class="btn-submit" id="change-password-btn">
+                                <i class="fas fa-key"></i> Change Password
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 
  <!-- ✅ Main content area (for child pages) -->
@@ -95,53 +290,19 @@
 
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  /** -------------------------------
-   * 📂 Sidebar Dropdown Menu Toggle
-   * ------------------------------- */
-  document.querySelectorAll('.dropdown-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const container = btn.nextElementSibling;
-      document.querySelectorAll('.dropdown-container').forEach(el => {
-        if (el !== container) el.style.display = 'none';
-      });
-      container.style.display = (container.style.display === 'block') ? 'none' : 'block';
-    });
-  });
-  // Profile image & name
-  function changeProfileImage() { document.getElementById('imageInput').click(); }
-  document.getElementById('imageInput').addEventListener('change', function(e){
-    const file = e.target.files[0];
-    if(file){
-      const reader = new FileReader();
-      reader.onload = function(ev){ document.getElementById('profileImage').src = ev.target.result; }
-      reader.readAsDataURL(file);
-    }
-  });
-  function changeProfileName() {
-    const newName = prompt("Enter new name:");
-    if(newName) document.querySelector('.user-info span').innerText = newName;
-  }
-
-
-  /** -------------------------------
-   * 🚪 Logout Confirmation & Action
-   * ------------------------------- */
-  window.logout = () => {
-    if (!confirm("Are you sure you want to logout?")) return;
-    fetch("{{ route('adviser.logout') }}", {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-        'Accept': 'application/json'
-      }
-    })
-    .then(response => {
-      if (response.ok) window.location.href = "{{ route('login') }}";
-    })
-    .catch(err => console.error('Logout failed:', err));
-  };
-});
+ // Global variables for routes and CSRF token
+    const ROUTES = {
+        sendVerificationCode: '{{ route("adviser.send-verification-code") }}',
+        changePassword: '{{ route("adviser.change-password") }}',
+        profileInfo: '{{ route("adviser.profile-info") }}',
+        uploadProfileImage: '{{ route("adviser.upload-profile-image") }}',
+        removeProfileImage: '{{ route("adviser.remove-profile-image") }}',
+        logout: '{{ route("adviser.logout") }}',
+        login: '{{ route("login") }}'
+    };
+    const CSRF_TOKEN = '{{ csrf_token() }}';
 </script>
+<script src="{{ asset('js/prefect/layout.js') }}"></script>
+
 </body>
 </html>

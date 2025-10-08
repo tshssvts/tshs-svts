@@ -21,13 +21,14 @@ public function offensesanction()
         ->select(
             'offense_type',
             'offense_description',
-            DB::raw('GROUP_CONCAT(DISTINCT sanction_consequences ORDER BY group_number, stage_number SEPARATOR ", ") as sanctions')
+            DB::raw('GROUP_CONCAT(DISTINCT sanction_consequences ORDER BY offense_sanc_id SEPARATOR ", ") as sanctions'),
+            DB::raw('MIN(offense_sanc_id) as min_id')
         )
         ->groupBy('offense_type', 'offense_description')
-        ->orderBy('offense_type')
+        ->orderBy('min_id', 'ASC')
         ->get();
 
     return view('adviser.offensesanction', compact('offenses'));
 }
-    
+
 }

@@ -20,6 +20,7 @@ use App\Http\Controllers\Prefect\PComplaintAnecdotalController;
 
 
 // Adviser Controllers
+use App\Http\Controllers\Adviser\AProfileController;
 use App\Http\Controllers\Adviser\ADashboardController;
 use App\Http\Controllers\Adviser\ALogoutController;
 use App\Http\Controllers\Adviser\AStudentController;
@@ -56,6 +57,16 @@ Route::prefix('prefect')->group(function () {
         Route::get('/profile-info', [ProfileController::class, 'getProfileInfo'])->name('prefect.profile-info');
         Route::post('/upload-profile-image', [ProfileController::class, 'uploadProfileImage'])->name('prefect.upload-profile-image');
         Route::post('/remove-profile-image', [ProfileController::class, 'removeProfileImage'])->name('prefect.remove-profile-image');
+
+
+               // Adviser Profile routes
+        Route::post('/send-verification-code', [AProfileController::class, 'sendVerificationCode'])->name('adviser.send-verification-code');
+        Route::post('/change-password', [AProfileController::class, 'changePassword'])->name('adviser.change-password');
+        Route::get('/profile-info', [AProfileController::class, 'getProfileInfo'])->name('adviser.profile-info');
+        Route::post('/upload-profile-image', [AProfileController::class, 'uploadProfileImage'])->name('adviser.upload-profile-image');
+        Route::post('/remove-profile-image', [AProfileController::class, 'removeProfileImage'])->name('adviser.remove-profile-image');
+
+
 
         // Management Routes
         Route::get('/studentmanagement', [PStudentController::class, 'studentmanagement'])->name('student.management');

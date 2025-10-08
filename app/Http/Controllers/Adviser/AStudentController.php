@@ -22,7 +22,7 @@ class AStudentController extends Controller
 
 public function studentlist()
 {
-    // $adviserId = Auth::guard('adviser')->id();
+     $adviserId = Auth::guard('adviser')->id();
 
     // // Active and Cleared students
      $totalStudents = DB::table('tbl_student')->count();

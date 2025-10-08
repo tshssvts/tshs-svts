@@ -1,430 +1,743 @@
 @extends('adviser.layout')
 @section('content')
 <div class="main-container">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
-
-  <!-- Toolbar -->
+  <!-- ✅ Toolbar -->
   <div class="toolbar">
     <h2>Complaint Management</h2>
     <div class="actions">
-<input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
-      <button class="btn-primary" id="createBtn">➕ Add Violation</button>
-      <button class="btn-secondary" id="createAnecBtn">📝 Create Anecdotal</button>
+      <input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
+      <a href="{{ route('complaints.create') }}" class="btn-primary" id="createBtn">
+        <i class="fas fa-plus"></i> Add Complaint
+      </a>
       <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
     </div>
   </div>
 
-  <!-- Summary Cards -->
+  <!-- ✅ Summary Cards -->
   <div class="summary">
-    <div class="card">
-      <h2>55</h2>
-      <p>Total Students</p>
-    </div>
-    <div class="card">
-      <h2>12</h2>
-      <p>Violations Today</p>
-    </div>
-    <div class="card">
-      <h2>11</h2>
-      <p>Pending Appointments</p>
-    </div>
+    <div class="card"><h2>{{ $monthlyComplaints }}</h2><p>This Month</p></div>
+    <div class="card"><h2>{{ $weeklyComplaints }}</h2><p>This Week</p></div>
+    <div class="card"><h2>{{ $dailyComplaints }}</h2><p>Today</p></div>
   </div>
 
-  <!-- Bulk Action / Select Options -->
- <div class="select-options">
-  <div class="left-controls">
-    <label for="selectAll" class="select-label">
-      <input type="checkbox" id="selectAll">
-      <span>Select All</span>
-    </label>
+  <!-- ✅ Bulk Actions / Tabs -->
+  <div class="select-options">
+    <div class="left-controls">
+      <label for="selectAll" class="select-label">
+        <input type="checkbox" id="selectAll"><span>Select All</span>
+      </label>
 
-    <!-- Dropdown Button -->
-    <div class="dropdown">
-      <button class="btn-info dropdown-btn">⬇️ View Records</button>
-      <div class="dropdown-content">
-        <a href="#" id="violationRecords">Violation Records</a>
-        <a href="#" id="violaitonAppointments">Violation Appointments</a>
-        <a href="#" id="violationAnecdotals">Violation Anecdotals</a>
-      </div>
-    </div>
-  </div>
-
-
-    <div class="right-controls">
-      <button class="btn-danger" id="moveToTrashBtn">🗑️ Move Selected to Trash</button>
-    </div>
-  </div>
-
-  <!-- Violation Table -->
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>ID</th>
-          <th>Student Name</th>
-          <th>Offense Type</th>
-          <th>Sanction</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-  <tbody id="tableBody">
-<tr data-details="Juan Dela Cruz|Tardiness|Verbal Warning|2025-09-28|08:15 AM">
-  <td><input type="checkbox" class="rowCheckbox"></td>
-  <td>1</td>
-  <td>Juan Dela Cruz</td>
-  <td><span title="Tardiness">Tardiness</span></td>
-  <td><span title="Verbal Warning">Verbal Warning</span></td>
-  <td>2025-09-28</td>
-  <td>08:15 AM</td>
-  <td><button class="btn-primary editBtn">✏️ Edit</button></td>
-</tr>
-
-  <tr data-details="Maria Santos|Incomplete Homework|Written Warning|2025-09-27|09:30 AM">
-    <td><input type="checkbox" class="rowCheckbox"></td>
-    <td>2</td>
-    <td>Maria Santos</td>
-    <td>Incomplete Homework</td>
-    <td>Written Warning</td>
-    <td>2025-09-27</td>
-    <td>09:30 AM</td>
-    <td><button class="btn-primary editBtn">✏️ Edit</button></td>
-  </tr>
-  <tr data-details="Pedro Reyes|Uniform Violation|Detention|2025-09-26|07:50 AM">
-    <td><input type="checkbox" class="rowCheckbox"></td>
-    <td>3</td>
-    <td>Pedro Reyes</td>
-    <td>Uniform Violation</td>
-    <td>Detention</td>
-    <td>2025-09-26</td>
-    <td>07:50 AM</td>
-    <td><button class="btn-primary editBtn">✏️ Edit</button></td>
-  </tr>
-  <tr data-details="Ana Lopez|Disrespect|Counseling|2025-09-25|10:10 AM">
-    <td><input type="checkbox" class="rowCheckbox"></td>
-    <td>4</td>
-    <td>Ana Lopez</td>
-    <td>Disrespect</td>
-    <td>Counseling</td>
-    <td>2025-09-25</td>
-    <td>10:10 AM</td>
-    <td><button class="btn-primary editBtn">✏️ Edit</button></td>
-  </tr>
-</tbody>
-
-    </table>
-
-    <!-- Pagination (if needed) -->
-    <div class="pagination">
-      {{-- Implement your pagination links --}}
-      {{-- {{ $violations->links() }} --}}
-    </div>
-  </div>
-
-  <!-- Modals (Details, Anecdotal, Edit, Schedule, Archive) -->
-  {{-- @include('prefect.violations.modals') Create a separate Blade file for modals to keep it clean --}}
-
-
-</div>
-
-
-<!-- 📝 Details Modal -->
-<div class="modal" id="detailsModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      📄 Violation Details
-    </div>
-    <div class="modal-body" id="detailsBody">
-      <!-- Content filled dynamically via JS -->
-    </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" id="setScheduleBtn">📅 Set Schedule</button>
-      <button class="btn-info" id="sendSmsBtn">📩 Send SMS</button>
-      <button class="btn-close">❌ Close</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- 🗃️ Archive Modal -->
-<div class="modal" id="archiveModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      🗃️ Archived Violations
-    </div>
-
-    <div class="modal-body">
-
-      <!-- 🔍 Search & Bulk Actions -->
-      <div class="modal-actions">
-        <label class="select-all-label">
-          <input type="checkbox" id="selectAllArchived" class="select-all-checkbox">
-          <span>Select All</span>
-        </label>
-
-        <div class="search-container">
-          <input type="search" placeholder="🔍 Search archived..." class="search-input">
+      <div class="dropdown">
+        <button class="btn-info dropdown-btn">⬇️ View Records</button>
+        <div class="dropdown-content">
+          <a href="#" id="complaintRecords">Complaint Records</a>
+          <a href="#" id="complaintAppointments">Complaint Appointments</a>
+          <a href="#" id="complaintAnecdotals">Complaint Anecdotals</a>
         </div>
       </div>
+    </div>
 
-      <!-- 📋 Archive Table -->
-      <div class="archive-table-container">
-        <table class="archive-table">
-          <thead>
-            <tr>
-              <th>✔</th>
-              <th>ID</th>
-              <th>Student Name</th>
-              <th>Offense</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input type="checkbox" class="archivedCheckbox"></td>
-              <td>3</td>
-              <td>Mark Dela Cruz</td>
-              <td>Tardiness</td>
-              <td>2025-09-22</td>
-            </tr>
-            <tr>
-              <td><input type="checkbox" class="archivedCheckbox"></td>
-              <td>4</td>
-              <td>Anna Reyes</td>
-              <td>Cutting Classes</td>
-              <td>2025-09-23</td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="right-controls">
+      <button class="btn-appointment" id="setAppointmentBtn">📅 Set Appointment</button>
+      <button class="btn-anecdotal" id="createAnecdotalBtn">📝 Create Anecdotal</button>
+      <button class="btn-cleared">✅ Cleared</button>
+      <button class="btn-danger">🗑️ Move Selected to Trash</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+
+    <!-- 📋 COMPLAINT RECORDS TABLE -->
+    <div id="complaintRecordsTable" class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th></th><th>ID</th><th>Complainant</th><th>Respondent</th>
+            <th>Offense Type</th><th>Sanction</th><th>Incident</th>
+            <th>Date</th><th>Time</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($complaints as $comp)
+          <tr
+            data-complaint-id="{{ $comp->complaints_id }}"
+            data-incident="{{ $comp->complaints_incident }}"
+            data-date="{{ $comp->complaints_date }}"
+            data-time="{{ \Carbon\Carbon::parse($comp->complaints_time)->format('h:i A') }}"
+          >
+            <td><input type="checkbox" class="rowCheckbox" data-complaint-id="{{ $comp->complaints_id }}"></td>
+            <td>{{ $comp->complaints_id }}</td>
+            <td>{{ $comp->complainant_fname }} {{ $comp->complainant_lname }}</td>
+            <td>{{ $comp->respondent_fname }} {{ $comp->respondent_lname }}</td>
+            <td>{{ $comp->offense_type }}</td>
+            <td>{{ $comp->sanction_consequences }}</td>
+            <td>{{ $comp->complaints_incident }}</td>
+            <td>{{ $comp->complaints_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($comp->complaints_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editComplaintBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="10" style="text-align:center;">No complaints found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+
+      <div class="pagination-wrapper">
+        <div class="pagination-summary">
+          @if($complaints instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            Showing {{ $complaints->firstItem() ?? 0 }} to {{ $complaints->lastItem() ?? 0 }} of {{ $complaints->total() ?? 0 }} record(s)
+          @endif
+        </div>
+        <div class="pagination-links">{{ $complaints->links() }}</div>
       </div>
+    </div>
 
-      <!-- ⚠️ Note -->
-      <div class="modal-note">
-        ⚠️ Note: Deleting records will permanently remove them.
+    <!-- 📅 COMPLAINT APPOINTMENTS TABLE -->
+    <div id="complaintAppointmentsTable" class="table-wrapper" style="display:none;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Complainant</th><th>Respondent</th><th>Status</th><th>Date</th><th>Time</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          @forelse($cappointments as $appt)
+          <tr
+            data-app-id="{{ $appt->comp_app_id }}"
+            data-status="{{ $appt->comp_app_status }}"
+            data-date="{{ $appt->comp_app_date }}"
+            data-time="{{ \Carbon\Carbon::parse($appt->comp_app_time)->format('h:i A') }}"
+          >
+            <td>{{ $appt->comp_app_id }}</td>
+            <td>{{ $appt->complaint->complainant->student_fname ?? 'N/A' }} {{ $appt->complaint->complainant->student_lname ?? '' }}</td>
+            <td>{{ $appt->complaint->respondent->student_fname ?? 'N/A' }} {{ $appt->complaint->respondent->student_lname ?? '' }}</td>
+            <td>{{ $appt->comp_app_status }}</td>
+            <td>{{ $appt->comp_app_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($appt->comp_app_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editAppointmentBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="7" style="text-align:center;">No appointments found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 📝 COMPLAINT ANECDOTALS TABLE -->
+    <div id="complaintAnecdotalsTable" class="table-wrapper" style="display:none;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Complainant</th><th>Respondent</th><th>Solution</th><th>Recommendation</th><th>Date</th><th>Time</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          @forelse($canecdotals as $anec)
+          <tr
+            data-anec-id="{{ $anec->comp_anec_id }}"
+            data-solution="{{ $anec->comp_anec_solution }}"
+            data-recommendation="{{ $anec->comp_anec_recommendation }}"
+            data-date="{{ $anec->comp_anec_date }}"
+            data-time="{{ \Carbon\Carbon::parse($anec->comp_anec_time)->format('h:i A') }}"
+          >
+            <td>{{ $anec->comp_anec_id }}</td>
+            <td>{{ $anec->complaint->complainant->student_fname ?? 'N/A' }} {{ $anec->complaint->complainant->student_lname ?? '' }}</td>
+            <td>{{ $anec->complaint->respondent->student_fname ?? 'N/A' }} {{ $anec->complaint->respondent->student_lname ?? '' }}</td>
+            <td>{{ Str::limit($anec->comp_anec_solution, 50) }}</td>
+            <td>{{ Str::limit($anec->comp_anec_recommendation, 50) }}</td>
+            <td>{{ $anec->comp_anec_date }}</td>
+            <td>{{ \Carbon\Carbon::parse($anec->comp_anec_time)->format('h:i A') }}</td>
+            <td><button class="btn-primary editAnecdotalBtn">✏️ Edit</button></td>
+          </tr>
+          @empty
+          <tr><td colspan="8" style="text-align:center;">No anecdotal records found</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ✏️ Edit Modal -->
+  <div class="modal" id="editComplaintModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeComplaintEditModal">✖</button>
+      <h2>Edit Record</h2>
+
+      <form id="editComplaintForm" method="POST" action="">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="record_id" id="edit_record_id">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Details</label>
+            <textarea id="edit_details" name="details"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="edit_date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="edit_time" name="time" required>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="button" class="btn-secondary" id="cancelComplaintEditBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 📅 Set Appointment Modal -->
+  <div class="modal" id="appointmentModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeAppointmentModal">✖</button>
+      <h2>Set Appointment for Selected Complaints</h2>
+
+      <form id="appointmentForm" method="POST" action="{{ route('complaint-appointments.store') }}">
+        @csrf
+
+        <div class="selected-violations">
+          <h3>Selected Complaints:</h3>
+          <div id="selectedComplaintsForAppointment" class="selected-list">
+            <!-- Selected complaints will be listed here -->
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Appointment Date</label>
+            <input type="date" name="comp_app_date" id="appointment_date" required>
+          </div>
+          <div class="form-group">
+            <label>Appointment Time</label>
+            <input type="time" name="comp_app_time" id="appointment_time" required>
+          </div>
+          <div class="form-group full-width">
+            <label>Status</label>
+            <select name="comp_app_status" id="appointment_status" required>
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="rescheduled">Rescheduled</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">📅 Create Appointments</button>
+          <button type="button" class="btn-secondary" id="cancelAppointmentBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 📝 Create Anecdotal Modal -->
+  <div class="modal" id="createAnecdotalModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeAnecdotalModal">✖</button>
+      <h2>Create Anecdotal Record for Selected Complaints</h2>
+
+      <form id="createAnecdotalForm" method="POST" action="{{ route('complaint-anecdotals.store') }}">
+        @csrf
+
+        <div class="selected-violations">
+          <h3>Selected Complaints:</h3>
+          <div id="selectedComplaintsForAnecdotal" class="selected-list">
+            <!-- Selected complaints for anecdotal will be listed here -->
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="anecdotal_date">Anecdotal Date</label>
+            <input type="date" id="anecdotal_date" name="anecdotal_date" required value="{{ date('Y-m-d') }}">
+          </div>
+          <div class="form-group">
+            <label for="anecdotal_time">Anecdotal Time</label>
+            <input type="time" id="anecdotal_time" name="anecdotal_time" required value="{{ date('H:i') }}">
+          </div>
+          <div class="form-group full-width">
+            <label for="comp_anec_solution">Solution</label>
+            <textarea id="comp_anec_solution" name="comp_anec_solution" placeholder="Describe the solution implemented..." required rows="4"></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="comp_anec_recommendation">Recommendation</label>
+            <textarea id="comp_anec_recommendation" name="comp_anec_recommendation" placeholder="Provide recommendations for future prevention..." required rows="4"></textarea>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">📝 Create Anecdotal Records</button>
+          <button type="button" class="btn-secondary" id="cancelAnecdotalBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ✅ Anecdotal Success Modal -->
+  <div class="modal" id="anecdotalSuccessModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>✅ Anecdotal Records Created Successfully</h2>
       </div>
-
-      <!-- 🧭 Footer Buttons -->
-      <div class="modal-footer">
-        <button class="btn-secondary" id="restoreArchivedBtn">🔄 Restore</button>
-        <button class="btn-danger" id="deleteArchivedBtn">🗑️ Delete</button>
-        <button class="btn-close" id="closeArchive">❌ Close</button>
+      <div class="modal-body">
+        <p id="successMessage"></p>
+        <div class="success-actions">
+          <button class="btn-print" id="printAnecdotalBtn">🖨️ Print Records</button>
+          <button class="btn-primary" id="closeSuccessModal">OK</button>
+        </div>
       </div>
-
     </div>
   </div>
 </div>
 
+<style>
+.btn-appointment {
+  background-color: #28a745;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 8px;
+}
 
+.btn-anecdotal {
+  background-color: #17a2b8;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.btn-cleared {
+  background-color: #6c757d;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.btn-print {
+  background-color: #6f42c1;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.right-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.selected-violations {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.selected-list {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.selected-complaint-item {
+  padding: 8px 12px;
+  margin-bottom: 5px;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.success-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+</style>
 
 <script>
+// Get CSRF Token
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
 
-    // Search filter for main violation table
-document.getElementById('searchInput').addEventListener('input', function() {
-    const filter = this.value.toLowerCase();
-    const tableBody = document.getElementById('tableBody');
-    const rows = tableBody.querySelectorAll('tr:not(.no-data-row)'); // Ignore the "No records found" row
+const csrfToken = getCsrfToken();
 
-    let visibleCount = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  // Existing modal functionality
+  const modal = document.getElementById('editComplaintModal');
+  const form = document.getElementById('editComplaintForm');
+  const close = document.getElementById('closeComplaintEditModal');
+  const cancel = document.getElementById('cancelComplaintEditBtn');
 
-    rows.forEach(row => {
-        const studentName = row.cells[2].innerText.toLowerCase(); // Student Name column
-        const studentID = row.cells[1].innerText.toLowerCase();   // ID column
-        if(studentName.includes(filter) || studentID.includes(filter)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
+  const openModal = (action, data) => {
+    form.action = action;
+    document.getElementById('edit_record_id').value = data.id || '';
+    document.getElementById('edit_details').value = data.details || '';
+    document.getElementById('edit_date').value = data.date || '';
+    document.getElementById('edit_time').value = convertTo24Hour(data.time || '');
+    modal.style.display = 'flex';
+  };
+
+  const convertTo24Hour = t => {
+    if (!t.includes(' ')) return t;
+    const [time, mod] = t.split(' ');
+    let [h, m] = time.split(':'); h = +h;
+    if (mod === 'PM' && h !== 12) h += 12;
+    if (mod === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2,'0')}:${m}`;
+  };
+
+  document.querySelectorAll('.editComplaintBtn').forEach(btn => btn.addEventListener('click', e => {
+    const r = e.target.closest('tr');
+    openModal(`/prefect/complaints/update/${r.dataset.complaintId}`, {
+      id: r.dataset.complaintId,
+      details: r.dataset.incident,
+      date: r.dataset.date,
+      time: r.dataset.time
+    });
+  }));
+
+  document.querySelectorAll('.editAppointmentBtn').forEach(btn => btn.addEventListener('click', e => {
+    const r = e.target.closest('tr');
+    openModal(`/prefect/complaint-appointments/update/${r.dataset.appId}`, {
+      id: r.dataset.appId,
+      details: r.dataset.status,
+      date: r.dataset.date,
+      time: r.dataset.time
+    });
+  }));
+
+  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => btn.addEventListener('click', e => {
+    const r = e.target.closest('tr');
+    openModal(`/prefect/complaint-anecdotals/update/${r.dataset.anecId}`, {
+      id: r.dataset.anecId,
+      details: r.dataset.solution,
+      date: r.dataset.date,
+      time: r.dataset.time
+    });
+  }));
+
+  [close, cancel].forEach(b => b.addEventListener('click', () => modal.style.display = 'none'));
+
+  // Table navigation
+  const sections = {
+    complaintRecords: document.getElementById('complaintRecordsTable'),
+    complaintAppointments: document.getElementById('complaintAppointmentsTable'),
+    complaintAnecdotals: document.getElementById('complaintAnecdotalsTable')
+  };
+
+  Object.keys(sections).forEach(key => {
+    document.getElementById(key).addEventListener('click', e => {
+      e.preventDefault();
+      Object.values(sections).forEach(s => s.style.display = 'none');
+      sections[key].style.display = 'block';
+    });
+  });
+
+  // ==================== SET APPOINTMENT FUNCTIONALITY ====================
+  document.getElementById('setAppointmentBtn').addEventListener('click', function() {
+    const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
+
+    if (!selectedCheckboxes.length) {
+      alert('Please select at least one complaint to schedule.');
+      return;
+    }
+
+    // Get selected complaint data
+    const selectedComplaints = Array.from(selectedCheckboxes).map(cb => {
+      const row = cb.closest('tr');
+      return {
+        complaint_id: row.dataset.complaintId,
+        complainant: row.cells[2].textContent,
+        respondent: row.cells[3].textContent,
+        incident: row.dataset.incident
+      };
     });
 
-    // Remove existing "No records found" row
-    const noDataRow = tableBody.querySelector('.no-data-row');
-    if(visibleCount === 0) {
-        if(!noDataRow) {
-            const newRow = document.createElement('tr');
-            newRow.classList.add('no-data-row');
-            newRow.innerHTML = `<td colspan="8" style="text-align:center; padding:15px;">⚠️ No records found</td>`;
-            tableBody.appendChild(newRow);
-        }
-    } else {
-        if(noDataRow) noDataRow.remove();
+    // Populate selected complaints list
+    const selectedList = document.getElementById('selectedComplaintsForAppointment');
+    selectedList.innerHTML = '';
+
+    selectedComplaints.forEach(complaint => {
+      const item = document.createElement('div');
+      item.className = 'selected-complaint-item';
+      item.innerHTML = `
+        <strong>${complaint.complainant} vs ${complaint.respondent}</strong><br>
+        <small>Incident: ${complaint.incident}</small>
+        <input type="hidden" name="complaint_ids[]" value="${complaint.complaint_id}">
+      `;
+      selectedList.appendChild(item);
+    });
+
+    // Show the modal
+    document.getElementById('appointmentModal').style.display = 'flex';
+    document.getElementById('appointment_date').value = new Date().toISOString().split('T')[0];
+  });
+
+  // ==================== CREATE ANECDOTAL FUNCTIONALITY ====================
+  document.getElementById('createAnecdotalBtn').addEventListener('click', function() {
+    const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
+
+    if (!selectedCheckboxes.length) {
+      alert('Please select at least one complaint to create anecdotal record.');
+      return;
     }
-});
 
+    // Get selected complaint data
+    const selectedComplaints = Array.from(selectedCheckboxes).map(cb => {
+      const row = cb.closest('tr');
+      return {
+        complaint_id: row.dataset.complaintId,
+        complainant: row.cells[2].textContent,
+        respondent: row.cells[3].textContent,
+        incident: row.dataset.incident,
+        offense_type: row.cells[4].textContent,
+        sanction: row.cells[5].textContent
+      };
+    });
 
+    // Populate selected complaints list
+    const selectedList = document.getElementById('selectedComplaintsForAnecdotal');
+    selectedList.innerHTML = '';
 
-  // Select all checkboxes
-  document.getElementById('selectAll').addEventListener('change', function() {
-    document.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = this.checked);
+    selectedComplaints.forEach(complaint => {
+      const item = document.createElement('div');
+      item.className = 'selected-complaint-item';
+      item.innerHTML = `
+        <strong>${complaint.complainant} vs ${complaint.respondent}</strong><br>
+        <small>Incident: ${complaint.incident}</small><br>
+        <small>Offense: ${complaint.offense_type}</small>
+        <input type="hidden" name="complaint_ids[]" value="${complaint.complaint_id}">
+      `;
+      selectedList.appendChild(item);
+    });
+
+    // Show the modal
+    document.getElementById('createAnecdotalModal').style.display = 'flex';
   });
-
-  // Move to Trash
-  document.getElementById('moveToTrashBtn').addEventListener('click', () => {
-    const selected = [...document.querySelectorAll('.rowCheckbox:checked')];
-    if (selected.length === 0) {
-      alert('Please select at least one record.');
-    } else {
-      alert(selected.length + ' record(s) moved to Trash.');
-      // Add AJAX call here to move to trash in backend
-    }
-  });
-
-  // Row click -> Details Modal
-// Row click -> Details Modal
-document.querySelectorAll('#tableBody tr').forEach(row => {
-  row.addEventListener('click', e => {
-    // Ignore if checkbox or edit button is clicked
-    if(e.target.type === 'checkbox' || e.target.classList.contains('editBtn')) return;
-
-    const data = row.dataset.details.split('|');
-
-    const detailsBody = `
-      <p><strong>Student:</strong> ${data[0]}</p>
-      <p><strong>Offense:</strong> ${data[1]}</p>
-      <p><strong>Sanction:</strong> ${data[2]}</p>
-      <p><strong>Date:</strong> ${data[3]}</p>
-      <p><strong>Time:</strong> ${data[4]}</p>
-    `;
-
-    document.getElementById('detailsBody').innerHTML = detailsBody;
-    document.getElementById('detailsModal').style.display = 'flex';
-    document.getElementById('detailsModal').classList.add('show');
-    btn.closest('.modal').classList.remove('show');
-
-
-  });
-});
-// Close Details Modal
-document.querySelectorAll('#detailsModal .btn-close').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.closest('.modal').style.display = 'none';
-  });
-});
-
-// Set Schedule Button
-document.getElementById('setScheduleBtn').addEventListener('click', () => {
-  alert('Open schedule setup form or modal here.');
-  // TODO: open your schedule modal or redirect to schedule setup
-});
-
-// Send SMS Button
-document.getElementById('sendSmsBtn').addEventListener('click', () => {
-  alert('Trigger SMS sending here.');
-  // TODO: implement SMS sending via backend
-});
-
 
   // Close modals
-  document.querySelectorAll('.btn-close').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.closest('.modal').style.display = 'none';
-    });
-  });
+  document.getElementById('closeAppointmentModal').addEventListener('click', () => document.getElementById('appointmentModal').style.display = 'none');
+  document.getElementById('closeAnecdotalModal').addEventListener('click', () => document.getElementById('createAnecdotalModal').style.display = 'none');
+  document.getElementById('cancelAppointmentBtn').addEventListener('click', () => document.getElementById('appointmentModal').style.display = 'none');
+  document.getElementById('cancelAnecdotalBtn').addEventListener('click', () => document.getElementById('createAnecdotalModal').style.display = 'none');
 
-  // Edit button
-  document.querySelectorAll('.editBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const row = btn.closest('tr');
-      const data = row.dataset.details.split('|');
-      document.getElementById('editStudentName').value = data[0];
-      document.getElementById('editOffense').value = data[1];
-      document.getElementById('editSanction').value = data[2];
-      document.getElementById('editDate').value = data[3];
-      document.getElementById('editTime').value = data[4];
-      document.getElementById('editModal').style.display = 'flex';
-    });
-  });
+  // Handle anecdotal form submission
+  document.getElementById('createAnecdotalForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-  // Open modals
-  document.getElementById('createAnecBtn').addEventListener('click', () => {
-    document.getElementById('anecModal').style.display = 'flex';
-  });
-  document.getElementById('archiveBtn').addEventListener('click', () => {
-    document.getElementById('archiveModal').style.display = 'flex';
-  });
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
 
-  document.querySelectorAll('.dropdown-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation(); // prevent row click event
-    const dropdown = btn.parentElement;
-    dropdown.classList.toggle('show');
-  });
-});
+    try {
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+      submitBtn.disabled = true;
 
-// Close dropdown if clicked outside
-window.addEventListener('click', () => {
-  document.querySelectorAll('.dropdown').forEach(dd => dd.classList.remove('show'));
-});
+      const response = await fetch(this.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
 
-// Open archive modal
-document.getElementById('archiveBtn').addEventListener('click', () => {
-  document.getElementById('archiveModal').style.display = 'flex';
-});
+      const result = await response.json();
 
-// Close modal
-document.querySelectorAll('#archiveModal .btn-close').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.closest('.modal').style.display = 'none';
-  });
-});
+      if (result.success) {
+        // Show success modal
+        document.getElementById('createAnecdotalModal').style.display = 'none';
+        document.getElementById('successMessage').textContent = result.message;
+        document.getElementById('anecdotalSuccessModal').style.display = 'flex';
 
-// Select all checkboxes
-  // Get the select all checkbox and all individual checkboxes
-  const selectAllArchived = document.getElementById('selectAllArchived');
-  const archivedCheckboxes = document.querySelectorAll('.archivedCheckbox');
-
-  // When the select all checkbox changes
-  selectAllArchived.addEventListener('change', () => {
-    const isChecked = selectAllArchived.checked;
-    archivedCheckboxes.forEach(checkbox => {
-      checkbox.checked = isChecked;
-    });
-  });
-
-  // Optional: If any individual checkbox is unchecked, uncheck "Select All"
-  archivedCheckboxes.forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
-      if (!checkbox.checked) {
-        selectAllArchived.checked = false;
+        // Store created anecdotal data for printing
+        window.lastCreatedAnecdotals = result.data;
       } else {
-        // If all checkboxes are checked, check the "Select All" box
-        const allChecked = Array.from(archivedCheckboxes).every(cb => cb.checked);
-        selectAllArchived.checked = allChecked;
+        if (result.errors) {
+          let messages = Object.values(result.errors).flat().join('\n');
+          alert('Validation failed:\n' + messages);
+          console.error(result.errors);
+        } else {
+          alert('Error: ' + (result.message || 'Unknown error'));
+        }
       }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error creating anecdotal records.');
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Handle appointment form submission
+  document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+      submitBtn.disabled = true;
+
+      const response = await fetch(this.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Appointments created successfully!');
+        document.getElementById('appointmentModal').style.display = 'none';
+        location.reload();
+      } else {
+        if (result.errors) {
+          let messages = Object.values(result.errors).flat().join('\n');
+          alert('Validation failed:\n' + messages);
+        } else {
+          alert('Error: ' + (result.message || 'Unknown error'));
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error creating appointments.');
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Print Anecdotal Records
+  document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
+    if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
+      alert('No anecdotal records to print.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    const printContent = generateAnecdotalPrintContent(window.lastCreatedAnecdotals);
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Complaint Anecdotal Records</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          .anecdotal-record { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; page-break-inside: avoid; }
+          .record-header { background: #f5f5f5; padding: 10px; margin: -15px -15px 15px -15px; border-bottom: 1px solid #ddd; }
+          .field { margin-bottom: 10px; }
+          .field label { font-weight: bold; display: inline-block; width: 150px; }
+          .field-content { margin-left: 150px; margin-top: 5px; }
+          @media print {
+            .no-print { display: none; }
+            .anecdotal-record { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+        <div class="no-print" style="margin-top: 20px; text-align: center;">
+          <button onclick="window.print()">Print</button>
+          <button onclick="window.close()">Close</button>
+        </div>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  });
+
+  // Close Success Modal
+  document.getElementById('closeSuccessModal').addEventListener('click', function() {
+    document.getElementById('anecdotalSuccessModal').style.display = 'none';
+    location.reload(); // Reload to show the new anecdotal records
+  });
+
+  // Select All functionality
+  document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.rowCheckbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+  });
+
+  // Function to generate print content
+  function generateAnecdotalPrintContent(anecdotals) {
+    let content = `
+      <div class="header">
+        <h1>Complaint Anecdotal Records Report</h1>
+        <p>Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+      </div>
+    `;
+
+    anecdotals.forEach((anecdotal, index) => {
+      content += `
+        <div class="anecdotal-record">
+          <div class="record-header">
+            <h3>Anecdotal Record #${index + 1}</h3>
+          </div>
+          <div class="field">
+            <label>Anecdotal ID:</label> ${anecdotal.comp_anec_id || 'N/A'}
+          </div>
+          <div class="field">
+            <label>Complaint ID:</label> ${anecdotal.complaints_id}
+          </div>
+          <div class="field">
+            <label>Date:</label> ${anecdotal.comp_anec_date}
+          </div>
+          <div class="field">
+            <label>Time:</label> ${anecdotal.comp_anec_time}
+          </div>
+          <div class="field">
+            <label>Solution:</label>
+            <div class="field-content">${anecdotal.comp_anec_solution}</div>
+          </div>
+          <div class="field">
+            <label>Recommendation:</label>
+            <div class="field-content">${anecdotal.comp_anec_recommendation}</div>
+          </div>
+          <div class="field">
+            <label>Status:</label> ${anecdotal.status}
+          </div>
+          <div class="field">
+            <label>Created:</label> ${new Date(anecdotal.created_at).toLocaleString()}
+          </div>
+        </div>
+      `;
     });
-  });
 
-// Search filter
-document.getElementById('archiveSearch').addEventListener('input', function() {
-  const filter = this.value.toLowerCase();
-  document.querySelectorAll('#archiveTableBody tr').forEach(row => {
-    const text = row.innerText.toLowerCase();
-    row.style.display = text.includes(filter) ? '' : 'none';
-  });
-});
-
-// Restore selected
-document.getElementById('restoreArchiveBtn').addEventListener('click', () => {
-  const selected = [...document.querySelectorAll('.archiveCheckbox:checked')];
-  if(selected.length === 0) return alert('Please select at least one record to restore.');
-  alert(`${selected.length} record(s) restored.`);
-  // TODO: Add AJAX call to restore records
-});
-
-// Delete selected
-document.getElementById('deleteArchiveBtn').addEventListener('click', () => {
-  const selected = [...document.querySelectorAll('.archiveCheckbox:checked')];
-  if(selected.length === 0) return alert('Please select at least one record to delete.');
-  if(confirm('This will permanently delete the selected record(s). Are you sure?')) {
-    alert(`${selected.length} record(s) deleted permanently.`);
-    // TODO: Add AJAX call to delete records
+    return content;
   }
 });
-
-
-
 </script>
 @endsection

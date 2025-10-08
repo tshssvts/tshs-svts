@@ -2,423 +2,525 @@
 
 @section('content')
 <div class="main-container">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
-            <!-- Toolbar -->
-            <div class="toolbar">
-                <h2>Create Student</h2>
-                <div class="actions">
-                    <input type="search" placeholder="🔍 Search student..." id="searchInput">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <h2>Student Management</h2>
+    <div class="actions">
+      <input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
+      <a href="{{ route('create.student') }}" class="btn-primary" id="createBtn">
+        <i class="fas fa-plus"></i> Add Student
+      </a>
+      <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
+    </div>
+  </div>
 
-                    <div class="buttons-row">
-                        <button type="button" class="btn-Add-Student" id="btnAddStudent">
-                            <i class="fas fa-plus-circle"></i> Add Another Student
-                        </button>
-                        <button type="submit" class="btn-save" form="studentForm">
-                            <i class="fas fa-save"></i> Save All
-                        </button>
-                    </div>
-                </div>
-            </div>
+  <!-- Summary Cards -->
+  <div class="summary">
+    <div class="card">
+        <h2>{{ $totalStudents }}</h2>
+        <p>Total Students</p>
+    </div>
+    <div class="card">
+        <h2>{{ $grade11Students }}</h2>
+        <p>Grade 11 Students</p>
+    </div>
+    <div class="card">
+        <h2>{{ $grade12Students }}</h2>
+        <p>Grade 12 Students</p>
+    </div>
+</div>
 
-            <!-- Student Container -->
-            <form id="studentForm" method="POST" action="{{ route('students.store') }}">
-                @csrf
-                <div class="students-wrapper" id="studentsWrapper">
-                    <!-- Student forms will be dynamically added here -->
-                </div>
-            </form>
+
+  <!-- Bulk Action / Select Options -->
+  <div class="select-options">
+    <div class="left-controls">
+      <label for="selectAll" class="select-label">
+        <input type="checkbox" id="selectAll">
+        <span>Select All</span>
+      </label>
+
+      <div class="dropdown">
+        <button class="btn-info dropdown-btn">⬇️ View Records</button>
+        <div class="dropdown-content">
+          <a href="#" id="violationRecords">Violation Records</a>
+          <a href="#" id="violationAppointments">Violation Appointments</a>
+          <a href="#" id="violationAnecdotals">Violation Anecdotals</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-controls">
+      <button class="btn-danger" id="moveToTrashBtn">🗑️ Move Selected to Trash</button>
+    </div>
+  </div>
+
+  <!-- Student Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>ID</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Sex</th>
+          <th>Birthdate</th>
+          <th>Address</th>
+          <th>Contact</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        @forelse($students as $student)
+        <tr data-student-id="{{ $student->student_id }}">
+          <td><input type="checkbox" class="rowCheckbox" value="{{ $student->student_id }}"></td>
+          <td>{{ $student->student_id }}</td>
+          <td>{{ $student->student_fname }}</td>
+          <td>{{ $student->student_lname }}</td>
+          <td>{{ ucfirst($student->student_sex) }}</td>
+          <td>{{ \Carbon\Carbon::parse($student->student_birthdate)->format('F j, Y') }}</td>
+          <td>{{ $student->student_address }}</td>
+          <td>{{ $student->student_contactinfo }}</td>
+          <td>
+            <span class="status-badge {{ $student->status === 'active' ? 'status-active' : 'status-inactive' }}">
+              {{ ucfirst($student->status) }}
+            </span>
+          </td>
+          <td>
+            <button class="btn-primary edit-btn">✏️ Edit</button>
+          </td>
+        </tr>
+        @empty
+        <tr>
+          <td colspan="10" style="text-align:center;">⚠️ No students found</td>
+        </tr>
+        @endforelse
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-wrapper">
+    <div class="pagination-summary">
+      Showing {{ $students->firstItem() }} to {{ $students->lastItem() }} of {{ $students->total() }} results
+    </div>
+    <div class="pagination-links">
+      {{ $students->links() }}
+    </div>
+  </div>
+
+  <!-- ✏️ Edit Student Modal -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeEditModal">✖</button>
+      <h2>Edit Student</h2>
+
+      <form id="editStudentForm" method="POST" action="">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="student_id" id="edit_student_id">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" name="student_fname" id="edit_student_fname" required>
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" name="student_lname" id="edit_student_lname" required>
+          </div>
+          <div class="form-group">
+            <label>Sex</label>
+            <select name="student_sex" id="edit_student_sex" required>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Birthdate</label>
+            <input type="date" name="student_birthdate" id="edit_student_birthdate" required>
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" name="student_address" id="edit_student_address" required>
+          </div>
+          <div class="form-group">
+            <label>Contact Info</label>
+            <input type="text" name="student_contactinfo" id="edit_student_contactinfo" required>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select name="status" id="edit_student_status" required>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="transferred">Transferred</option>
+              <option value="graduated">Graduated</option>
+            </select>
+          </div>
         </div>
 
-        <script>
-            let studentCount = 0;
-            const parentSearchUrl = "{{ route('students.search-parents') }}";
-            const adviserSearchUrl = "{{ route('students.search-advisers') }}";
+        <div class="actions">
+          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="button" class="btn-secondary" id="cancelEditBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-            // Initialize with one student form
-            document.addEventListener('DOMContentLoaded', function() {
-                addStudentForm();
-            });
+  <!-- 🗃️ Archive Modal -->
+  <div class="modal" id="archiveModal">
+    <div class="modal-content">
+      <div class="modal-header">🗃️ Archived Students</div>
+      <div class="modal-body">
+        <div class="modal-actions">
+          <label class="select-all-label">
+            <input type="checkbox" id="selectAllArchived">
+            <span>Select All</span>
+          </label>
+          <div class="search-container">
+            <input type="search" id="archiveSearch" placeholder="🔍 Search archived..." class="search-input">
+          </div>
+        </div>
 
-            // Add new student form
-            document.getElementById('btnAddStudent').addEventListener('click', function() {
-                addStudentForm();
-                updateLayout();
-            });
+        <div class="archive-table-container">
+          <table class="archive-table">
+            <thead>
+              <tr>
+                <th>✔</th>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Sex</th>
+                <th>Status</th>
+                <th>Date Archived</th>
+              </tr>
+            </thead>
+            <tbody id="archiveTableBody">
+              <!-- Archived students will be loaded here via AJAX -->
+            </tbody>
+          </table>
+        </div>
 
-            function addStudentForm() {
-                studentCount++;
+        <div class="modal-footer">
+          <button class="btn-secondary" id="restoreArchiveBtn">🔄 Restore</button>
+          <button class="btn-danger" id="deleteArchiveBtn">🗑️ Delete</button>
+          <button class="btn-close" id="closeArchive">❌ Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-                const studentsWrapper = document.getElementById('studentsWrapper');
-                const newStudent = document.createElement('div');
-                newStudent.className = 'student-container';
-                newStudent.innerHTML = `
-                    <div class="student-header">
-                        <span class="student-title">Student #${studentCount}</span>
-                        <button type="button" class="remove-student" onclick="removeStudent(this)">
-                            <i class="fas fa-times"></i> Remove
-                        </button>
-                    </div>
+</div>
 
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="student_fname_${studentCount}">First Name *</label>
-                            <input type="text" id="student_fname_${studentCount}" name="students[${studentCount-1}][student_fname]" class="form-control" required>
-                        </div>
+<script>
+// Get CSRF Token
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+}
 
-                        <div class="form-group">
-                            <label for="student_lname_${studentCount}">Last Name *</label>
-                            <input type="text" id="student_lname_${studentCount}" name="students[${studentCount-1}][student_lname]" class="form-control" required>
-                        </div>
+const csrfToken = getCsrfToken();
 
-                        <div class="form-group">
-                            <label for="student_sex_${studentCount}">Sex</label>
-                            <div class="radio-group">
-                                <div class="radio-option">
-                                    <input type="radio" id="student_sex_male_${studentCount}" name="students[${studentCount-1}][student_sex]" value="male">
-                                    <label for="student_sex_male_${studentCount}">Male</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="student_sex_female_${studentCount}" name="students[${studentCount-1}][student_sex]" value="female">
-                                    <label for="student_sex_female_${studentCount}">Female</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="student_sex_other_${studentCount}" name="students[${studentCount-1}][student_sex]" value="other">
-                                    <label for="student_sex_other_${studentCount}">Other</label>
-                                </div>
-                            </div>
-                        </div>
+// 🔍 Search Functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#tableBody tr');
 
-                        <div class="form-group">
-                            <label for="student_birthdate_${studentCount}">Birthdate *</label>
-                            <input type="date" id="student_birthdate_${studentCount}" name="students[${studentCount-1}][student_birthdate]" class="form-control" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="student_address_${studentCount}">Address *</label>
-                            <input type="text" id="student_address_${studentCount}" name="students[${studentCount-1}][student_address]" class="form-control" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="student_contactinfo_${studentCount}">Contact Information *</label>
-                            <input type="text" id="student_contactinfo_${studentCount}" name="students[${studentCount-1}][student_contactinfo]" class="form-control" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="parent_search_${studentCount}">Parent *</label>
-                            <input type="text" id="parent_search_${studentCount}" class="form-control parent-search-input" placeholder="Search parent by name..." autocomplete="off">
-                            <input type="hidden" id="parent_id_${studentCount}" name="students[${studentCount-1}][parent_id]" class="parent-id-input" required>
-                            <div class="search-results parent-results" id="parent_results_${studentCount}"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="adviser_search_${studentCount}">Adviser *</label>
-                            <input type="text" id="adviser_search_${studentCount}" class="form-control adviser-search-input" placeholder="Search adviser by name..." autocomplete="off">
-                            <input type="hidden" id="adviser_id_${studentCount}" name="students[${studentCount-1}][adviser_id]" class="adviser-id-input" required>
-                            <div class="search-results adviser-results" id="adviser_results_${studentCount}"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="status_${studentCount}">Status</label>
-                            <select id="status_${studentCount}" name="students[${studentCount-1}][status]" class="form-control">
-                                <option value="active" selected>Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="transferred">Transferred</option>
-                                <option value="graduated">Graduated</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-
-                studentsWrapper.appendChild(newStudent);
-
-                // Attach search functionality to the new form
-                attachSearchListeners(newStudent, studentCount);
-            }
-
-            // Attach search functionality to parent and adviser fields
-            function attachSearchListeners(container, studentIndex) {
-                const parentSearch = container.querySelector('.parent-search-input');
-                const parentIdInput = container.querySelector('.parent-id-input');
-                const parentResults = container.querySelector('.parent-results');
-
-                const adviserSearch = container.querySelector('.adviser-search-input');
-                const adviserIdInput = container.querySelector('.adviser-id-input');
-                const adviserResults = container.querySelector('.adviser-results');
-
-                // Parent search functionality
-// Parent search functionality - using FormData
-parentSearch.addEventListener('input', function() {
-    const query = this.value.trim();
-
-    console.log('Parent search query:', query);
-
-    if (query.length < 2) {
-        parentResults.innerHTML = '';
-        return;
-    }
-
-    // Use FormData instead of JSON (more compatible with Laravel)
-    const formData = new FormData();
-    formData.append('query', query);
-    formData.append('_token', '{{ csrf_token() }}');
-
-    fetch(parentSearchUrl, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Parent search results:', data);
-        parentResults.innerHTML = '';
-
-        if (!data || data.length === 0) {
-            parentResults.innerHTML = '<div class="no-results">No parents found</div>';
-            return;
-        }
-
-        data.forEach(parent => {
-            const item = document.createElement('div');
-            item.className = 'search-result-item';
-            item.textContent = `${parent.parent_fname} ${parent.parent_lname}`;
-            item.dataset.id = parent.parent_id;
-
-            item.addEventListener('click', function() {
-                parentSearch.value = `${parent.parent_fname} ${parent.parent_lname}`;
-                parentIdInput.value = parent.parent_id;
-                parentResults.innerHTML = '';
-
-                parentIdInput.style.borderColor = '#ddd';
-                parentSearch.style.borderColor = '#ddd';
-            });
-
-            parentResults.appendChild(item);
-        });
-    })
-    .catch(error => {
-        console.error('Parent search error:', error);
-        parentResults.innerHTML = '<div class="no-results">Search failed. Please try again.</div>';
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
     });
 });
 
-                // Adviser search functionality
-                adviserSearch.addEventListener('input', function() {
-                    const query = this.value.trim();
+// ✅ Select All - Main Table
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.rowCheckbox');
+    checkboxes.forEach(cb => {
+        cb.checked = this.checked;
+    });
+});
 
-                    if (query.length < 2) {
-                        adviserResults.innerHTML = '';
-                        return;
-                    }
+// ✅ Select All - Archive Table
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'selectAllArchived') {
+        const archiveCheckboxes = document.querySelectorAll('.archiveCheckbox');
+        archiveCheckboxes.forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+    }
+});
 
-                    // AJAX call to search advisers
-                    fetch(adviserSearchUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ query: query })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        adviserResults.innerHTML = '';
+// 🗑️ Move to Trash (Archive)
+document.getElementById('moveToTrashBtn').addEventListener('click', async function() {
+    const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
 
-                        if (data.length === 0) {
-                            adviserResults.innerHTML = '<div class="no-results">No advisers found</div>';
-                            return;
-                        }
+    if (!selectedCheckboxes.length) {
+        alert('Please select at least one student.');
+        return;
+    }
 
-                        data.forEach(adviser => {
-                            const item = document.createElement('div');
-                            item.className = 'search-result-item';
-                            item.textContent = `${adviser.adviser_fname} ${adviser.adviser_lname}`;
-                            item.dataset.id = adviser.adviser_id;
+    const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-                            item.addEventListener('click', function() {
-                                adviserSearch.value = `${adviser.adviser_fname} ${adviser.adviser_lname}`;
-                                adviserIdInput.value = adviser.adviser_id;
-                                adviserResults.innerHTML = '';
+    if (!confirm(`Are you sure you want to archive ${studentIds.length} student(s)?`)) {
+        return;
+    }
 
-                                // Clear any previous error styling
-                                adviserIdInput.style.borderColor = '#ddd';
-                                adviserSearch.style.borderColor = '#ddd';
-                            });
+    try {
+        const response = await fetch('{{ route("students.archive") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ student_ids: studentIds })
+        });
 
-                            adviserResults.appendChild(item);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Adviser search error:', error);
-                        adviserResults.innerHTML = '<div class="no-results">Search failed</div>';
-                    });
-                });
+        const result = await response.json();
 
-                // Close search results when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!parentSearch.contains(e.target) && !parentResults.contains(e.target)) {
-                        parentResults.innerHTML = '';
-                    }
-                    if (!adviserSearch.contains(e.target) && !adviserResults.contains(e.target)) {
-                        adviserResults.innerHTML = '';
-                    }
-                });
-            }
-
-            // Remove student form
-            function removeStudent(button) {
-                const studentContainers = document.querySelectorAll('.student-container');
-                if (studentContainers.length > 1) {
-                    button.closest('.student-container').remove();
-                    // Update student numbers and layout
-                    updateStudentNumbers();
-                    updateLayout();
-                } else {
-                    alert('You need at least one student form.');
-                }
-            }
-
-            // Update student numbers after removal
-            function updateStudentNumbers() {
-                const studentContainers = document.querySelectorAll('.student-container');
-                studentContainers.forEach((container, index) => {
-                    const title = container.querySelector('.student-title');
-                    title.textContent = `Student #${index + 1}`;
-
-                    // Update all input names and IDs
-                    const inputs = container.querySelectorAll('input, select');
-                    inputs.forEach(input => {
-                        const name = input.getAttribute('name');
-                        if (name) {
-                            input.setAttribute('name', name.replace(/\[\d+\]/, `[${index}]`));
-                        }
-
-                        const id = input.getAttribute('id');
-                        if (id) {
-                            input.setAttribute('id', id.replace(/\d+$/, index + 1));
-                        }
-                    });
-
-                    // Update radio button IDs and labels
-                    const radios = container.querySelectorAll('input[type="radio"]');
-                    radios.forEach(radio => {
-                        const id = radio.getAttribute('id');
-                        if (id) {
-                            radio.setAttribute('id', id.replace(/\d+$/, index + 1));
-                        }
-                    });
-
-                    const labels = container.querySelectorAll('label');
-                    labels.forEach(label => {
-                        const forAttr = label.getAttribute('for');
-                        if (forAttr) {
-                            label.setAttribute('for', forAttr.replace(/\d+$/, index + 1));
-                        }
-                    });
-                });
-                studentCount = studentContainers.length;
-            }
-
-            // Update layout based on number of student forms
-            function updateLayout() {
-                const studentContainers = document.querySelectorAll('.student-container');
-                const studentsWrapper = document.getElementById('studentsWrapper');
-
-                // Reset all containers to default flex behavior
-                studentContainers.forEach(container => {
-                    container.style.flex = '1 1 400px';
-                    container.style.maxWidth = '600px';
-                });
-
-                // Special layout for single student
-                if (studentContainers.length === 1) {
-                    studentContainers[0].style.maxWidth = '800px';
-                    studentsWrapper.style.justifyContent = 'center';
-                }
-                // For multiple students, let flexbox handle the layout naturally
-                else {
-                    studentsWrapper.style.justifyContent = 'flex-start';
-                }
-            }
-
-            // Form validation
-            document.getElementById('studentForm').addEventListener('submit', function(e) {
-                const studentContainers = document.querySelectorAll('.student-container');
-                let isValid = true;
-
-                studentContainers.forEach((container, index) => {
-                    const firstName = container.querySelector(`input[name="students[${index}][student_fname]"]`);
-                    const lastName = container.querySelector(`input[name="students[${index}][student_lname]"]`);
-                    const birthdate = container.querySelector(`input[name="students[${index}][student_birthdate]"]`);
-                    const address = container.querySelector(`input[name="students[${index}][student_address]"]`);
-                    const contactInfo = container.querySelector(`input[name="students[${index}][student_contactinfo]"]`);
-                    const parentId = container.querySelector(`input[name="students[${index}][parent_id]"]`);
-                    const parentSearch = container.querySelector('.parent-search-input');
-                    const adviserId = container.querySelector(`input[name="students[${index}][adviser_id]"]`);
-                    const adviserSearch = container.querySelector('.adviser-search-input');
-
-                    if (!firstName.value || !lastName.value || !birthdate.value || !address.value || !contactInfo.value || !parentId.value || !adviserId.value) {
-                        isValid = false;
-                        // Highlight empty required fields
-                        if (!firstName.value) firstName.style.borderColor = '#e74c3c';
-                        if (!lastName.value) lastName.style.borderColor = '#e74c3c';
-                        if (!birthdate.value) birthdate.style.borderColor = '#e74c3c';
-                        if (!address.value) address.style.borderColor = '#e74c3c';
-                        if (!contactInfo.value) contactInfo.style.borderColor = '#e74c3c';
-                        if (!parentId.value) {
-                            parentId.style.borderColor = '#e74c3c';
-                            parentSearch.style.borderColor = '#e74c3c';
-                        }
-                        if (!adviserId.value) {
-                            adviserId.style.borderColor = '#e74c3c';
-                            adviserSearch.style.borderColor = '#e74c3c';
-                        }
-                    }
-                });
-
-                if (!isValid) {
-                    e.preventDefault();
-                    alert('Please fill in all required fields (marked with *) before submitting.');
-                }
+        if (result.success) {
+            alert(`${studentIds.length} student(s) moved to archive.`);
+            // Remove the archived rows from the main table
+            studentIds.forEach(id => {
+                const row = document.querySelector(`tr[data-student-id="${id}"]`);
+                if (row) row.remove();
             });
 
-            // Clear error styling on input
-            document.addEventListener('input', function(e) {
-                if (e.target.classList.contains('form-control')) {
-                    e.target.style.borderColor = '#ddd';
+            // Update UI
+            document.getElementById('selectAll').checked = false;
 
-                    // Also clear error styling on hidden ID inputs when search input changes
-                    if (e.target.classList.contains('parent-search-input')) {
-                        const parentIdInput = e.target.closest('.form-group').querySelector('.parent-id-input');
-                        parentIdInput.style.borderColor = '#ddd';
-                    }
-                    if (e.target.classList.contains('adviser-search-input')) {
-                        const adviserIdInput = e.target.closest('.form-group').querySelector('.adviser-id-input');
-                        adviserIdInput.style.borderColor = '#ddd';
-                    }
-                }
+            // Reload to update counts
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert('Error: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error moving students to archive.');
+    }
+});
+
+// 🗃️ Archive Modal - Load archived students
+document.getElementById('archiveBtn').addEventListener('click', async function() {
+    try {
+        const response = await fetch('{{ route("students.getArchived") }}');
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const archivedStudents = await response.json();
+        const archiveTableBody = document.getElementById('archiveTableBody');
+        archiveTableBody.innerHTML = '';
+
+        if (archivedStudents.length === 0) {
+            archiveTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
+        } else {
+            archivedStudents.forEach(student => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-student-id', student.student_id);
+                row.innerHTML = `
+                    <td><input type="checkbox" class="archiveCheckbox" value="${student.student_id}"></td>
+                    <td>${student.student_id}</td>
+                    <td>${student.student_fname}</td>
+                    <td>${student.student_lname}</td>
+                    <td>${student.student_sex}</td>
+                    <td><span class="status-badge status-inactive">${student.status}</span></td>
+                    <td>${new Date(student.updated_at).toLocaleDateString()}</td>
+                `;
+                archiveTableBody.appendChild(row);
+            });
+        }
+
+        document.getElementById('archiveModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Error loading archived students:', error);
+        alert('Error loading archived students.');
+    }
+});
+
+// 🔄 Restore Archived Students
+document.getElementById('restoreArchiveBtn').addEventListener('click', async function() {
+    const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
+
+    if (!selectedCheckboxes.length) {
+        alert('Please select at least one student to restore.');
+        return;
+    }
+
+    const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+    if (!confirm(`Are you sure you want to restore ${studentIds.length} student(s)?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('{{ route("students.restore") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ student_ids: studentIds })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`${studentIds.length} student(s) restored successfully.`);
+            // Remove the restored rows from archive table
+            studentIds.forEach(id => {
+                const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
+                if (row) row.remove();
             });
 
-            // Search functionality
-            document.getElementById('searchInput').addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                const studentContainers = document.querySelectorAll('.student-container');
+            // Reload the page to show restored students in main table
+            location.reload();
+        } else {
+            alert('Error: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error restoring students.');
+    }
+});
 
-                studentContainers.forEach(container => {
-                    const firstName = container.querySelector('input[name*="[student_fname]"]').value.toLowerCase();
-                    const lastName = container.querySelector('input[name*="[student_lname]"]').value.toLowerCase();
+// 🗑️ Delete Archived Students Permanently
+document.getElementById('deleteArchiveBtn').addEventListener('click', async function() {
+    const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
 
-                    if (firstName.includes(searchTerm) || lastName.includes(searchTerm)) {
-                        container.style.display = 'block';
-                    } else {
-                        container.style.display = 'none';
-                    }
-                });
+    if (!selectedCheckboxes.length) {
+        alert('Please select at least one student to delete permanently.');
+        return;
+    }
+
+    if (!confirm('WARNING: This will permanently delete these students. This action cannot be undone!')) {
+        return;
+    }
+
+    const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+    try {
+        const response = await fetch('{{ route("students.destroyMultiple") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ student_ids: studentIds })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`${studentIds.length} student(s) deleted permanently.`);
+            // Remove the deleted rows from archive table
+            studentIds.forEach(id => {
+                const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
+                if (row) row.remove();
             });
-        </script>
+
+            // If no more archived students, show message
+            const remainingRows = document.querySelectorAll('#archiveTableBody tr');
+            if (remainingRows.length === 0) {
+                document.getElementById('archiveTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
+            }
+        } else {
+            alert('Error: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error deleting students.');
+    }
+});
+
+// Close Archive Modal
+document.getElementById('closeArchive').addEventListener('click', function() {
+    document.getElementById('archiveModal').style.display = 'none';
+});
+
+// Archive Search
+document.getElementById('archiveSearch').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#archiveTableBody tr');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+});
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const archiveModal = document.getElementById('archiveModal');
+    if (event.target === archiveModal) {
+        archiveModal.style.display = 'none';
+    }
+});
+
+// ✏️ Edit Modal Functionality
+document.addEventListener('DOMContentLoaded', function () {
+    const editButtons = document.querySelectorAll('.edit-btn');
+    const editModal = document.getElementById('editModal');
+    const closeEditModal = document.getElementById('closeEditModal');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const editForm = document.getElementById('editStudentForm');
+
+    // 🎯 When "Edit" Button Clicked
+    editButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const row = this.closest('tr');
+            const studentId = row.children[1].innerText.trim();
+            const fname = row.children[2].innerText.trim();
+            const lname = row.children[3].innerText.trim();
+            const sex = row.children[4].innerText.trim();
+            const birthdate = row.children[5].innerText.trim();
+            const address = row.children[6].innerText.trim();
+            const contact = row.children[7].innerText.trim();
+            const status = row.querySelector('.status-badge').innerText.trim();
+
+            // Convert birthdate back to YYYY-MM-DD format
+            const birthdateObj = new Date(birthdate);
+            const formattedBirthdate = birthdateObj.toISOString().split('T')[0];
+
+            // 📝 Fill Form
+            document.getElementById('edit_student_id').value = studentId;
+            document.getElementById('edit_student_fname').value = fname;
+            document.getElementById('edit_student_lname').value = lname;
+            document.getElementById('edit_student_sex').value = sex.toLowerCase();
+            document.getElementById('edit_student_birthdate').value = formattedBirthdate;
+            document.getElementById('edit_student_address').value = address;
+            document.getElementById('edit_student_contactinfo').value = contact;
+            document.getElementById('edit_student_status').value = status.toLowerCase();
+
+            // Set form action dynamically
+            editForm.action = `/prefect/students/update/${studentId}`;
+
+            // Show modal
+            editModal.style.display = 'flex';
+        });
+    });
+
+    // ❌ Close / Cancel Modal
+    [closeEditModal, cancelEditBtn].forEach(btn => {
+        btn.addEventListener('click', () => {
+            editModal.style.display = 'none';
+        });
+    });
+
+    // Close edit modal when clicking outside
+    document.addEventListener('click', function(event) {
+        if (event.target === editModal) {
+            editModal.style.display = 'none';
+        }
+    });
+});
+</script>
 
 @endsection

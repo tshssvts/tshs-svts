@@ -3,6 +3,24 @@
 @section('content')
 <div class="main-container">
 
+
+<style>
+.toolbar {
+    display: flex;             /* make it a flex container */
+    justify-content: center;   /* horizontal center */
+    align-items: center;       /* vertical center */
+    height: 80px;              /* adjust as needed */
+}
+
+.toolbar h3 {
+    font-size: 2rem;
+    color: #4b0000;
+    font-weight: 600;
+    text-align: center;        /* centers text inside h3 if needed */
+}
+</style>
+
+
   <!-- Toolbar -->
 <div class="toolbar">
     <h2>Dashboard Overview</h2>
@@ -118,11 +136,11 @@
   // Chart.js Doughnut - Violation Types (only if there's data)
   @if($violationTypes->where('count', '>', 0)->count() > 0)
   const ctx = document.getElementById('violationChart').getContext('2d');
-  
+
   // Filter out offenses with zero counts
   const violationLabels = {!! json_encode($violationTypes->where('count', '>', 0)->pluck('offense_type')) !!};
   const violationData = {!! json_encode($violationTypes->where('count', '>', 0)->pluck('count')) !!};
-  
+
   new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -130,7 +148,7 @@
       datasets: [{
         data: violationData,
         backgroundColor: [
-          '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', 
+          '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
           '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
           '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA'
         ],
@@ -138,12 +156,12 @@
         borderColor: '#ffffff'
       }]
     },
-    options: { 
+    options: {
       responsive: true,
       maintainAspectRatio: false,
       cutout: '50%',
-      plugins: { 
-        legend: { 
+      plugins: {
+        legend: {
           position: 'bottom',
           labels: {
             padding: 10,
@@ -186,12 +204,12 @@
     data: {
         labels: {!! json_encode($recentActivity['dates']) !!},
         datasets: [
-            { 
-              label: 'Violations', 
-              data: {!! json_encode($recentActivity['violations']) !!}, 
-              borderColor: '#FF6B6B', 
-              backgroundColor: 'rgba(255, 107, 107, 0.1)', 
-              fill: true, 
+            {
+              label: 'Violations',
+              data: {!! json_encode($recentActivity['violations']) !!},
+              borderColor: '#FF6B6B',
+              backgroundColor: 'rgba(255, 107, 107, 0.1)',
+              fill: true,
               tension: 0.4,
               borderWidth: 3,
               pointBackgroundColor: '#FF6B6B',
@@ -200,12 +218,12 @@
               pointRadius: 5,
               pointHoverRadius: 7
             },
-            { 
-              label: 'Complaints', 
-              data: {!! json_encode($recentActivity['complaints']) !!}, 
-              borderColor: '#4ECDC4', 
-              backgroundColor: 'rgba(78, 205, 196, 0.1)', 
-              fill: true, 
+            {
+              label: 'Complaints',
+              data: {!! json_encode($recentActivity['complaints']) !!},
+              borderColor: '#4ECDC4',
+              backgroundColor: 'rgba(78, 205, 196, 0.1)',
+              fill: true,
               tension: 0.4,
               borderWidth: 3,
               pointBackgroundColor: '#4ECDC4',
@@ -219,8 +237,8 @@
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-          legend: { 
+        plugins: {
+          legend: {
             position: 'bottom',
             labels: {
               padding: 20,
@@ -230,20 +248,20 @@
                 weight: '500'
               }
             }
-          }, 
+          },
           tooltip: {
-            mode: 'index', 
+            mode: 'index',
             intersect: false,
             backgroundColor: 'rgba(44, 62, 80, 0.9)',
             titleFont: { size: 12 },
             bodyFont: { size: 13, weight: '600' },
             padding: 12
-          } 
+          }
         },
         interaction: { mode: 'nearest', axis: 'x', intersect: false },
         scales: {
-            x: { 
-              display: true, 
+            x: {
+              display: true,
               grid: {
                 display: false
               },
@@ -253,8 +271,8 @@
                 }
               }
             },
-            y: { 
-              display: true, 
+            y: {
+              display: true,
               beginAtZero: true,
               grid: {
                 color: 'rgba(0,0,0,0.05)'

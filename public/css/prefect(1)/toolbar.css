@@ -47,8 +47,7 @@
 /* Buttons in toolbar */
 .btn-primary,
 .btn-secondary,
-.btn-info,
-.btn-danger {
+.btn-info {
     display: flex;
     align-items: center;
     justify-content: center;
