@@ -17,14 +17,21 @@ class AParentController extends Controller
 {
     public function parentlist()
 {
-    // // Get all parents with their students
-    // $parents = \App\Models\ParentModel::with('students')->get();
+        $totalParents = DB::table('tbl_parent')->count();
 
-    // return view('adviser.parentlist', compact('parents'));
+        // Get active parents
+        $activeParents = DB::table('tbl_parent')
+            ->where('status', 'active')
+            ->count();
 
+        // Get archived parents
+        $archivedParents = DB::table('tbl_parent')
+            ->where('status', 'archived')
+            ->count();
+        $parents = ParentModel::where('status', 'active')->paginate(10);
+        $archivedParents = ParentModel::where('status', 'inactive')->get();
 
-    $parents = ParentModel::paginate(10); // ✅ Use paginate for links()
-    return view('adviser.parentlist', compact("parents"));
+    return view('adviser.parentlist', compact('parents', 'archivedParents','totalParents','activeParents','archivedParents'));
 
 
 }

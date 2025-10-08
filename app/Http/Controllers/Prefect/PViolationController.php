@@ -58,7 +58,7 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
     // ✅ Fetch Main Violation Records
     $violations = ViolationRecord::with(['student', 'offense'])
         ->orderBy('violation_date', 'desc')
-        ->paginate(50);
+        ->paginate(30);
 
     // ✅ Fetch Violation Appointments
     $appointments = DB::table('tbl_violation_appointment')
@@ -68,7 +68,7 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
             'tbl_violation_record.violation_incident'
         )
         ->orderBy('tbl_violation_appointment.violation_app_date', 'desc')
-        ->paginate(50);
+        ->paginate(30);
 
     // ✅ Fetch Violation Anecdotals
     $anecdotals = DB::table('tbl_violation_anecdotal')
@@ -78,7 +78,7 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
             'tbl_violation_record.violation_incident'
         )
         ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc')
-        ->paginate(50);
+        ->paginate(30);
 
     // ✅ Fetch Offenses (if needed for dropdowns)
     $offenses = OffensesWithSanction::all();
