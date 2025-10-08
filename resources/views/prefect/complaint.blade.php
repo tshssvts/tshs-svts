@@ -67,6 +67,10 @@
             data-incident="{{ $comp->complaints_incident }}"
             data-date="{{ $comp->complaints_date }}"
             data-time="{{ \Carbon\Carbon::parse($comp->complaints_time)->format('h:i A') }}"
+            data-offense-type="{{ $comp->offense_type }}"
+            data-sanction="{{ $comp->sanction_consequences }}"
+            data-complainant="{{ $comp->complainant_fname }} {{ $comp->complainant_lname }}"
+            data-respondent="{{ $comp->respondent_fname }} {{ $comp->respondent_lname }}"
           >
             <td><input type="checkbox" class="rowCheckbox" data-complaint-id="{{ $comp->complaints_id }}"></td>
             <td>{{ $comp->complaints_id }}</td>
@@ -99,7 +103,7 @@
     <div id="complaintAppointmentsTable" class="table-wrapper" style="display:none;">
       <table>
         <thead>
-          <tr><th>ID</th><th>Complainant</th><th>Respondent</th><th>Status</th><th>Date</th><th>Time</th><th>Action</th></tr>
+          <tr><th></th><th>ID</th><th>Complainant</th><th>Respondent</th><th>Status</th><th>Date</th><th>Time</th><th>Action</th></tr>
         </thead>
         <tbody>
           @forelse($cappointments as $appt)
@@ -108,7 +112,9 @@
             data-status="{{ $appt->comp_app_status }}"
             data-date="{{ $appt->comp_app_date }}"
             data-time="{{ \Carbon\Carbon::parse($appt->comp_app_time)->format('h:i A') }}"
+            data-complaint-id="{{ $appt->complaints_id }}"
           >
+            <td><input type="checkbox" class="rowCheckbox" data-app-id="{{ $appt->comp_app_id }}"></td>
             <td>{{ $appt->comp_app_id }}</td>
             <td>{{ $appt->complaint->complainant->student_fname ?? 'N/A' }} {{ $appt->complaint->complainant->student_lname ?? '' }}</td>
             <td>{{ $appt->complaint->respondent->student_fname ?? 'N/A' }} {{ $appt->complaint->respondent->student_lname ?? '' }}</td>
@@ -128,7 +134,7 @@
     <div id="complaintAnecdotalsTable" class="table-wrapper" style="display:none;">
       <table>
         <thead>
-          <tr><th>ID</th><th>Complainant</th><th>Respondent</th><th>Solution</th><th>Recommendation</th><th>Date</th><th>Time</th><th>Action</th></tr>
+          <tr><th></th><th>ID</th><th>Complainant</th><th>Respondent</th><th>Solution</th><th>Recommendation</th><th>Date</th><th>Time</th><th>Action</th></tr>
         </thead>
         <tbody>
           @forelse($canecdotals as $anec)
@@ -138,7 +144,9 @@
             data-recommendation="{{ $anec->comp_anec_recommendation }}"
             data-date="{{ $anec->comp_anec_date }}"
             data-time="{{ \Carbon\Carbon::parse($anec->comp_anec_time)->format('h:i A') }}"
+            data-complaint-id="{{ $anec->complaints_id }}"
           >
+            <td><input type="checkbox" class="rowCheckbox" data-anec-id="{{ $anec->comp_anec_id }}"></td>
             <td>{{ $anec->comp_anec_id }}</td>
             <td>{{ $anec->complaint->complainant->student_fname ?? 'N/A' }} {{ $anec->complaint->complainant->student_lname ?? '' }}</td>
             <td>{{ $anec->complaint->respondent->student_fname ?? 'N/A' }} {{ $anec->complaint->respondent->student_lname ?? '' }}</td>
@@ -156,35 +164,120 @@
     </div>
   </div>
 
-  <!-- ✏️ Edit Modal -->
+  <!-- ✏️ Edit Complaint Modal -->
   <div class="modal" id="editComplaintModal">
     <div class="modal-content">
       <button class="close-btn" id="closeComplaintEditModal">✖</button>
-      <h2>Edit Record</h2>
+      <h2>Edit Complaint Record</h2>
 
       <form id="editComplaintForm" method="POST" action="">
         @csrf
         @method('PUT')
-        <input type="hidden" name="record_id" id="edit_record_id">
+        <input type="hidden" name="record_id" id="edit_complaint_id">
 
         <div class="form-grid">
+          <div class="form-group full-width">
+            <label>Incident Description</label>
+            <textarea id="edit_incident" name="complaints_incident" required rows="4"></textarea>
+          </div>
           <div class="form-group">
-            <label>Details</label>
-            <textarea id="edit_details" name="details"></textarea>
+            <label>Offense Type</label>
+            <input type="text" id="edit_offense_type" name="offense_type" required>
+          </div>
+          <div class="form-group">
+            <label>Sanction</label>
+            <input type="text" id="edit_sanction" name="sanction_consequences" required>
           </div>
           <div class="form-group">
             <label>Date</label>
-            <input type="date" id="edit_date" name="date" required>
+            <input type="date" id="edit_complaint_date" name="complaints_date" required>
           </div>
           <div class="form-group">
             <label>Time</label>
-            <input type="time" id="edit_time" name="time" required>
+            <input type="time" id="edit_complaint_time" name="complaints_time" required>
           </div>
         </div>
 
         <div class="actions">
           <button type="submit" class="btn-primary">💾 Save Changes</button>
           <button type="button" class="btn-secondary" id="cancelComplaintEditBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ✏️ Edit Appointment Modal -->
+  <div class="modal" id="editAppointmentModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeAppointmentEditModal">✖</button>
+      <h2>Edit Appointment</h2>
+
+      <form id="editAppointmentForm" method="POST" action="">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="record_id" id="edit_appointment_id">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Status</label>
+            <select id="edit_app_status" name="comp_app_status" required>
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="rescheduled">Rescheduled</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="edit_app_date" name="comp_app_date" required>
+          </div>
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="edit_app_time" name="comp_app_time" required>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="button" class="btn-secondary" id="cancelAppointmentEditBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ✏️ Edit Anecdotal Modal -->
+  <div class="modal" id="editAnecdotalModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeAnecdotalEditModal">✖</button>
+      <h2>Edit Anecdotal Record</h2>
+
+      <form id="editAnecdotalForm" method="POST" action="">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="record_id" id="edit_anecdotal_id">
+
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label>Solution</label>
+            <textarea id="edit_solution" name="comp_anec_solution" required rows="4" placeholder="Describe the solution implemented..."></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label>Recommendation</label>
+            <textarea id="edit_recommendation" name="comp_anec_recommendation" required rows="4" placeholder="Provide recommendations for future prevention..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="edit_anec_date" name="comp_anec_date" required>
+          </div>
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="edit_anec_time" name="comp_anec_time" required>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="button" class="btn-secondary" id="cancelAnecdotalEditBtn">❌ Cancel</button>
         </div>
       </form>
     </div>
@@ -386,61 +479,10 @@ function getCsrfToken() {
 const csrfToken = getCsrfToken();
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Existing modal functionality
-  const modal = document.getElementById('editComplaintModal');
-  const form = document.getElementById('editComplaintForm');
-  const close = document.getElementById('closeComplaintEditModal');
-  const cancel = document.getElementById('cancelComplaintEditBtn');
-
-  const openModal = (action, data) => {
-    form.action = action;
-    document.getElementById('edit_record_id').value = data.id || '';
-    document.getElementById('edit_details').value = data.details || '';
-    document.getElementById('edit_date').value = data.date || '';
-    document.getElementById('edit_time').value = convertTo24Hour(data.time || '');
-    modal.style.display = 'flex';
-  };
-
-  const convertTo24Hour = t => {
-    if (!t.includes(' ')) return t;
-    const [time, mod] = t.split(' ');
-    let [h, m] = time.split(':'); h = +h;
-    if (mod === 'PM' && h !== 12) h += 12;
-    if (mod === 'AM' && h === 12) h = 0;
-    return `${h.toString().padStart(2,'0')}:${m}`;
-  };
-
-  document.querySelectorAll('.editComplaintBtn').forEach(btn => btn.addEventListener('click', e => {
-    const r = e.target.closest('tr');
-    openModal(`/prefect/complaints/update/${r.dataset.complaintId}`, {
-      id: r.dataset.complaintId,
-      details: r.dataset.incident,
-      date: r.dataset.date,
-      time: r.dataset.time
-    });
-  }));
-
-  document.querySelectorAll('.editAppointmentBtn').forEach(btn => btn.addEventListener('click', e => {
-    const r = e.target.closest('tr');
-    openModal(`/prefect/complaint-appointments/update/${r.dataset.appId}`, {
-      id: r.dataset.appId,
-      details: r.dataset.status,
-      date: r.dataset.date,
-      time: r.dataset.time
-    });
-  }));
-
-  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => btn.addEventListener('click', e => {
-    const r = e.target.closest('tr');
-    openModal(`/prefect/complaint-anecdotals/update/${r.dataset.anecId}`, {
-      id: r.dataset.anecId,
-      details: r.dataset.solution,
-      date: r.dataset.date,
-      time: r.dataset.time
-    });
-  }));
-
-  [close, cancel].forEach(b => b.addEventListener('click', () => modal.style.display = 'none'));
+  // Separate modals for each table
+  const complaintModal = document.getElementById('editComplaintModal');
+  const appointmentModal = document.getElementById('editAppointmentModal');
+  const anecdotalModal = document.getElementById('editAnecdotalModal');
 
   // Table navigation
   const sections = {
@@ -456,6 +498,84 @@ document.addEventListener('DOMContentLoaded', () => {
       sections[key].style.display = 'block';
     });
   });
+
+  // ==================== COMPLAINT RECORDS EDIT ====================
+  document.querySelectorAll('.editComplaintBtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const row = e.target.closest('tr');
+      const complaintId = row.dataset.complaintId;
+
+      // Populate form with current data
+      document.getElementById('edit_complaint_id').value = complaintId;
+      document.getElementById('edit_incident').value = row.dataset.incident;
+      document.getElementById('edit_offense_type').value = row.dataset.offenseType;
+      document.getElementById('edit_sanction').value = row.dataset.sanction;
+      document.getElementById('edit_complaint_date').value = row.dataset.date;
+      document.getElementById('edit_complaint_time').value = convertTo24Hour(row.dataset.time);
+
+      // Set form action
+      document.getElementById('editComplaintForm').action = `/prefect/complaints/update/${complaintId}`;
+
+      // Show modal
+      complaintModal.style.display = 'flex';
+    });
+  });
+
+  // ==================== APPOINTMENT RECORDS EDIT ====================
+  document.querySelectorAll('.editAppointmentBtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const row = e.target.closest('tr');
+      const appId = row.dataset.appId;
+
+      // Populate form with current data
+      document.getElementById('edit_appointment_id').value = appId;
+      document.getElementById('edit_app_status').value = row.dataset.status;
+      document.getElementById('edit_app_date').value = row.dataset.date;
+      document.getElementById('edit_app_time').value = convertTo24Hour(row.dataset.time);
+
+      // Set form action
+      document.getElementById('editAppointmentForm').action = `/prefect/complaint-appointments/update/${appId}`;
+
+      // Show modal
+      appointmentModal.style.display = 'flex';
+    });
+  });
+
+  // ==================== ANECDOTAL RECORDS EDIT ====================
+  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const row = e.target.closest('tr');
+      const anecId = row.dataset.anecId;
+
+      // Populate form with current data
+      document.getElementById('edit_anecdotal_id').value = anecId;
+      document.getElementById('edit_solution').value = row.dataset.solution;
+      document.getElementById('edit_recommendation').value = row.dataset.recommendation;
+      document.getElementById('edit_anec_date').value = row.dataset.date;
+      document.getElementById('edit_anec_time').value = convertTo24Hour(row.dataset.time);
+
+      // Set form action
+      document.getElementById('editAnecdotalForm').action = `/prefect/complaint-anecdotals/update/${anecId}`;
+
+      // Show modal
+      anecdotalModal.style.display = 'flex';
+    });
+  });
+
+  // Close modal functions
+  document.getElementById('closeComplaintEditModal').addEventListener('click', () => complaintModal.style.display = 'none');
+  document.getElementById('cancelComplaintEditBtn').addEventListener('click', () => complaintModal.style.display = 'none');
+
+  document.getElementById('closeAppointmentEditModal').addEventListener('click', () => appointmentModal.style.display = 'none');
+  document.getElementById('cancelAppointmentEditBtn').addEventListener('click', () => appointmentModal.style.display = 'none');
+
+  document.getElementById('closeAnecdotalEditModal').addEventListener('click', () => anecdotalModal.style.display = 'none');
+  document.getElementById('cancelAnecdotalEditBtn').addEventListener('click', () => anecdotalModal.style.display = 'none');
+
+  // Form submission handlers
+  document.getElementById('editComplaintForm').addEventListener('submit', handleFormSubmit);
+  document.getElementById('editAppointmentForm').addEventListener('submit', handleFormSubmit);
+  document.getElementById('editAnecdotalForm').addEventListener('submit', handleFormSubmit);
 
   // ==================== SET APPOINTMENT FUNCTIONALITY ====================
   document.getElementById('setAppointmentBtn').addEventListener('click', function() {
@@ -692,7 +812,67 @@ document.addEventListener('DOMContentLoaded', () => {
     checkboxes.forEach(cb => cb.checked = this.checked);
   });
 
-  // Function to generate print content
+  // Utility Functions
+  function convertTo24Hour(t) {
+    if (!t.includes(' ')) return t;
+    const [time, mod] = t.split(' ');
+    let [h, m] = time.split(':'); h = +h;
+    if (mod === 'PM' && h !== 12) h += 12;
+    if (mod === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2,'0')}:${m}`;
+  }
+
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      submitBtn.disabled = true;
+
+      const response = await fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Record updated successfully!');
+        // Close the appropriate modal based on form ID
+        if (form.id === 'editComplaintForm') {
+          complaintModal.style.display = 'none';
+        } else if (form.id === 'editAppointmentForm') {
+          appointmentModal.style.display = 'none';
+        } else if (form.id === 'editAnecdotalForm') {
+          anecdotalModal.style.display = 'none';
+        }
+        location.reload();
+      } else {
+        if (result.errors) {
+          let messages = Object.values(result.errors).flat().join('\n');
+          alert('Validation failed:\n' + messages);
+        } else {
+          alert('Error: ' + (result.message || 'Unknown error'));
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error updating record.');
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  }
+
   function generateAnecdotalPrintContent(anecdotals) {
     let content = `
       <div class="header">

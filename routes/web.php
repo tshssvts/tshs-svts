@@ -29,7 +29,6 @@ use App\Http\Controllers\Adviser\AViolationController;
 use App\Http\Controllers\Adviser\AComplaintController;
 use App\Http\Controllers\Adviser\AOffenseSanctionController;
 use App\Http\Controllers\Adviser\AReportController;
-use App\Http\Controllers\PParentController as ControllersPParentController;
 
 Route::get('/', function () {
     return view('login');
@@ -62,15 +61,6 @@ Route::prefix('prefect')->group(function () {
         Route::get('/profile-info', [ProfileController::class, 'getProfileInfo'])->name('prefect.profile-info');
         Route::post('/upload-profile-image', [ProfileController::class, 'uploadProfileImage'])->name('prefect.upload-profile-image');
         Route::post('/remove-profile-image', [ProfileController::class, 'removeProfileImage'])->name('prefect.remove-profile-image');
-
-
-               // Adviser Profile routes
-        Route::post('/send-verification-code', [AProfileController::class, 'sendVerificationCode'])->name('adviser.send-verification-code');
-        Route::post('/change-password', [AProfileController::class, 'changePassword'])->name('adviser.change-password');
-        Route::get('/profile-info', [AProfileController::class, 'getProfileInfo'])->name('adviser.profile-info');
-        Route::post('/upload-profile-image', [AProfileController::class, 'uploadProfileImage'])->name('adviser.upload-profile-image');
-        Route::post('/remove-profile-image', [AProfileController::class, 'removeProfileImage'])->name('adviser.remove-profile-image');
-
 
 
         // Management Routes
@@ -222,6 +212,17 @@ Route::prefix('adviser')->group(function () {
         Route::post('/violations/search-students', [AViolationController::class, 'AsearchStudents'])->name('Aviolations.search-students');
         Route::post('/violations/search-offenses', [AViolationController::class, 'AsearchOffenses'])->name('Aviolations.search-offenses');
         Route::get('/violations/get-sanction', [AViolationController::class, 'AgetSanction'])->name('Aviolations.get-sanction');
+
+
+                       // Adviser Profile routes
+        Route::post('/send-verification-code', [AProfileController::class, 'sendVerificationCode'])->name('adviser.send-verification-code');
+        Route::post('/change-password', [AProfileController::class, 'changePassword'])->name('adviser.change-password');
+        Route::get('/profile-info', [AProfileController::class, 'getProfileInfo'])->name('adviser.profile-info');
+        Route::post('/upload-profile-image', [AProfileController::class, 'uploadProfileImage'])->name('adviser.upload-profile-image');
+        Route::post('/remove-profile-image', [AProfileController::class, 'removeProfileImage'])->name('adviser.remove-profile-image');
+
+
+
 
         // Report Routes
         Route::get('/adviserreports', [AReportController::class, 'reports'])->name('adviser.reports');

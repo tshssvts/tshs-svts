@@ -532,21 +532,70 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
   </style>
 </head>
 <body>
+
 <!-- Sidebar -->
 <div class="sidebar">
-  <img src="/images/Logo.png" alt="Logo">
-  <h2>PREFECT</h2>
-  <ul>
-    <li><a href="{{ route('adviser.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Overview</a></li>
-    <li><a href="{{ route('student.list') }}"><i class="fas fa-user-graduate"></i> Student List</a></li>
-    <li><a href="{{ route('parent.list') }}"><i class="fas fa-users"></i> Parent List</a></li>
-    <li><a href="{{ route('violation.record') }}"><i class="fas fa-book"></i>Violation Record</a></li>
-    <li><a href="{{ route('complaints.all') }}"><i class="fas fa-comments"></i>Complaints</a></li>
-    <li><a href="{{ route('offense.sanction') }}"><i class="fas fa-exclamation-triangle"></i> Offense & Sanctions</a></li>
-    <li class="active"><a href="{{ route('adviser.reports') }}"><i class="fas fa-chart-line"></i> Reports</a></li>
-    <li onclick="logout()"><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-  </ul>
+    <img src="/images/Logo.png" alt="Logo">
+    <h2>Adviser</h2>
+    <ul>
+        <li class="{{ request()->routeIs('adviser.dashboard') ? 'active' : '' }}">
+            <a href="{{ route('adviser.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard Overview</a>
+        </li>
+        <li class="{{ request()->routeIs('parent.list') ? 'active' : '' }}">
+            <a href="{{ route('parent.list') }}"><i class="fas fa-users"></i> Parents</a>
+        </li>
+        <li class="{{ request()->routeIs('student.list') ? 'active' : '' }}">
+            <a href="{{ route('student.list') }}"><i class="fas fa-user-graduate"></i> Students</a>
+        </li>
+        <li class="{{ request()->routeIs('violation.record') ? 'active' : '' }}">
+            <a href="{{ route('violation.record') }}"><i class="fas fa-book"></i> Violations</a>
+        </li>
+        {{-- <li class="{{ request()->routeIs('violation.anecdotal') ? 'active' : '' }}">
+            <a href="{{ route('violation.anecdotal') }}"><i class="fas fa-book"></i> Violations Anecdotal</a>
+        </li> --}}
+        <li class="{{ request()->routeIs('complaints.all') ? 'active' : '' }}">
+            <a href="{{ route('complaints.all') }}"><i class="fas fa-comments"></i> Complaints</a>
+        </li>
+        {{-- <li class="{{ request()->routeIs('complaints.anecdotal') ? 'active' : '' }}">
+            <a href="{{ route('complaints.anecdotal') }}"><i class="fas fa-comments"></i> Complaints Anecdotal</a>
+        </li> --}}
+        <li class="{{ request()->routeIs('offense.sanction') ? 'active' : '' }}">
+            <a href="{{ route('offense.sanction') }}"><i class="fas fa-exclamation-triangle"></i> Offense & Sanctions</a>
+        </li>
+        <li class="{{ request()->routeIs('adviser.reports') ? 'active' : '' }}">
+            <a href="{{ route('adviser.reports') }}"><i class="fas fa-chart-line"></i> Reports</a>
+        </li>
+        <li>
+            <a href="#" onclick="event.preventDefault(); logout();">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </li>
+    </ul>
 </div>
+
+<script>
+function logout() {
+    const confirmLogout = confirm("Are you sure you want to logout?");
+    if (!confirmLogout) return;
+
+    fetch("{{ route('adviser.logout') }}", {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if(response.ok) {
+            // Redirect to login after successful logout
+            window.location.href = "{{ route('login') }}";
+        } else {
+            console.error('Logout failed:', response.statusText);
+        }
+    })
+    .catch(error => console.error('Logout failed:', error));
+}
+</script>
 
 <!-- ✅ Main content area -->
 <main class="main-content">

@@ -42,7 +42,7 @@
       </label>
 
       <div class="dropdown">
-        <button class="btn-info dropdown-btn">⬇️ View Records</button>
+        <button class="btn-info dropdown-btn">⬇️ Select Section</button>
         <div class="dropdown-content">
           <a href="#" id="violationRecords">Violation Records</a>
           <a href="#" id="violationAppointments">Violation Appointments</a>
@@ -228,7 +228,7 @@ const csrfToken = getCsrfToken();
 document.getElementById('searchInput').addEventListener('input', function() {
     const filter = this.value.toLowerCase();
     const rows = document.querySelectorAll('#tableBody tr');
-    
+
     rows.forEach(row => {
         const text = row.innerText.toLowerCase();
         row.style.display = text.includes(filter) ? '' : 'none';
@@ -256,14 +256,14 @@ document.addEventListener('change', function(e) {
 // 🗑️ Move to Trash (Archive)
 document.getElementById('moveToTrashBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one student.');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to archive ${studentIds.length} student(s)?`)) {
         return;
     }
@@ -280,7 +280,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${studentIds.length} student(s) moved to archive.`);
             // Remove the archived rows from the main table
@@ -288,10 +288,10 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                 const row = document.querySelector(`tr[data-student-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Update UI
             document.getElementById('selectAll').checked = false;
-            
+
             // Reload to update counts
             setTimeout(() => {
                 location.reload();
@@ -309,15 +309,15 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
 document.getElementById('archiveBtn').addEventListener('click', async function() {
     try {
         const response = await fetch('{{ route("students.getArchived") }}');
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const archivedStudents = await response.json();
         const archiveTableBody = document.getElementById('archiveTableBody');
         archiveTableBody.innerHTML = '';
-        
+
         if (archivedStudents.length === 0) {
             archiveTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
         } else {
@@ -336,7 +336,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
                 archiveTableBody.appendChild(row);
             });
         }
-        
+
         document.getElementById('archiveModal').style.display = 'flex';
     } catch (error) {
         console.error('Error loading archived students:', error);
@@ -347,14 +347,14 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
 // 🔄 Restore Archived Students
 document.getElementById('restoreArchiveBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one student to restore.');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     if (!confirm(`Are you sure you want to restore ${studentIds.length} student(s)?`)) {
         return;
     }
@@ -371,7 +371,7 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${studentIds.length} student(s) restored successfully.`);
             // Remove the restored rows from archive table
@@ -379,7 +379,7 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
                 const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // Reload the page to show restored students in main table
             location.reload();
         } else {
@@ -394,7 +394,7 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
 // 🗑️ Delete Archived Students Permanently
 document.getElementById('deleteArchiveBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
-    
+
     if (!selectedCheckboxes.length) {
         alert('Please select at least one student to delete permanently.');
         return;
@@ -405,7 +405,7 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    
+
     try {
         const response = await fetch('{{ route("students.destroyMultiple") }}', {
             method: 'POST',
@@ -418,7 +418,7 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`${studentIds.length} student(s) deleted permanently.`);
             // Remove the deleted rows from archive table
@@ -426,7 +426,7 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
                 const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
                 if (row) row.remove();
             });
-            
+
             // If no more archived students, show message
             const remainingRows = document.querySelectorAll('#archiveTableBody tr');
             if (remainingRows.length === 0) {

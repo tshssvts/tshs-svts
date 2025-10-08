@@ -9,10 +9,30 @@
 </head>
 <body>
     <div class="main-container">
-        <!-- Flash Messages -->
-        <div class="alert-messages">
-            <!-- Flash messages would appear here -->
+
+  <!-- Display Validation Errors -->
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
+    @endif
+
+    <!-- Display Success/Error Messages -->
+    @if (session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
 
         <!-- Toolbar -->
         <div class="toolbar">
@@ -83,15 +103,15 @@
                         <label for="parent_sex_${parentCount}">Sex</label>
                         <div class="radio-group">
                             <div class="radio-option">
-                                <input type="radio" id="parent_sex_male_${parentCount}" name="parents[${parentCount-1}][parent_sex]" value="male">
+                                <input type="radio" id="parent_sex_male_${parentCount}" name="parents[${parentCount-1}][parent_sex]" value="Male">
                                 <label for="parent_sex_male_${parentCount}">Male</label>
                             </div>
                             <div class="radio-option">
-                                <input type="radio" id="parent_sex_female_${parentCount}" name="parents[${parentCount-1}][parent_sex]" value="female">
+                                <input type="radio" id="parent_sex_female_${parentCount}" name="parents[${parentCount-1}][parent_sex]" value="Female">
                                 <label for="parent_sex_female_${parentCount}">Female</label>
                             </div>
                             <div class="radio-option">
-                                <input type="radio" id="parent_sex_other_${parentCount}" name="parents[${parentCount-1}][parent_sex]" value="other">
+                                <input type="radio" id="parent_sex_other_${parentCount}" name="parents[${parentCount-1}][parent_sex]" value="Other">
                                 <label for="parent_sex_other_${parentCount}">Other</label>
                             </div>
                         </div>
@@ -205,9 +225,10 @@
             }
         }
 
-    document.getElementById('violationForm').addEventListener('submit', function(e) {
+document.getElementById('violationForm').addEventListener('submit', function(e) {
     const parentContainers = document.querySelectorAll('.parent-container');
     let isValid = true;
+    let errorMessages = [];
 
     parentContainers.forEach((container, index) => {
         const firstName = container.querySelector(`input[name="parents[${index}][parent_fname]"]`);
@@ -215,13 +236,41 @@
         const birthdate = container.querySelector(`input[name="parents[${index}][parent_birthdate]"]`);
         const contactInfo = container.querySelector(`input[name="parents[${index}][parent_contactinfo]"]`);
         const email = container.querySelector(`input[name="parents[${index}][parent_email]"]`);
+        const relationship = container.querySelector(`select[name="parents[${index}][parent_relationship]"]`);
+        const sexRadios = container.querySelectorAll(`input[name="parents[${index}][parent_sex]"]`);
 
+        // Reset borders
+        [firstName, lastName, birthdate, contactInfo, email, relationship].forEach(field => {
+            if (field) field.style.borderColor = '#ddd';
+        });
+
+        // Check required fields
         if (!firstName.value || !lastName.value || !birthdate.value || !contactInfo.value) {
             isValid = false;
+            errorMessages.push(`Parent #${index + 1} has missing required fields`);
+
             if (!firstName.value) firstName.style.borderColor = '#e74c3c';
             if (!lastName.value) lastName.style.borderColor = '#e74c3c';
             if (!birthdate.value) birthdate.style.borderColor = '#e74c3c';
             if (!contactInfo.value) contactInfo.style.borderColor = '#e74c3c';
+        }
+
+        // Check if sex is selected
+        let sexSelected = false;
+        sexRadios.forEach(radio => {
+            if (radio.checked) sexSelected = true;
+        });
+
+        if (!sexSelected) {
+            isValid = false;
+            errorMessages.push(`Parent #${index + 1}: Please select a gender`);
+        }
+
+        // Check if relationship is selected
+        if (!relationship.value) {
+            isValid = false;
+            errorMessages.push(`Parent #${index + 1}: Please select a relationship`);
+            relationship.style.borderColor = '#e74c3c';
         }
 
         // Validate email only if not empty
@@ -230,14 +279,19 @@
             if (!emailPattern.test(email.value)) {
                 isValid = false;
                 email.style.borderColor = '#e74c3c';
-                alert(`Please enter a valid email address for Parent #${index + 1}.`);
+                errorMessages.push(`Parent #${index + 1}: Please enter a valid email address`);
             }
         }
     });
 
     if (!isValid) {
         e.preventDefault();
-        alert('Please fill in all required fields (marked with *) before submitting.');
+        alert('Please fix the following errors:\n\n' + errorMessages.join('\n'));
+    } else {
+        // Show loading state
+        const saveButton = document.querySelector('.btn-save');
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        saveButton.disabled = true;
     }
 });
 

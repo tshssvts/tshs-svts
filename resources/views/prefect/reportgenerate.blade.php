@@ -552,16 +552,16 @@ tr:nth-child(even) {
     <a href="{{ route('prefect.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard Overview</a>
   </li>
 
+  <li class="{{ request()->routeIs('prefect.adviser') ? 'active' : '' }}">
+    <a href="{{ route('prefect.adviser') }}"><i class="fas fa-users"></i> Advisers</a>
+  </li>
+
   <li class="{{ request()->routeIs('parent.lists') ? 'active' : '' }}">
     <a href="{{ route('parent.lists') }}"><i class="fas fa-users"></i> Parents</a>
   </li>
 
   <li class="{{ request()->routeIs('student.management') ? 'active' : '' }}">
     <a href="{{ route('student.management') }}"><i class="fas fa-user-graduate"></i> Students</a>
-  </li>
-
-  <li class="{{ request()->routeIs('prefect.adviser') ? 'active' : '' }}">
-    <a href="{{ route('prefect.adviser') }}"><i class="fas fa-users"></i> Advisers</a>
   </li>
 
   <li class="{{ request()->routeIs('prefect.violation') ? 'active' : '' }}">
@@ -580,11 +580,11 @@ tr:nth-child(even) {
     <a href="{{ route('report.generate') }}"><i class="fas fa-chart-line"></i> Reports</a>
   </li>
 
-<li>
+{{-- <li>
   <a href="#" onclick="event.preventDefault(); logout();">
     <i class="fas fa-sign-out-alt"></i> Logout
   </a>
-</li>
+</li> --}}
 
 </ul>
 

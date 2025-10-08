@@ -613,13 +613,6 @@ document
     .querySelector("#forgotPasswordModal .close")
     .addEventListener("click", closeForgotPasswordModal);
 
-// Close modal when clicking outside
-window.addEventListener("click", function (event) {
-    const modal = document.getElementById("forgotPasswordModal");
-    if (event.target === modal) {
-        closeForgotPasswordModal();
-    }
-});
 
 // Close modal with escape key
 document.addEventListener("keydown", function (event) {

@@ -23,85 +23,80 @@ class PComplaintController extends Controller
     {
         return view('prefect.create-complaints');
     }
-public function index()
-{
-    // ✅ Load Anecdotal + Appointment models with relationships
-    $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])->get();
-    $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])->get();
 
-    // ✅ Get Actual Complaint Date Range
-    $mostRecentComplaintDate = DB::table('tbl_complaints')->max('complaints_date');
-    $earliestComplaintDate = DB::table('tbl_complaints')->min('complaints_date');
-
-    $referenceDate = $mostRecentComplaintDate ? Carbon::parse($mostRecentComplaintDate) : Carbon::today();
-
-    // ✅ Date Ranges
-    $today = $referenceDate->copy();
-    $startOfWeek = $referenceDate->copy()->startOfWeek();
-    $endOfWeek = $referenceDate->copy()->endOfWeek();
-    $startOfMonth = $referenceDate->copy()->startOfMonth();
-    $endOfMonth = $referenceDate->copy()->endOfMonth();
-
-    // ✅ Summary Counts
-    $dailyComplaints = DB::table('tbl_complaints')
-        ->whereDate('complaints_date', $today)
-        ->count();
-
-    $weeklyComplaints = DB::table('tbl_complaints')
-        ->whereBetween('complaints_date', [$startOfWeek, $endOfWeek])
-        ->count();
-
-    $monthlyComplaints = DB::table('tbl_complaints')
-        ->whereBetween('complaints_date', [$startOfMonth, $endOfMonth])
-        ->count();
-
-    // ✅ Fetch Complaint Records
-    $complaints = DB::table('tbl_complaints as c')
-        ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
-        ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
-        ->join('tbl_offenses_with_sanction as o', 'o.offense_sanc_id', '=', 'c.offense_sanc_id')
-        ->select(
-            'c.complaints_id',
-            'c.complaints_incident',
-            'c.complaints_date',
-            'c.complaints_time',
-            'c.status',
-            'comp.student_fname as complainant_fname',
-            'comp.student_lname as complainant_lname',
-            'resp.student_fname as respondent_fname',
-            'resp.student_lname as respondent_lname',
-            'o.offense_type',
-            'o.sanction_consequences'
-        )
-        ->orderBy('c.complaints_date', 'desc')
-        ->paginate(10);
-
-    return view('prefect.complaint', compact(
-        'complaints',
-        'cappointments',
-        'canecdotals',
-        'mostRecentComplaintDate',
-        'earliestComplaintDate',
-        'referenceDate',
-        'today',
-        'startOfWeek',
-        'endOfWeek',
-        'startOfMonth',
-        'endOfMonth',
-        'dailyComplaints',
-        'weeklyComplaints',
-        'monthlyComplaints'
-    ));
-}
-
-
-
-
- public function store(Request $request)
+    public function index()
     {
-        Log::info('=== COMPLAINT STORE METHOD STARTED ===');
-        Log::info('Full Request Data:', $request->all());
+        // ✅ Load Anecdotal + Appointment models with relationships
+        $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])->get();
+        $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])->get();
 
+        // ✅ Get Actual Complaint Date Range
+        $mostRecentComplaintDate = DB::table('tbl_complaints')->max('complaints_date');
+        $earliestComplaintDate = DB::table('tbl_complaints')->min('complaints_date');
+
+        $referenceDate = $mostRecentComplaintDate ? Carbon::parse($mostRecentComplaintDate) : Carbon::today();
+
+        // ✅ Date Ranges
+        $today = $referenceDate->copy();
+        $startOfWeek = $referenceDate->copy()->startOfWeek();
+        $endOfWeek = $referenceDate->copy()->endOfWeek();
+        $startOfMonth = $referenceDate->copy()->startOfMonth();
+        $endOfMonth = $referenceDate->copy()->endOfMonth();
+
+        // ✅ Summary Counts
+        $dailyComplaints = DB::table('tbl_complaints')
+            ->whereDate('complaints_date', $today)
+            ->count();
+
+        $weeklyComplaints = DB::table('tbl_complaints')
+            ->whereBetween('complaints_date', [$startOfWeek, $endOfWeek])
+            ->count();
+
+        $monthlyComplaints = DB::table('tbl_complaints')
+            ->whereBetween('complaints_date', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        // ✅ Fetch Complaint Records
+        $complaints = DB::table('tbl_complaints as c')
+            ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
+            ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
+            ->join('tbl_offenses_with_sanction as o', 'o.offense_sanc_id', '=', 'c.offense_sanc_id')
+            ->select(
+                'c.complaints_id',
+                'c.complaints_incident',
+                'c.complaints_date',
+                'c.complaints_time',
+                'c.status',
+                'comp.student_fname as complainant_fname',
+                'comp.student_lname as complainant_lname',
+                'resp.student_fname as respondent_fname',
+                'resp.student_lname as respondent_lname',
+                'o.offense_type',
+                'o.sanction_consequences'
+            )
+            ->orderBy('c.complaints_date', 'desc')
+            ->paginate(10);
+
+        return view('prefect.complaint', compact(
+            'complaints',
+            'cappointments',
+            'canecdotals',
+            'mostRecentComplaintDate',
+            'earliestComplaintDate',
+            'referenceDate',
+            'today',
+            'startOfWeek',
+            'endOfWeek',
+            'startOfMonth',
+            'endOfMonth',
+            'dailyComplaints',
+            'weeklyComplaints',
+            'monthlyComplaints'
+        ));
+    }
+
+    public function store(Request $request)
+    {
         try {
             DB::beginTransaction();
 
@@ -112,20 +107,14 @@ public function index()
             // Get all complaints data
             $complaintsData = $request->input('complaints', []);
 
-            Log::info('Complaints Data Structure:', $complaintsData);
-            Log::info('Number of complaints to process:', ['count' => count($complaintsData)]);
-
             // Check if we have any data
             if (empty($complaintsData)) {
-                Log::warning('No complaints data found in request');
                 DB::rollBack();
                 return back()->with('error', 'No complaint data found. Please make sure you added complaints to the summary.');
             }
 
             // Loop through each complaint
             foreach ($complaintsData as $complaintIndex => $complaint) {
-                Log::info("Processing complaint index: {$complaintIndex}", $complaint);
-
                 $complainant_id = $complaint['complainant_id'] ?? null;
                 $respondent_id = $complaint['respondent_id'] ?? null;
                 $offense_sanc_id = $complaint['offense_sanc_id'] ?? null;
@@ -135,14 +124,6 @@ public function index()
 
                 // Validate required fields
                 if (!$complainant_id || !$respondent_id || !$offense_sanc_id || !$date || !$time || !$incident) {
-                    Log::warning("Skipping complaint {$complaintIndex} - missing required fields", [
-                        'complainant_id' => $complainant_id,
-                        'respondent_id' => $respondent_id,
-                        'offense_sanc_id' => $offense_sanc_id,
-                        'date' => $date,
-                        'time' => $time,
-                        'incident' => $incident
-                    ]);
                     continue;
                 }
 
@@ -151,18 +132,7 @@ public function index()
                 $respondentExists = DB::table('tbl_student')->where('student_id', $respondent_id)->exists();
                 $offenseExists = DB::table('tbl_offenses_with_sanction')->where('offense_sanc_id', $offense_sanc_id)->exists();
 
-                if (!$complainantExists) {
-                    Log::warning("Complainant does not exist: {$complainant_id}");
-                    continue;
-                }
-
-                if (!$respondentExists) {
-                    Log::warning("Respondent does not exist: {$respondent_id}");
-                    continue;
-                }
-
-                if (!$offenseExists) {
-                    Log::warning("Offense does not exist: {$offense_sanc_id}");
+                if (!$complainantExists || !$respondentExists || !$offenseExists) {
                     continue;
                 }
 
@@ -172,8 +142,6 @@ public function index()
 
                 $complainantName = $complainant ? $complainant->student_fname . ' ' . $complainant->student_lname : 'Unknown';
                 $respondentName = $respondent ? $respondent->student_fname . ' ' . $respondent->student_lname : 'Unknown';
-
-                Log::info("Creating complaint record: {$complainantName} vs {$respondentName}");
 
                 // Create the complaint record
                 try {
@@ -188,19 +156,15 @@ public function index()
                         'status' => 'active'
                     ]);
 
-                    Log::info("Complaint created successfully with ID: {$newComplaint->id}");
                     $savedCount++;
                     $messages[] = "✅ {$complainantName} vs {$respondentName}";
 
                 } catch (\Exception $e) {
-                    Log::error("Failed to create complaint record: " . $e->getMessage());
                     continue;
                 }
             }
 
             DB::commit();
-
-            Log::info("Complaint storage completed. Saved: {$savedCount}, Attempted: " . count($complaintsData));
 
             if ($savedCount === 0) {
                 return back()->with('error',
@@ -220,12 +184,9 @@ public function index()
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Complaint storage error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
             return back()->with('error', 'Error saving complaints: ' . $e->getMessage());
         }
     }
-
 
     /**
      * Search students for complainant/respondent.
@@ -285,169 +246,286 @@ public function index()
     }
 
     /**
-     * Store multiple complaints
-//      */
-// public function store(Request $request)
-// {
-//     // ✅ Remove or comment out the dd once tested
-//     // dd($request->all());
-
-//     try {
-//         // Loop through each group
-//         foreach ($request->complainant_id as $groupId => $complainants) {
-//             $respondents = $request->respondent_id[$groupId] ?? [];
-//             $offenseId   = $request->offense_sanc_id[$groupId] ?? null;
-//             $date        = $request->complaints_date[$groupId] ?? null;
-//             $time        = $request->complaints_time[$groupId] ?? null;
-//             $incident    = $request->complaints_incident[$groupId] ?? null;
-//             $prefectId   = auth()->prefect_id ?? 1;
-
-//             foreach ($complainants as $compId) {
-//                 foreach ($respondents as $respId) {
-//                     Complaints::create([
-//                         'complainant_id'      => $compId,
-//                         'respondent_id'       => $respId,
-//                         'prefect_id'          => $prefectId,
-//                         'offense_sanc_id'     => $offenseId,
-//                         'complaints_incident' => $incident,
-//                         'complaints_date'     => $date,
-//                         'complaints_time'     => $time,
-//                         'status'              => 'active',
-//                     ]);
-//                 }
-//             }
-//         }
-
-//         return redirect()->route('prefect.complaints')
-//                          ->with('messages', ['✅ All complaints stored successfully!']);
-//     } catch (\Exception $e) {
-//         return redirect()->route('prefect.complaints')
-//                          ->with('messages', ['❌ Error saving complaints: ' . $e->getMessage()]);
-//     }
-// }
-
-
-   public function update(Request $request, $id)
-{
-
-            // dd($request->all());
-
-    $complaint = Complaints::findOrFail($id);
-
-    $request->validate([
-        'complainant_id'     => 'required|exists:tbl_student,student_id',
-        'respondent_id'      => 'required|exists:tbl_student,student_id',
-        'offense_sanc_id'    => 'required|exists:tbl_offenses_with_sanction,offense_sanc_id',
-        'complaints_incident'=> 'required|string',
-        'complaints_date'    => 'required|date',
-        'complaints_time'    => 'required',
-    ]);
-
-    $complaint->update([
-        'complainant_id'      => $request->complainant_id,
-        'respondent_id'       => $request->respondent_id,
-        'offense_sanc_id'     => $request->offense_sanc_id,
-        'complaints_incident' => $request->complaints_incident,
-        'complaints_date'     => $request->complaints_date,
-        'complaints_time'     => $request->complaints_time,
-    ]);
-
-    return redirect()->route('prefect.complaints')
-                     ->with('success', 'Complaint updated successfully.');
-}
-
-// Add these store methods to your controller
-
-// Store multiple anecdotal records
-public function storeMultipleAnecdotals(Request $request)
-{
-    $request->validate([
-        'complaint_ids' => 'required|array',
-        'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
-        'comp_anec_solution' => 'required|string',
-        'comp_anec_recommendation' => 'required|string',
-        'anecdotal_date' => 'required|date',
-        'anecdotal_time' => 'required',
-    ]);
-
-    $complaintIds = $request->complaint_ids;
-
-    try {
-        DB::beginTransaction();
-
-        $createdAnecdotals = [];
-
-        foreach ($complaintIds as $complaintId) {
-            $anecdotal = ComplaintsAnecdotal::create([
-                'complaints_id' => $complaintId,
-                'comp_anec_solution' => $request->comp_anec_solution,
-                'comp_anec_recommendation' => $request->comp_anec_recommendation,
-                'comp_anec_date' => $request->anecdotal_date,
-                'comp_anec_time' => $request->anecdotal_time,
-                'status' => 'active'
-            ]);
-
-            // Load relationships for the response
-            $anecdotal->load(['complaint.complainant', 'complaint.respondent']);
-            $createdAnecdotals[] = $anecdotal;
-        }
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Anecdotal records created successfully!',
-            'data' => $createdAnecdotals
+     * Update complaint record
+     */
+    public function updateComplaint(Request $request, $id)
+    {
+        $validator = \Validator::make($request->all(), [
+            'complaints_incident' => 'required|string|max:1000',
+            'offense_type' => 'required|string|max:255',
+            'sanction_consequences' => 'required|string|max:500',
+            'complaints_date' => 'required|date',
+            'complaints_time' => 'required',
         ]);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Error creating anecdotal records: ' . $e->getMessage()
-        ], 500);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $complaint = Complaints::findOrFail($id);
+
+            // First, find the offense_sanc_id based on offense_type and sanction_consequences
+            $offense = DB::table('tbl_offenses_with_sanction')
+                ->where('offense_type', $request->offense_type)
+                ->where('sanction_consequences', $request->sanction_consequences)
+                ->first();
+
+            if (!$offense) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Offense type and sanction combination not found.'
+                ], 404);
+            }
+
+            $complaint->update([
+                'complaints_incident' => $request->complaints_incident,
+                'offense_sanc_id' => $offense->offense_sanc_id,
+                'complaints_date' => $request->complaints_date,
+                'complaints_time' => $request->complaints_time,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Complaint updated successfully!',
+                'data' => $complaint
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating complaint: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
-// Store multiple appointment records
-public function storeMultipleAppointments(Request $request)
-{
-    $request->validate([
-        'complaint_ids' => 'required|array',
-        'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
-        'comp_app_date' => 'required|date',
-        'comp_app_time' => 'required',
-        'comp_app_status' => 'required|string',
-    ]);
+    /**
+     * Update appointment record
+     */
+    public function updateAppointment(Request $request, $id)
+    {
+        $validator = \Validator::make($request->all(), [
+            'comp_app_status' => 'required|string|in:scheduled,completed,cancelled,rescheduled',
+            'comp_app_date' => 'required|date',
+            'comp_app_time' => 'required',
+        ]);
 
-    $complaintIds = $request->complaint_ids;
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-    try {
-        DB::beginTransaction();
+        try {
+            $appointment = ComplaintsAppointment::findOrFail($id);
 
-        foreach ($complaintIds as $complaintId) {
-            ComplaintsAppointment::create([
-                'complaints_id' => $complaintId,
+            $appointment->update([
+                'comp_app_status' => $request->comp_app_status,
                 'comp_app_date' => $request->comp_app_date,
                 'comp_app_time' => $request->comp_app_time,
-                'comp_app_status' => $request->comp_app_status,
-                'status' => 'active'
             ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Appointment updated successfully!',
+                'data' => $appointment
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating appointment: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Appointments created successfully!'
+    /**
+     * Update anecdotal record
+     */
+    public function updateAnecdotal(Request $request, $id)
+    {
+        $validator = \Validator::make($request->all(), [
+            'comp_anec_solution' => 'required|string|max:2000',
+            'comp_anec_recommendation' => 'required|string|max:2000',
+            'comp_anec_date' => 'required|date',
+            'comp_anec_time' => 'required',
         ]);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Error creating appointments: ' . $e->getMessage()
-        ], 500);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $anecdotal = ComplaintsAnecdotal::findOrFail($id);
+
+            $anecdotal->update([
+                'comp_anec_solution' => $request->comp_anec_solution,
+                'comp_anec_recommendation' => $request->comp_anec_recommendation,
+                'comp_anec_date' => $request->comp_anec_date,
+                'comp_anec_time' => $request->comp_anec_time,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Anecdotal record updated successfully!',
+                'data' => $anecdotal
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating anecdotal record: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
+
+    // Store multiple anecdotal records
+    public function storeMultipleAnecdotals(Request $request)
+    {
+        $request->validate([
+            'complaint_ids' => 'required|array',
+            'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
+            'comp_anec_solution' => 'required|string',
+            'comp_anec_recommendation' => 'required|string',
+            'anecdotal_date' => 'required|date',
+            'anecdotal_time' => 'required',
+        ]);
+
+        $complaintIds = $request->complaint_ids;
+
+        try {
+            DB::beginTransaction();
+
+            $createdAnecdotals = [];
+
+            foreach ($complaintIds as $complaintId) {
+                $anecdotal = ComplaintsAnecdotal::create([
+                    'complaints_id' => $complaintId,
+                    'comp_anec_solution' => $request->comp_anec_solution,
+                    'comp_anec_recommendation' => $request->comp_anec_recommendation,
+                    'comp_anec_date' => $request->anecdotal_date,
+                    'comp_anec_time' => $request->anecdotal_time,
+                    'status' => 'active'
+                ]);
+
+                // Load relationships for the response
+                $anecdotal->load(['complaint.complainant', 'complaint.respondent']);
+                $createdAnecdotals[] = $anecdotal;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Anecdotal records created successfully!',
+                'data' => $createdAnecdotals
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating anecdotal records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Store multiple appointment records
+    public function storeMultipleAppointments(Request $request)
+    {
+        $request->validate([
+            'complaint_ids' => 'required|array',
+            'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
+            'comp_app_date' => 'required|date',
+            'comp_app_time' => 'required',
+            'comp_app_status' => 'required|string',
+        ]);
+
+        $complaintIds = $request->complaint_ids;
+
+        try {
+            DB::beginTransaction();
+
+            $createdAppointments = [];
+
+            foreach ($complaintIds as $complaintId) {
+                $appointment = ComplaintsAppointment::create([
+                    'complaints_id' => $complaintId,
+                    'comp_app_date' => $request->comp_app_date,
+                    'comp_app_time' => $request->comp_app_time,
+                    'comp_app_status' => $request->comp_app_status,
+                    'status' => 'active'
+                ]);
+
+                $createdAppointments[] = $appointment;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Appointments created successfully!',
+                'data' => $createdAppointments
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating appointments: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get complaint details for editing
+     */
+    public function getComplaintDetails($id)
+    {
+        try {
+            $complaint = DB::table('tbl_complaints as c')
+                ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
+                ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
+                ->join('tbl_offenses_with_sanction as o', 'o.offense_sanc_id', '=', 'c.offense_sanc_id')
+                ->select(
+                    'c.complaints_id',
+                    'c.complaints_incident',
+                    'c.complaints_date',
+                    'c.complaints_time',
+                    'comp.student_fname as complainant_fname',
+                    'comp.student_lname as complainant_lname',
+                    'resp.student_fname as respondent_fname',
+                    'resp.student_lname as respondent_lname',
+                    'o.offense_type',
+                    'o.sanction_consequences'
+                )
+                ->where('c.complaints_id', $id)
+                ->first();
+
+            if (!$complaint) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Complaint not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $complaint
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching complaint details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

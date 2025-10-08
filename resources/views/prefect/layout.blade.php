@@ -73,27 +73,27 @@
         <li class="{{ request()->routeIs('prefect.dashboard') ? 'active' : '' }}">
             <a href="{{ route('prefect.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard Overview</a>
         </li>
+        <li class="{{ request()->routeIs('prefect.adviser') ? 'active' : '' }}">
+            <a href="{{ route('prefect.adviser') }}"><i class="fas fa-users"></i> Advisers</a>
+        </li>
         <li class="{{ request()->routeIs('parent.lists') ? 'active' : '' }}">
             <a href="{{ route('parent.lists') }}"><i class="fas fa-users"></i> Parents</a>
         </li>
         <li class="{{ request()->routeIs('student.management') ? 'active' : '' }}">
             <a href="{{ route('student.management') }}"><i class="fas fa-user-graduate"></i> Students</a>
         </li>
-        <li class="{{ request()->routeIs('prefect.adviser') ? 'active' : '' }}">
-            <a href="{{ route('prefect.adviser') }}"><i class="fas fa-users"></i> Advisers</a>
-        </li>
         <li class="{{ request()->routeIs('prefect.violation') ? 'active' : '' }}">
             <a href="{{ route('prefect.violation') }}"><i class="fas fa-book"></i> Violations</a>
-        </li>
+        {{-- </li>
                <li class="{{ request()->routeIs('prefect.violationAnecdotal') ? 'active' : '' }}">
             <a href="{{ route('prefect.violationAnecdotal') }}"><i class="fas fa-book"></i> Violations Anecdotal</a>
-        </li>
+        </li> --}}
         <li class="{{ request()->routeIs('prefect.complaints') ? 'active' : '' }}">
             <a href="{{ route('prefect.complaints') }}"><i class="fas fa-comments"></i> Complaints</a>
         </li>
-        <li class="{{ request()->routeIs('prefect.complaintsAnecdotal') ? 'active' : '' }}">
+        {{-- <li class="{{ request()->routeIs('prefect.complaintsAnecdotal') ? 'active' : '' }}">
             <a href="{{ route('prefect.complaintsAnecdotal') }}"><i class="fas fa-comments"></i> Complaints Anecdotal</a>
-        </li>
+        </li> --}}
         <li class="{{ request()->routeIs('offenses.sanctions') ? 'active' : '' }}">
             <a href="{{ route('offenses.sanctions') }}"><i class="fas fa-exclamation-triangle"></i> Offense & Sanctions</a>
         </li>

@@ -32,7 +32,7 @@ class PParentController extends Controller
             ->count();
         $parents = ParentModel::where('status', 'active')->paginate(10);
         $archivedParents = ParentModel::where('status', 'inactive')->get();
-        
+
         return view('prefect.parentlists', compact('parents', 'archivedParents','totalParents','activeParents','archivedParents'));
     }
 
@@ -46,48 +46,90 @@ class PParentController extends Controller
 
     /**
      * Store new parent
-     */
-    public function parentStore(Request $request)
-    {
-        $request->validate([
-            'parent_fname' => 'required|string',
-            'parent_lname' => 'required|string',
-            'parent_sex' => 'required|in:Male,Female',
-            'parent_relationship' => 'required|string',
-            'parent_birthdate' => 'required|date',
-            'parent_contactinfo' => 'required|string|size:11',
-            'status' => 'required|in:active,inactive',
-        ]);
+     */public function parentStore(Request $request)
+{
+    // Debug: Check what's being received
+    \Log::info('Received data:', $request->all());
 
-        DB::table('tbl_parent')->insert([
-            'parent_fname' => $request->parent_fname,
-            'parent_lname' => $request->parent_lname,
-            'parent_sex' => $request->parent_sex,
-            'parent_relationship' => $request->parent_relationship,
-            'parent_birthdate' => $request->parent_birthdate,
-            'parent_contactinfo' => $request->parent_contactinfo,
-            'status' => $request->status,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+    // Validate the array of parents
+    $request->validate([
+        'parents' => 'required|array|min:1',
+        'parents.*.parent_fname' => 'required|string|max:255',
+        'parents.*.parent_lname' => 'required|string|max:255',
+        'parents.*.parent_sex' => 'required|in:Male,Female,Other', // Match your form values
+        'parents.*.parent_relationship' => 'required|string|max:255',
+        'parents.*.parent_birthdate' => 'required|date',
+        'parents.*.parent_contactinfo' => 'required|string|max:20',
+        'parents.*.parent_email' => 'nullable|email|max:255',
+    ]);
 
-        return redirect()->route('parents.list')->with('success', 'Parent added successfully!');
+    try {
+        $insertedCount = 0;
+        $errors = [];
+
+        foreach ($request->parents as $index => $parentData) {
+            // Check if required fields are not empty
+            if (empty($parentData['parent_fname']) || empty($parentData['parent_lname']) ||
+                empty($parentData['parent_birthdate']) || empty($parentData['parent_contactinfo'])) {
+                $errors[] = "Parent #" . ($index + 1) . " has missing required fields";
+                continue;
+            }
+
+            DB::table('tbl_parent')->insert([
+                'parent_fname' => $parentData['parent_fname'],
+                'parent_lname' => $parentData['parent_lname'],
+                'parent_sex' => $parentData['parent_sex'],
+                'parent_relationship' => $parentData['parent_relationship'],
+                'parent_birthdate' => $parentData['parent_birthdate'],
+                'parent_contactinfo' => $parentData['parent_contactinfo'],
+                'parent_email' => $parentData['parent_email'] ?? null,
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $insertedCount++;
+        }
+
+        if (!empty($errors)) {
+            return back()->withInput()->with('error', implode(', ', $errors));
+        }
+
+        if ($insertedCount > 0) {
+            return redirect()->route('parent.lists')->with('success', $insertedCount . ' parent(s) added successfully!');
+        } else {
+            return back()->withInput()->with('error', 'No parents were saved. Please check your data.');
+        }
+
+    } catch (\Exception $e) {
+        \Log::error('Error saving parents: ' . $e->getMessage());
+        return back()->withInput()->with('error', 'Error saving parents: ' . $e->getMessage());
     }
-
+}
     /**
      * Update parent
      */
     public function parentUpdate(Request $request, $id)
-    {
-        $request->validate([
-            'parent_fname' => 'required|string',
-            'parent_lname' => 'required|string',
-            'parent_birthdate' => 'required|date',
-            'parent_contactinfo' => 'required|string',
-            'parent_sex' => 'required|in:Male,Female',
-            'parent_relationship' => 'required|string',
-            'status' => 'required|in:active,inactive',
-        ]);
+{
+    // Validate the request
+    $request->validate([
+        'parent_fname' => 'required|string|max:255',
+        'parent_lname' => 'required|string|max:255',
+        'parent_birthdate' => 'required|date',
+        'parent_contactinfo' => 'required|string|max:20',
+        'parent_sex' => 'required|in:Male,Female',
+        'parent_relationship' => 'required|string|max:255',
+        'status' => 'required|in:active,inactive',
+    ]);
+
+    try {
+        $parent = DB::table('tbl_parent')->where('parent_id', $id)->first();
+
+        if (!$parent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parent not found.'
+            ], 404);
+        }
 
         DB::table('tbl_parent')->where('parent_id', $id)->update([
             'parent_fname' => $request->parent_fname,
@@ -100,8 +142,20 @@ class PParentController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect()->route('parents.list')->with('success', 'Parent updated successfully!');
+        return response()->json([
+            'success' => true,
+            'message' => 'Parent updated successfully!'
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Error updating parent: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating parent: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Move parents to archive (set status to inactive)
@@ -199,7 +253,7 @@ class PParentController extends Controller
         return response()->json(['count' => $count]);
     }
 
-    
+
     /**
      * Send SMS to parent
      */
@@ -220,6 +274,6 @@ class PParentController extends Controller
 
         return back()->with('success', 'SMS sent to ' . $parent->parent_fname);
     }
-    
-    
+
+
 }

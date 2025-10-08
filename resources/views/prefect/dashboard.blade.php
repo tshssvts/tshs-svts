@@ -23,9 +23,7 @@
 
   <!-- Toolbar -->
 <div class="toolbar">
-    <h2>Dashboard Overview</h2>
-    <div class="actions">
-      <input type="search" style="border-color: white;">
+    <h3>Dashboard Overview</h3>
     </div>
   </div>
 
