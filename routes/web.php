@@ -306,7 +306,7 @@ Route::prefix('adviser')->group(function () {
  // Complaint Routes
         Route::get('/complaints', [AComplaintController::class, 'index'])->name('adviser.prefect.complaints');
         Route::get('/complaints/create', [AComplaintController::class, 'create'])->name('adviser.complaints.create');
-        Route::post('/complaints/store', [AComplaintController::class, 'store'])->name('adviser.complaints.store');
+        Route::post('/complaints/storing', [AComplaintController::class, 'store'])->name('adviser.complaints.store');
         Route::put('/complaints/{id}', [AComplaintController::class, 'update'])->name('adviser.complaints.update');
 
         // Complaint AJAX Routes

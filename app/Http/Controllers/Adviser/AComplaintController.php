@@ -25,12 +25,12 @@ public function complaintsall()
     // Get student IDs under this adviser
     $studentIds = Student::where('adviser_id', $adviserId)->pluck('student_id');
 
-    // ✅ Load Anecdotal + Appointment models with relationships - filtered by adviser
+    // ✅ Load Anecdotal + Appointment models with relationships - filtered by adviser (BOTH students)
     $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])
         ->whereHas('complaint.complainant', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
-        ->orWhereHas('complaint.respondent', function($query) use ($adviserId) {
+        ->whereHas('complaint.respondent', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
         ->get();
@@ -39,20 +39,20 @@ public function complaintsall()
         ->whereHas('complaint.complainant', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
-        ->orWhereHas('complaint.respondent', function($query) use ($adviserId) {
+        ->whereHas('complaint.respondent', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
         ->get();
 
-    // ✅ Get Actual Complaint Date Range - filtered by adviser's students
+    // ✅ Get Actual Complaint Date Range - filtered by adviser's students (BOTH students)
     $mostRecentComplaintDate = DB::table('tbl_complaints')
         ->whereIn('complainant_id', $studentIds)
-        ->orWhereIn('respondent_id', $studentIds)
+        ->whereIn('respondent_id', $studentIds)
         ->max('complaints_date');
 
     $earliestComplaintDate = DB::table('tbl_complaints')
         ->whereIn('complainant_id', $studentIds)
-        ->orWhereIn('respondent_id', $studentIds)
+        ->whereIn('respondent_id', $studentIds)
         ->min('complaints_date');
 
     $referenceDate = $mostRecentComplaintDate ? Carbon::parse($mostRecentComplaintDate) : Carbon::today();
@@ -64,40 +64,32 @@ public function complaintsall()
     $startOfMonth = $referenceDate->copy()->startOfMonth();
     $endOfMonth = $referenceDate->copy()->endOfMonth();
 
-    // ✅ Summary Counts - filtered by adviser's students
+    // ✅ Summary Counts - filtered by adviser's students (BOTH students)
     $dailyComplaints = DB::table('tbl_complaints')
-        ->where(function($query) use ($studentIds, $today) {
-            $query->whereIn('complainant_id', $studentIds)
-                  ->orWhereIn('respondent_id', $studentIds);
-        })
+        ->whereIn('complainant_id', $studentIds)
+        ->whereIn('respondent_id', $studentIds)
         ->whereDate('complaints_date', $today)
         ->count();
 
     $weeklyComplaints = DB::table('tbl_complaints')
-        ->where(function($query) use ($studentIds) {
-            $query->whereIn('complainant_id', $studentIds)
-                  ->orWhereIn('respondent_id', $studentIds);
-        })
+        ->whereIn('complainant_id', $studentIds)
+        ->whereIn('respondent_id', $studentIds)
         ->whereBetween('complaints_date', [$startOfWeek, $endOfWeek])
         ->count();
 
     $monthlyComplaints = DB::table('tbl_complaints')
-        ->where(function($query) use ($studentIds) {
-            $query->whereIn('complainant_id', $studentIds)
-                  ->orWhereIn('respondent_id', $studentIds);
-        })
+        ->whereIn('complainant_id', $studentIds)
+        ->whereIn('respondent_id', $studentIds)
         ->whereBetween('complaints_date', [$startOfMonth, $endOfMonth])
         ->count();
 
-    // ✅ Fetch Complaint Records - only where complainant OR respondent is under this adviser
+    // ✅ Fetch Complaint Records - only where complainant AND respondent are under this adviser
     $complaints = DB::table('tbl_complaints as c')
         ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
         ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
         ->join('tbl_offenses_with_sanction as o', 'o.offense_sanc_id', '=', 'c.offense_sanc_id')
-        ->where(function($query) use ($adviserId) {
-            $query->where('comp.adviser_id', $adviserId)
-                  ->orWhere('resp.adviser_id', $adviserId);
-        })
+        ->where('comp.adviser_id', $adviserId) // Complainant belongs to adviser
+        ->where('resp.adviser_id', $adviserId) // Respondent also belongs to adviser
         ->select(
             'c.complaints_id',
             'c.complaints_incident',
@@ -132,7 +124,6 @@ public function complaintsall()
     ));
 }
 
-
 public function create()
     {
         return view('adviser.create-complaints');
@@ -144,7 +135,7 @@ public function store(Request $request)
             DB::beginTransaction();
 
             $messages = [];
-            $prefect_id = Auth::id() ?? 1;
+            $prefect_id = 1;
             $savedCount = 0;
 
             // Get all complaints data
