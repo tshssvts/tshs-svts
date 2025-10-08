@@ -8,7 +8,7 @@
     <h2>Complaint Management</h2>
     <div class="actions">
       <input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
-      <a href="{{ route('complaints.create') }}" class="btn-primary" id="createBtn">
+      <a href="{{ route('adviser.complaints.create') }}" class="btn-primary" id="createBtn">
         <i class="fas fa-plus"></i> Add Complaint
       </a>
       <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
@@ -195,7 +195,7 @@
       <button class="close-btn" id="closeAppointmentModal">✖</button>
       <h2>Set Appointment for Selected Complaints</h2>
 
-      <form id="appointmentForm" method="POST" action="{{ route('complaint-appointments.store') }}">
+      <form id="appointmentForm" method="POST" action="{{ route('adviser.complaint-appointments.store') }}">
         @csrf
 
         <div class="selected-violations">
@@ -239,7 +239,7 @@
       <button class="close-btn" id="closeAnecdotalModal">✖</button>
       <h2>Create Anecdotal Record for Selected Complaints</h2>
 
-      <form id="createAnecdotalForm" method="POST" action="{{ route('complaint-anecdotals.store') }}">
+      <form id="createAnecdotalForm" method="POST" action="{{ route('adviser.complaint-anecdotals.store') }}">
         @csrf
 
         <div class="selected-violations">

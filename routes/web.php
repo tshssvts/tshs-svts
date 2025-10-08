@@ -188,7 +188,7 @@ Route::prefix('prefect')->group(function () {
         Route::post('/complaints/update-status/{id}', [PComplaintController::class, 'updateComplaintStatus'])->name('complaints.update-status');
         Route::post('/complaint-appointments/update-status/{id}', [PComplaintController::class, 'updateAppointmentStatus'])->name('complaint-appointments.update-status');
         Route::post('/complaint-anecdotals/update-status/{id}', [PComplaintController::class, 'updateAnecdotalStatus'])->name('complaint-anecdotals.update-status');
-        
+
         // Restore routes Complaint Management
         Route::post('/complaints/restore/{id}', [PComplaintController::class, 'restoreComplaint'])->name('complaints.restore');
         Route::post('/complaint-appointments/restore/{id}', [PComplaintController::class, 'restoreAppointment'])->name('complaint-appointments.restore');
@@ -200,7 +200,7 @@ Route::prefix('prefect')->group(function () {
         Route::delete('/complaint-anecdotals/delete-permanent/{id}', [PComplaintController::class, 'deleteAnecdotalPermanent'])->name('complaint-anecdotals.delete-permanent');
     });
 });
-    
+
 
 
 
@@ -244,9 +244,102 @@ Route::prefix('adviser')->group(function () {
 
 
 
+                // Parent Routes
+        Route::get('/parentlists', [AParentController::class, 'parentlists'])->name('adviser.parent.lists');
+        Route::get('/create/parent', [AParentController::class, 'createParent'])->name('adviser.create.parent');
+        Route::post('/parents/store', [AParentController::class, 'parentStore'])->name('adviser.parents.store');
+        Route::put('/parents/update/{id}', [AParentController::class, 'parentUpdate'])->name('adviser.parents.update');
+
+        // Parent Archive Routes
+        Route::post('/parents/archive', [AParentController::class, 'archiveParents'])->name('adviser.parents.archive');
+        Route::get('/parents/archived', [AParentController::class, 'getArchivedParents'])->name('adviser.parents.archived');
+        Route::post('/parents/restore', [AParentController::class, 'restoreParents'])->name('adviser.parents.restore');
+        Route::post('/parents/destroy-permanent', [AParentController::class, 'destroyParentsPermanent'])->name('adviser.parents.destroy.permanent');
+        Route::get('/parents/archived/count', [AParentController::class, 'getArchivedParentsCount'])->name('adviser.parents.archived.count');
+
+
+        // Student Routes
+        Route::get('/create/student', [AStudentController::class, 'createStudent'])->name('adviser.create.student');
+        Route::post('/students/store', [AStudentController::class, 'store'])->name('adviser.students.store');
+        Route::put('/students/update/{id}', [AStudentController::class, 'update'])->name('adviser.students.update');
+        Route::get('/students/search', [AStudentController::class, 'search'])->name('adviser.students.search');
+        // 🔍 Live search routes
+        Route::post('/students/search-parents', [AStudentController::class, 'searchParents'])->name('adviser.students.search-parents');
+        Route::post('/students/search-advisers', [AStudentController::class, 'searchAdvisers'])->name('adviser.students.search-advisers');
+        // Archive Routes
+        Route::post('/students/archive', [AStudentController::class, 'archive'])->name('adviser.students.archive');
+        Route::get('/students/archived', [AStudentController::class, 'getArchived'])->name('adviser.students.getArchived');
+        Route::post('/students/restore', [AStudentController::class, 'restore'])->name('adviser.students.restore');
+        Route::post('/students/destroy-multiple', [AStudentController::class, 'destroyMultiple'])->name('adviser.students.destroyMultiple');
+
+
+               // In your routes file
+        Route::post('/violation-appointments/store-multiple', [AViolationController::class, 'storeMultipleAppointments'])->name('adviser.storeMultipleAppointments');
+        Route::post('/violation-anecdotals/store-multiple', [AViolationController::class, 'storeMultipleAnecdotals'])->name('adviser.storeMultipleAnecdotals');
+                // Violation Routes
+        Route::get('/violations/create', [AViolationController::class, 'create'])->name('adviser.violations.create');
+        Route::post('/violations/store', [AViolationController::class, 'store'])->name('adviser.violations.store');
+        Route::put('/violations/update/{violationId}', [AViolationController::class, 'update'])->name('adviser.violations.update');
+        // Violation Archive Routes
+        Route::post('/violations/archive', [AViolationController::class, 'archive'])->name('adviser.violations.archive');
+        Route::get('/violations/archived', [AViolationController::class, 'getArchived'])->name('adviser.violations.getArchived');
+        Route::post('/violations/restore', [AViolationController::class, 'restore'])->name('adviser.violations.restore');
+        Route::post('/violations/destroy-multiple', [AViolationController::class, 'destroyMultiple'])->name('adviser.violations.destroyMultiple');
+        // Archive Routes for different types
+        Route::post('/violation-appointments/archive', [AViolationController::class, 'archiveAppointments'])->name('adviser.violation.appointments.archive');
+        Route::post('/violation-anecdotals/archive', [AViolationController::class, 'archiveAnecdotals'])->name('adviser.violation.anecdotals.archive');
+        Route::get('/violation-appointments/archived', [AViolationController::class, 'getArchivedAppointments'])->name('adviser.violation.appointments.archived');
+        Route::get('/violation-anecdotals/archived', [AViolationController::class, 'getArchivedAnecdotals'])->name('adviser.violation.anecdotals.archived');
+        Route::post('/violations/restore-multiple', [AViolationController::class, 'restoreMultiple'])->name('adviser.violations.restore.multiple');
+        Route::post('/violations/destroy-multiple-archived', [AViolationController::class, 'destroyMultipleArchived'])->name('adviser.violations.destroy.multiple.archived');
+        // Violation AJAX Routes
+        Route::post('/violations/search-students', [PViolationController::class, 'searchStudents'])->name('adviser.violations.search-students');
+        Route::post('/violations/search-offenses', [PViolationController::class, 'searchOffenses'])->name('adviser.violations.search-offenses');
+
+
+                // Complaint Anecdotal Routes
+        Route::post('/complaint-anecdotals/store', [AComplaintController::class, 'storeMultipleAnecdotals'])->name('adviser.complaint-anecdotals.store');
+
+        // Complaint Appointment Routes
+        Route::post('/complaint-appointments/store', [AComplaintController::class, 'storeMultipleAppointments'])->name('adviser.complaint-appointments.store');
+
+ // Complaint Routes
+        Route::get('/complaints', [AComplaintController::class, 'index'])->name('adviser.prefect.complaints');
+        Route::get('/complaints/create', [AComplaintController::class, 'create'])->name('adviser.complaints.create');
+        Route::post('/complaints/store', [AComplaintController::class, 'store'])->name('adviser.complaints.store');
+        Route::put('/complaints/{id}', [AComplaintController::class, 'update'])->name('adviser.complaints.update');
+
+        // Complaint AJAX Routes
+        Route::post('/complaints/search-students', [AComplaintController::class, 'searchStudents'])->name('adviser.complaints.search-students');
+        Route::get('/complaints/search-students1', [AComplaintController::class, 'searchStudents'])->name('adviser.students.search');
+        Route::post('/complaints/search-offenses', [AComplaintController::class, 'searchOffenses'])->name('adviser.complaints.search-offenses');
+        Route::get('/complaints/search-offenses1', [AComplaintController::class, 'searchOffenses'])->name('adviser.offenses.search');
+        Route::get('/complaints/get-sanction', [AComplaintController::class, 'getSanction'])->name('adviser.complaints.get-sanction');
+
+
+        // Archive routes Complaint Management
+        Route::get('/complaints/archive', [AComplaintController::class, 'getComplaintArchive'])->name('adviser.complaints.archive');
+        Route::get('/complaint-appointments/archive', [AComplaintController::class, 'getAppointmentArchive'])->name('adviser.complaint-appointments.archive');
+        Route::get('/complaint-anecdotals/archive', [AComplaintController::class, 'getAnecdotalArchive'])->name('adviser.complaint-anecdotals.archive');
+
+        // Status update routes Complaint Management
+        Route::post('/complaints/update-status/{id}', [AComplaintController::class, 'updateComplaintStatus'])->name('adviser.complaints.update-status');
+        Route::post('/complaint-appointments/update-status/{id}', [AComplaintController::class, 'updateAppointmentStatus'])->name('adviser.complaint-appointments.update-status');
+        Route::post('/complaint-anecdotals/update-status/{id}', [AComplaintController::class, 'updateAnecdotalStatus'])->name('adviser.complaint-anecdotals.update-status');
+
+        // Restore routes Complaint Management
+        Route::post('/complaints/restore/{id}', [AComplaintController::class, 'restoreComplaint'])->name('adviser.complaints.restore');
+        Route::post('/complaint-appointments/restore/{id}', [AComplaintController::class, 'restoreAppointment'])->name('adviser.complaint-appointments.restore');
+        Route::post('/complaint-anecdotals/restore/{id}', [AComplaintController::class, 'restoreAnecdotal'])->name('adviser.complaint-anecdotals.restore');
+
+        // Permanent delete routes Complaint Management
+        Route::delete('/complaints/delete-permanent/{id}', [AComplaintController::class, 'deleteComplaintPermanent'])->name('adviser.complaints.delete-permanent');
+        Route::delete('/complaint-appointments/delete-permanent/{id}', [AComplaintController::class, 'deleteAppointmentPermanent'])->name('adviser.complaint-appointments.delete-permanent');
+        Route::delete('/complaint-anecdotals/delete-permanent/{id}', [AComplaintController::class, 'deleteAnecdotalPermanent'])->name('adviser.complaint-anecdotals.delete-permanent');
+    });
+
 
         // Report Routes
         Route::get('/adviserreports', [AReportController::class, 'reports'])->name('adviser.reports');
         Route::get('/reports/data/{reportId}', [AReportController::class, 'getReportData'])->name('adviser.reports.data');
     });
-});

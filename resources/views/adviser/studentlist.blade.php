@@ -9,7 +9,7 @@
     <h2>Student Management</h2>
     <div class="actions">
       <input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
-      <a href="{{ route('create.student') }}" class="btn-primary" id="createBtn">
+      <a href="{{ route('adviser.create.student') }}" class="btn-primary" id="createBtn">
         <i class="fas fa-plus"></i> Add Student
       </a>
       <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
@@ -269,7 +269,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     }
 
     try {
-        const response = await fetch('{{ route("students.archive") }}', {
+        const response = await fetch('{{ route("adviser.students.archive") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -308,7 +308,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
 // 🗃️ Archive Modal - Load archived students
 document.getElementById('archiveBtn').addEventListener('click', async function() {
     try {
-        const response = await fetch('{{ route("students.getArchived") }}');
+        const response = await fetch('{{ route("adviser.students.getArchived") }}');
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -360,7 +360,7 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
     }
 
     try {
-        const response = await fetch('{{ route("students.restore") }}', {
+        const response = await fetch('{{ route("adviser.students.restore") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -407,7 +407,7 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
     try {
-        const response = await fetch('{{ route("students.destroyMultiple") }}', {
+        const response = await fetch('{{ route("adviser.students.destroyMultiple") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

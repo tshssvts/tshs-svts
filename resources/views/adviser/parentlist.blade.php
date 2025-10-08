@@ -8,7 +8,7 @@
     <h2>Parent Management</h2>
     <div class="actions">
       <input type="search" placeholder="🔍 Search by parent name or ID..." id="searchInput">
-      <a href="{{ route('create.parent') }}" class="btn-primary" id="createBtn">
+      <a href="{{ route('adviser.create.parent') }}" class="btn-primary" id="createBtn">
         <i class="fas fa-plus"></i> Add Parent
       </a>
       <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
@@ -264,7 +264,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', function() {
   }
 
   if (confirm(`Are you sure you want to move ${selected.length} parent(s) to archive?`)) {
-    fetch('{{ route("parents.archive") }}', {
+    fetch('{{ route("adviser.parents.archive") }}', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -292,7 +292,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', function() {
 // Load Archived Parents
 // ==========================
 function loadArchivedParents() {
-  fetch('{{ route("parents.archived") }}')
+  fetch('{{ route("adviser.parents.archived") }}')
     .then(response => response.json())
     .then(parents => {
       const archiveTableBody = document.getElementById('archiveTableBody');
@@ -365,7 +365,7 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', function(
   }
 
   if (confirm(`Are you sure you want to restore ${selected.length} parent(s)?`)) {
-    fetch('{{ route("parents.restore") }}', {
+    fetch('{{ route("adviser.parents.restore") }}', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', function()
   }
 
   if (confirm(`WARNING: This will permanently delete ${selected.length} parent(s). This action cannot be undone!`)) {
-    fetch('{{ route("parents.destroy.permanent") }}', {
+    fetch('{{ route("adviser.parents.destroy.permanent") }}', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -417,7 +417,7 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', function()
         alert(data.message);
         loadArchivedParents(); // Reload the archived list
         // Update archived count
-        fetch('{{ route("parents.archived.count") }}')
+        fetch('{{ route("adviser.parents.archived.count") }}')
           .then(response => response.json())
           .then(data => {
             document.getElementById('archivedCount').innerText = data.count;
@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load archived count on page load
 // ==========================
 document.addEventListener('DOMContentLoaded', function() {
-  fetch('{{ route("parents.archived.count") }}')
+  fetch('{{ route("adviser.parents.archived.count") }}')
     .then(response => response.json())
     .then(data => {
       document.getElementById('archivedCount').innerText = data.count;

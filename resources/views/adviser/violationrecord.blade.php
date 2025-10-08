@@ -9,7 +9,7 @@
     <h2>Violation Management</h2>
     <div class="actions">
       <input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
-      <a href="{{ route('violations.create') }}" class="btn-primary" id="createBtn">
+      <a href="{{ route('adviser.violations.create') }}" class="btn-primary" id="createBtn">
         <i class="fas fa-plus"></i> Add Violation
       </a>
       {{-- <a href="{{ route('violation-anecdotal.create') }}" class="btn-primary" id="createAnecBtn">
@@ -481,7 +481,7 @@
         <button class="close-btn" id="closeScheduleModal">✖</button>
         <h2>Set Schedule for Selected Violations</h2>
 
-        <form id="setScheduleForm" method="POST" action="{{ route('prefect.storeMultipleAppointments') }}">
+        <form id="setScheduleForm" method="POST" action="{{ route('adviser.storeMultipleAppointments') }}">
             @csrf
 
             <div class="selected-violations">
@@ -516,7 +516,7 @@
         <button class="close-btn" id="closeAnecdotalModal">✖</button>
         <h2>Create Anecdotal Record for Selected Violations</h2>
 
-        <form id="createAnecdotalForm" method="POST" action="{{ route('prefect.storeMultipleAnecdotals') }}">
+        <form id="createAnecdotalForm" method="POST" action="{{ route('adviser.storeMultipleAnecdotals') }}">
             @csrf
 
             <div class="selected-violations">

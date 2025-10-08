@@ -19,7 +19,7 @@
   <div class="toolbar">
     <h2>Create Violation Record</h2>
     <div class="actions">
-      <form id="violationForm" method="POST" action="{{ route('adviser.violations.store') }}">
+      <form id="violationForm" method="POST" action="{{ route('violations.store') }}">
         @csrf
         <div class="buttons-row">
           <button type="button" class="btn-Add-Violation" id="btnAddViolation" disabled>
@@ -97,8 +97,8 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-const studentSearchUrl = "{{ route('adviser.violations.search-students') }}";
-const offenseSearchUrl = "{{ route('adviser.violations.search-offenses') }}";
+const studentSearchUrl = "{{ route('violations.search-students') }}";
+const offenseSearchUrl = "{{ route('violations.search-offenses') }}";
 
 let violationCount = 1;
 let allViolationsData = {};
