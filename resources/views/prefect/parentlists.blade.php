@@ -4,36 +4,6 @@
 <div class="main-container">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-<style>
-    .error-message {
-    color: #e74c3c;
-    font-size: 12px;
-    margin-top: 5px;
-    display: block;
-}
-
-.form-control.error {
-    border-color: #e74c3c;
-}
-
-.alert {
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 4px;
-}
-
-.alert-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.alert-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-    </style>
 
   <!-- Toolbar -->
   <div class="toolbar">
@@ -62,7 +32,6 @@
         <p>Archived Parents</p>
     </div>
 </div>
-
 
   <!-- Bulk Action / Select Options -->
   <div class="select-options">
@@ -284,9 +253,119 @@
     </div>
   </div>
 
+  <!-- Notification Modal -->
+  <div class="notification-modal" id="notificationModal">
+    <div class="notification-content" id="notificationContent">
+      <div class="notification-icon" id="notificationIcon"></div>
+      <div class="notification-message" id="notificationMessage"></div>
+      <div class="notification-actions" id="notificationActions">
+        <button class="btn-confirm" id="notificationConfirm">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="notification-modal" id="confirmationModal">
+    <div class="notification-content">
+      <div class="notification-icon">⚠️</div>
+      <div class="notification-message" id="confirmationMessage"></div>
+      <div class="notification-actions">
+        <button class="btn-confirm" id="confirmAction">Confirm</button>
+        <button class="btn-cancel" id="cancelAction">Cancel</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
+// ==========================
+// Notification System
+// ==========================
+class NotificationManager {
+    constructor() {
+        this.notificationModal = document.getElementById('notificationModal');
+        this.confirmationModal = document.getElementById('confirmationModal');
+        this.notificationMessage = document.getElementById('notificationMessage');
+        this.confirmationMessage = document.getElementById('confirmationMessage');
+        this.notificationIcon = document.getElementById('notificationIcon');
+        this.notificationConfirm = document.getElementById('notificationConfirm');
+        this.confirmAction = document.getElementById('confirmAction');
+        this.cancelAction = document.getElementById('cancelAction');
+        
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Notification modal
+        this.notificationConfirm.addEventListener('click', () => {
+            this.hideNotification();
+        });
+
+        // Confirmation modal
+        this.confirmAction.addEventListener('click', () => {
+            if (this.confirmCallback) {
+                this.confirmCallback();
+            }
+            this.hideConfirmation();
+        });
+
+        this.cancelAction.addEventListener('click', () => {
+            if (this.cancelCallback) {
+                this.cancelCallback();
+            }
+            this.hideConfirmation();
+        });
+
+        // Close modals when clicking outside
+        this.notificationModal.addEventListener('click', (e) => {
+            if (e.target === this.notificationModal) {
+                this.hideNotification();
+            }
+        });
+
+        this.confirmationModal.addEventListener('click', (e) => {
+            if (e.target === this.confirmationModal) {
+                this.hideConfirmation();
+            }
+        });
+    }
+
+    showNotification(message, type = 'info') {
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        this.notificationIcon.textContent = icons[type] || icons.info;
+        this.notificationMessage.textContent = message;
+        this.notificationModal.className = `notification-modal notification-${type}`;
+        this.notificationModal.style.display = 'flex';
+    }
+
+    hideNotification() {
+        this.notificationModal.style.display = 'none';
+    }
+
+    showConfirmation(message, confirmCallback, cancelCallback = null) {
+        this.confirmationMessage.textContent = message;
+        this.confirmCallback = confirmCallback;
+        this.cancelCallback = cancelCallback;
+        this.confirmationModal.style.display = 'flex';
+    }
+
+    hideConfirmation() {
+        this.confirmationModal.style.display = 'none';
+        this.confirmCallback = null;
+        this.cancelCallback = null;
+    }
+}
+
+// Initialize notification manager
+const notifications = new NotificationManager();
+
 // ==========================
 // Search filter for main table
 // ==========================
@@ -315,33 +394,36 @@ document.getElementById('moveToTrashBtn').addEventListener('click', function() {
         .map(cb => cb.value);
 
     if (!selected.length) {
-        alert('Please select at least one parent.');
+        notifications.showNotification('Please select at least one parent.', 'warning');
         return;
     }
 
-    if (confirm(`Are you sure you want to move ${selected.length} parent(s) to archive?`)) {
-        fetch('{{ route("parents.archive") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ parent_ids: selected })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload(); // Reload to update the table and counts
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while archiving parents.');
-        });
-    }
+    notifications.showConfirmation(
+        `Are you sure you want to move ${selected.length} parent(s) to archive?`,
+        () => {
+            fetch('{{ route("parents.archive") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ parent_ids: selected })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    notifications.showNotification(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    notifications.showNotification('Error: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                notifications.showNotification('An error occurred while archiving parents.', 'error');
+            });
+        }
+    );
 });
 
 // ==========================
@@ -385,6 +467,7 @@ function loadArchivedParents() {
         })
         .catch(error => {
             console.error('Error loading archived parents:', error);
+            notifications.showNotification('Error loading archived parents.', 'error');
         });
 }
 
@@ -416,34 +499,37 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', function(
         .map(cb => cb.value);
 
     if (!selected.length) {
-        alert('Please select at least one parent to restore.');
+        notifications.showNotification('Please select at least one parent to restore.', 'warning');
         return;
     }
 
-    if (confirm(`Are you sure you want to restore ${selected.length} parent(s)?`)) {
-        fetch('{{ route("parents.restore") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ parent_ids: selected })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                loadArchivedParents(); // Reload the archived list
-                location.reload(); // Reload main page to update counts
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while restoring parents.');
-        });
-    }
+    notifications.showConfirmation(
+        `Are you sure you want to restore ${selected.length} parent(s)?`,
+        () => {
+            fetch('{{ route("parents.restore") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ parent_ids: selected })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    notifications.showNotification(data.message, 'success');
+                    loadArchivedParents();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    notifications.showNotification('Error: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                notifications.showNotification('An error occurred while restoring parents.', 'error');
+            });
+        }
+    );
 });
 
 // ==========================
@@ -454,39 +540,42 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', function()
         .map(cb => cb.value);
 
     if (!selected.length) {
-        alert('Please select at least one parent to delete permanently.');
+        notifications.showNotification('Please select at least one parent to delete permanently.', 'warning');
         return;
     }
 
-    if (confirm(`WARNING: This will permanently delete ${selected.length} parent(s). This action cannot be undone!`)) {
-        fetch('{{ route("parents.destroy.permanent") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ parent_ids: selected })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                loadArchivedParents(); // Reload the archived list
-                // Update archived count
-                fetch('{{ route("parents.archived.count") }}')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('archivedCount').innerText = data.count;
-                });
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while deleting parents.');
-        });
-    }
+    notifications.showConfirmation(
+        `WARNING: This will permanently delete ${selected.length} parent(s). This action cannot be undone!`,
+        () => {
+            fetch('{{ route("parents.destroy.permanent") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ parent_ids: selected })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    notifications.showNotification(data.message, 'success');
+                    loadArchivedParents();
+                    // Update archived count
+                    fetch('{{ route("parents.archived.count") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('archivedCount').innerText = data.count;
+                    });
+                } else {
+                    notifications.showNotification('Error: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                notifications.showNotification('An error occurred while deleting parents.', 'error');
+            });
+        }
+    );
 });
 
 // ==========================
@@ -599,67 +688,53 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle form submission with AJAX
-  // Temporary debug version
-editForm.addEventListener('submit', function(e) {
-    e.preventDefault();
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-    const formData = new FormData(this);
-    const parentId = document.getElementById('edit_parent_id').value;
+        const formData = new FormData(this);
+        const parentId = document.getElementById('edit_parent_id').value;
 
-    // Show loading state
-    saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-    saveEditBtn.disabled = true;
+        // Show loading state
+        saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        saveEditBtn.disabled = true;
 
-    console.log('Submitting to:', this.action);
-    console.log('Form data:', Object.fromEntries(formData));
-
-    fetch(this.action, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: new URLSearchParams(formData).toString()
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-
-        // Read the response as text first to see what we're getting
-        return response.text().then(text => {
-            console.log('Raw response:', text);
-
+        fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams(formData).toString()
+        })
+        .then(response => response.text().then(text => {
             try {
-                // Try to parse as JSON
                 return JSON.parse(text);
             } catch (e) {
                 console.error('Failed to parse JSON:', e);
                 throw new Error('Server returned: ' + text.substring(0, 100));
             }
+        }))
+        .then(data => {
+            if (data.success) {
+                showEditMessage(data.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                throw new Error(data.message || 'Update failed');
+            }
+        })
+        .catch(error => {
+            console.error('Full error:', error);
+            showEditMessage('Error: ' + error.message, 'error');
+        })
+        .finally(() => {
+            saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            saveEditBtn.disabled = false;
         });
-    })
-    .then(data => {
-        console.log('Parsed data:', data);
-        if (data.success) {
-            showEditMessage(data.message, 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            throw new Error(data.message || 'Update failed');
-        }
-    })
-    .catch(error => {
-        console.error('Full error:', error);
-        showEditMessage('Error: ' + error.message, 'error');
-    })
-    .finally(() => {
-        saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-        saveEditBtn.disabled = false;
     });
-});
 
     // Close modal functions
     closeEditModal.addEventListener('click', closeEditModalFunc);

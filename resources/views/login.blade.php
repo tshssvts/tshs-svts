@@ -215,6 +215,18 @@
     </div>
 </div>
 
+<!-- Too Many Attempts Modal -->
+<div id="tooManyAttemptsModal" class="modal too-many-attempts-modal">
+    <div class="modal-content">
+        <div class="attempts-icon">⚠️</div>
+        <h2>Too Many Attempts</h2>
+        <p>You have exceeded the maximum number of login attempts. Please try again in <span id="countdownTimer">60</span> seconds.</p>
+        <div class="modal-actions">
+            <button class="ok-btn" onclick="closeTooManyAttemptsModal()">OK</button>
+        </div>
+    </div>
+</div>
+
 <footer>
     &copy; {{ date('Y') }} Tagoloan Senior High School • Student Violation Tracking System
 </footer>

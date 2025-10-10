@@ -12,6 +12,7 @@ const emailError = document.getElementById("emailError");
 const passwordError = document.getElementById("passwordError");
 const loginBtn = document.getElementById("loginBtn");
 const successModal = document.getElementById("successModal");
+const tooManyAttemptsModal = document.getElementById("tooManyAttemptsModal");
 
 // Forgot Password Variables
 let resetTimer;
@@ -34,8 +35,10 @@ if (lockoutEnd && new Date().getTime() < parseInt(lockoutEnd)) {
 }
 
 function startLockout(seconds) {
-    // Disable form
+    // Disable form and button
     loginBtn.disabled = true;
+    loginForm.style.opacity = '0.6';
+    loginForm.style.pointerEvents = 'none';
 
     let timeLeft = seconds;
     updateLoginButtonText(timeLeft);
@@ -46,16 +49,62 @@ function startLockout(seconds) {
 
         if (timeLeft <= 0) {
             clearInterval(countdownInterval);
-            loginBtn.disabled = false;
-            loginBtn.textContent = "Log In";
-            loginAttempts = 0;
-            localStorage.removeItem("lockoutEnd");
+            resetLoginForm();
         }
     }, 1000);
 }
 
 function updateLoginButtonText(timeLeft) {
     loginBtn.textContent = `Try Again in ${timeLeft}s`;
+    loginBtn.style.background = 'linear-gradient(135deg, #ff6b6b, #ff8e8e)';
+    loginBtn.style.cursor = 'not-allowed';
+}
+
+function resetLoginForm() {
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Log In";
+    loginBtn.style.background = 'linear-gradient(135deg, #4facfe, #00f2fe)';
+    loginBtn.style.cursor = 'pointer';
+    loginForm.style.opacity = '1';
+    loginForm.style.pointerEvents = 'auto';
+    loginAttempts = 0;
+    localStorage.removeItem("lockoutEnd");
+    localStorage.removeItem("loginAttempts");
+}
+
+function showTooManyAttemptsModal() {
+    const modal = document.getElementById('tooManyAttemptsModal');
+    const countdownElement = document.getElementById('countdownTimer');
+    
+    modal.style.display = 'flex';
+    
+    // Start countdown from current lockout time
+    const lockoutEnd = localStorage.getItem("lockoutEnd");
+    if (lockoutEnd && new Date().getTime() < parseInt(lockoutEnd)) {
+        const remainingTime = Math.ceil(
+            (parseInt(lockoutEnd) - new Date().getTime()) / 1000
+        );
+        let timeLeft = remainingTime;
+        countdownElement.textContent = timeLeft;
+        
+        const modalCountdownInterval = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(modalCountdownInterval);
+                closeTooManyAttemptsModal();
+            }
+        }, 1000);
+    }
+}
+
+function closeTooManyAttemptsModal() {
+    const modal = document.getElementById('tooManyAttemptsModal');
+    modal.style.display = 'none';
+    
+    // DON'T reset the login form here - keep the button disabled and counting down
+    // The countdown will continue running and the form will auto-reset when time is up
 }
 
 function showSuccessMessage(redirectUrl) {
@@ -79,9 +128,13 @@ function showSuccessMessage(redirectUrl) {
 loginForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    // If user is in lockout period, prevent form submission
+    // If user is in lockout period, show modal and prevent form submission
     const lockoutEnd = localStorage.getItem("lockoutEnd");
     if (lockoutEnd && new Date().getTime() < parseInt(lockoutEnd)) {
+        const remainingTime = Math.ceil(
+            (parseInt(lockoutEnd) - new Date().getTime()) / 1000
+        );
+        showTooManyAttemptsModal();
         return;
     }
 
@@ -119,6 +172,7 @@ loginForm.addEventListener("submit", function (e) {
                 // Reset attempts on successful login
                 loginAttempts = 0;
                 localStorage.removeItem("lockoutEnd");
+                localStorage.removeItem("loginAttempts");
 
                 // Show success message before redirecting
                 showSuccessMessage(data.redirect);
@@ -136,6 +190,9 @@ loginForm.addEventListener("submit", function (e) {
                         new Date().getTime() + lockoutTime * 1000;
                     localStorage.setItem("lockoutEnd", lockoutEndTime);
 
+                    // Show too many attempts modal
+                    showTooManyAttemptsModal();
+                    
                     // Start lockout
                     startLockout(lockoutTime);
                 }
@@ -156,10 +213,47 @@ loginForm.addEventListener("submit", function (e) {
                     new Date().getTime() + lockoutTime * 1000;
                 localStorage.setItem("lockoutEnd", lockoutEndTime);
 
+                // Show too many attempts modal
+                showTooManyAttemptsModal();
+                
                 // Start lockout
                 startLockout(lockoutTime);
             }
         });
+});
+
+// Close modals when clicking outside
+window.addEventListener('click', function(e) {
+    const tooManyAttemptsModal = document.getElementById('tooManyAttemptsModal');
+    const successModal = document.getElementById('successModal');
+    
+    if (e.target === tooManyAttemptsModal) {
+        // Don't close if still in lockout period - let user see the countdown
+        // The modal will stay open until they click OK or time runs out
+        return;
+    }
+    
+    if (e.target === successModal) {
+        successModal.style.display = 'none';
+    }
+});
+
+// Close modals with escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const tooManyAttemptsModal = document.getElementById('tooManyAttemptsModal');
+        const successModal = document.getElementById('successModal');
+        
+        if (tooManyAttemptsModal.style.display === 'flex') {
+            // Don't allow closing with escape key during lockout
+            // User must wait for countdown or click OK button
+            return;
+        }
+        
+        if (successModal.style.display === 'flex') {
+            successModal.style.display = 'none';
+        }
+    }
 });
 
 // Password Toggle Functionality
@@ -612,7 +706,6 @@ function showForgotErrorMsg(message) {
 document
     .querySelector("#forgotPasswordModal .close")
     .addEventListener("click", closeForgotPasswordModal);
-
 
 // Close modal with escape key
 document.addEventListener("keydown", function (event) {

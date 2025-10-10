@@ -637,7 +637,14 @@
       </table>
     </div>
   </div>
-
+<!-- Notification Modal -->
+<div class="notification-modal" id="notificationModal">
+    <div class="notification-content">
+        <div class="notification-icon" id="notificationIcon"></div>
+        <div class="notification-message" id="notificationMessage"></div>
+        <div class="notification-actions" id="notificationActions"></div>
+    </div>
+</div>
   <!-- 🗃️ Archive Modal -->
   <div class="modal" id="archiveModal">
     <div class="modal-content" style="max-width: 95%; width: 95%;">
@@ -1123,6 +1130,68 @@
 </style>
 
 <script>
+// Notification Modal Functions
+function showNotification(message, type = 'info', confirmCallback = null, cancelCallback = null) {
+    const modal = document.getElementById('notificationModal');
+    const messageEl = document.getElementById('notificationMessage');
+    const iconEl = document.getElementById('notificationIcon');
+    const actionsEl = document.getElementById('notificationActions');
+    
+    // Set message
+    messageEl.textContent = message;
+    
+    // Set icon and styling based on type
+    modal.className = 'notification-modal notification-' + type;
+    if (type === 'success') {
+        iconEl.textContent = '✅';
+    } else if (type === 'error') {
+        iconEl.textContent = '❌';
+    } else if (type === 'warning') {
+        iconEl.textContent = '⚠️';
+    } else {
+        iconEl.textContent = 'ℹ️';
+    }
+    
+    // Set up actions
+    actionsEl.innerHTML = '';
+    
+    if (confirmCallback) {
+        // This is a confirmation dialog (with OK/Cancel)
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn-confirm';
+        confirmBtn.textContent = 'OK';
+        confirmBtn.onclick = function() {
+            hideNotification();
+            confirmCallback();
+        };
+        actionsEl.appendChild(confirmBtn);
+        
+        // Always add cancel button for confirmation dialogs
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = function() {
+            hideNotification();
+            if (cancelCallback) cancelCallback();
+        };
+        actionsEl.appendChild(cancelBtn);
+    } else {
+        // This is just an alert (only OK button)
+        const okBtn = document.createElement('button');
+        okBtn.className = 'btn-confirm';
+        okBtn.textContent = 'OK';
+        okBtn.onclick = hideNotification;
+        actionsEl.appendChild(okBtn);
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+function hideNotification() {
+    document.getElementById('notificationModal').style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
   let currentActiveTable = 'complaintRecords';
@@ -1191,26 +1260,34 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('clearedBtn').addEventListener('click', function() {
     const selectedItems = getSelectedItems();
     if (selectedItems.length === 0) {
-      alert('Please select at least one record to mark as cleared.');
+      showNotification('Please select at least one record to mark as cleared.', 'warning');
       return;
     }
 
-    if (confirm('Are you sure you want to mark the selected records as cleared?')) {
-      updateRecordsStatus(selectedItems, 'cleared');
-    }
+    showNotification(
+      'Are you sure you want to mark the selected records as cleared?',
+      'warning',
+      function() {
+        updateRecordsStatus(selectedItems, 'cleared');
+      }
+    );
   });
 
   // Move to Trash Button
   document.getElementById('moveToTrashBtn').addEventListener('click', function() {
     const selectedItems = getSelectedItems();
     if (selectedItems.length === 0) {
-      alert('Please select at least one record to move to trash.');
+      showNotification('Please select at least one record to move to trash.', 'warning');
       return;
     }
 
-    if (confirm('Are you sure you want to move the selected records to trash?')) {
-      updateRecordsStatus(selectedItems, 'inactive');
-    }
+    showNotification(
+      'Are you sure you want to move the selected records to trash?',
+      'warning',
+      function() {
+        updateRecordsStatus(selectedItems, 'inactive');
+      }
+    );
   });
 
   // ==================== UTILITY FUNCTIONS ====================
@@ -1284,19 +1361,19 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
 
-        alert(`Successfully updated ${selectedItems.length} record(s) to ${status}.`);
+        showNotification(`Successfully updated ${selectedItems.length} record(s) to ${status}.`, 'success');
         
         // Reload archive data if archive modal is open
         if (document.getElementById('archiveModal').style.display === 'flex') {
           loadArchiveData();
         }
       } else {
-        alert('Some records could not be updated. Please try again.');
+        showNotification('Some records could not be updated. Please try again.', 'error');
       }
 
     } catch (error) {
       console.error('Error updating records:', error);
-      alert('Error updating records. Please try again.');
+      showNotification('Error updating records. Please try again.', 'error');
     }
   }
 
@@ -1327,6 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (error) {
       console.error('Error loading archive data:', error);
+      showNotification('Error loading archive data. Check console for details.', 'error');
     }
   }
 
@@ -1339,6 +1417,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderComplaintRecordsArchive() {
     const tbody = document.getElementById('complaintRecordsArchiveBody');
     tbody.innerHTML = '';
+
+    if (archiveData.complaintRecords.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">No archived complaint records found</td></tr>';
+      return;
+    }
 
     archiveData.complaintRecords.forEach(record => {
       const row = document.createElement('tr');
@@ -1366,6 +1449,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('complaintAppointmentsArchiveBody');
     tbody.innerHTML = '';
 
+    if (archiveData.complaintAppointments.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No archived appointment records found</td></tr>';
+      return;
+    }
+
     archiveData.complaintAppointments.forEach(record => {
       const row = document.createElement('tr');
       row.innerHTML = `
@@ -1389,6 +1477,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderComplaintAnecdotalsArchive() {
     const tbody = document.getElementById('complaintAnecdotalsArchiveBody');
     tbody.innerHTML = '';
+
+    if (archiveData.complaintAnecdotals.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">No archived anecdotal records found</td></tr>';
+      return;
+    }
 
     archiveData.complaintAnecdotals.forEach(record => {
       const row = document.createElement('tr');
@@ -1417,26 +1510,34 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('restoreSelectedBtn').addEventListener('click', function() {
     const selectedArchiveItems = getSelectedArchiveItems();
     if (selectedArchiveItems.length === 0) {
-      alert('Please select at least one record to restore.');
+      showNotification('Please select at least one record to restore.', 'warning');
       return;
     }
 
-    if (confirm('Are you sure you want to restore the selected records?')) {
-      restoreSelectedRecords(selectedArchiveItems);
-    }
+    showNotification(
+      'Are you sure you want to restore the selected records?',
+      'warning',
+      function() {
+        restoreSelectedRecords(selectedArchiveItems);
+      }
+    );
   });
 
   // Delete Permanently
   document.getElementById('deletePermanentlyBtn').addEventListener('click', function() {
     const selectedArchiveItems = getSelectedArchiveItems();
     if (selectedArchiveItems.length === 0) {
-      alert('Please select at least one record to delete permanently.');
+      showNotification('Please select at least one record to delete permanently.', 'warning');
       return;
     }
 
-    if (confirm('Are you sure you want to permanently delete the selected records? This action cannot be undone.')) {
-      deleteSelectedPermanently(selectedArchiveItems);
-    }
+    showNotification(
+      'Are you sure you want to permanently delete the selected records? This action cannot be undone!',
+      'error',
+      function() {
+        deleteSelectedPermanently(selectedArchiveItems);
+      }
+    );
   });
 
   function getSelectedArchiveItems() {
@@ -1478,17 +1579,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const allSuccess = results.every(result => result.success);
       
       if (allSuccess) {
-        alert(`Successfully restored ${selectedItems.length} record(s).`);
+        showNotification(`Successfully restored ${selectedItems.length} record(s).`, 'success');
         loadArchiveData(); // Reload archive data
-        // You might want to reload the main page here to show restored records
-        // location.reload();
       } else {
-        alert('Some records could not be restored. Please try again.');
+        showNotification('Some records could not be restored. Please try again.', 'error');
       }
 
     } catch (error) {
       console.error('Error restoring records:', error);
-      alert('Error restoring records. Please try again.');
+      showNotification('Error restoring records. Please try again.', 'error');
     }
   }
 
@@ -1523,97 +1622,105 @@ document.addEventListener('DOMContentLoaded', () => {
       const allSuccess = results.every(result => result.success);
       
       if (allSuccess) {
-        alert(`Successfully permanently deleted ${selectedItems.length} record(s).`);
+        showNotification(`Successfully permanently deleted ${selectedItems.length} record(s).`, 'success');
         loadArchiveData(); // Reload archive data
       } else {
-        alert('Some records could not be deleted. Please try again.');
+        showNotification('Some records could not be deleted. Please try again.', 'error');
       }
 
     } catch (error) {
       console.error('Error deleting records:', error);
-      alert('Error deleting records. Please try again.');
+      showNotification('Error deleting records. Please try again.', 'error');
     }
   }
 
   // Global functions for individual actions
   window.restoreRecord = async function(type, id) {
-    if (confirm('Are you sure you want to restore this record?')) {
-      try {
-        let url = '';
-        switch(type) {
-          case 'complaintRecords':
-            url = `/prefect/complaints/restore/${id}`;
-            break;
-          case 'complaintAppointments':
-            url = `/prefect/complaint-appointments/restore/${id}`;
-            break;
-          case 'complaintAnecdotals':
-            url = `/prefect/complaint-anecdotals/restore/${id}`;
-            break;
-        }
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json'
+    showNotification(
+      'Are you sure you want to restore this record?',
+      'warning',
+      async function() {
+        try {
+          let url = '';
+          switch(type) {
+            case 'complaintRecords':
+              url = `/prefect/complaints/restore/${id}`;
+              break;
+            case 'complaintAppointments':
+              url = `/prefect/complaint-appointments/restore/${id}`;
+              break;
+            case 'complaintAnecdotals':
+              url = `/prefect/complaint-anecdotals/restore/${id}`;
+              break;
           }
-        });
 
-        const result = await response.json();
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': csrfToken,
+              'Accept': 'application/json'
+            }
+          });
 
-        if (result.success) {
-          alert('Record restored successfully!');
-          loadArchiveData();
-        } else {
-          alert('Error restoring record: ' + result.message);
+          const result = await response.json();
+
+          if (result.success) {
+            showNotification('Record restored successfully!', 'success');
+            loadArchiveData();
+          } else {
+            showNotification('Error restoring record: ' + result.message, 'error');
+          }
+
+        } catch (error) {
+          console.error('Error restoring record:', error);
+          showNotification('Error restoring record. Please try again.', 'error');
         }
-
-      } catch (error) {
-        console.error('Error restoring record:', error);
-        alert('Error restoring record. Please try again.');
       }
-    }
+    );
   };
 
   window.deletePermanently = async function(type, id) {
-    if (confirm('Are you sure you want to permanently delete this record? This action cannot be undone.')) {
-      try {
-        let url = '';
-        switch(type) {
-          case 'complaintRecords':
-            url = `/prefect/complaints/delete-permanent/${id}`;
-            break;
-          case 'complaintAppointments':
-            url = `/prefect/complaint-appointments/delete-permanent/${id}`;
-            break;
-          case 'complaintAnecdotals':
-            url = `/prefect/complaint-anecdotals/delete-permanent/${id}`;
-            break;
-        }
-
-        const response = await fetch(url, {
-          method: 'DELETE',
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json'
+    showNotification(
+      'Are you sure you want to permanently delete this record? This action cannot be undone!',
+      'error',
+      async function() {
+        try {
+          let url = '';
+          switch(type) {
+            case 'complaintRecords':
+              url = `/prefect/complaints/delete-permanent/${id}`;
+              break;
+            case 'complaintAppointments':
+              url = `/prefect/complaint-appointments/delete-permanent/${id}`;
+              break;
+            case 'complaintAnecdotals':
+              url = `/prefect/complaint-anecdotals/delete-permanent/${id}`;
+              break;
           }
-        });
 
-        const result = await response.json();
+          const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-TOKEN': csrfToken,
+              'Accept': 'application/json'
+            }
+          });
 
-        if (result.success) {
-          alert('Record permanently deleted!');
-          loadArchiveData();
-        } else {
-          alert('Error deleting record: ' + result.message);
+          const result = await response.json();
+
+          if (result.success) {
+            showNotification('Record permanently deleted!', 'success');
+            loadArchiveData();
+          } else {
+            showNotification('Error deleting record: ' + result.message, 'error');
+          }
+
+        } catch (error) {
+          console.error('Error deleting record:', error);
+          showNotification('Error deleting record. Please try again.', 'error');
         }
-
-      } catch (error) {
-        console.error('Error deleting record:', error);
-        alert('Error deleting record. Please try again.');
       }
-    }
+    );
   };
 
   function setupArchiveSearch() {
@@ -1657,7 +1764,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedCheckboxes = document.querySelectorAll('#complaintRecordsTable .rowCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-      alert('Please select at least one complaint from Complaint Records to schedule an appointment.');
+      showNotification('Please select at least one complaint from Complaint Records to schedule an appointment.', 'warning');
       return;
     }
 
@@ -1697,7 +1804,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedCheckboxes = document.querySelectorAll('#complaintRecordsTable .rowCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-      alert('Please select at least one complaint from Complaint Records to create anecdotal record.');
+      showNotification('Please select at least one complaint from Complaint Records to create anecdotal record.', 'warning');
       return;
     }
 
@@ -1859,15 +1966,14 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         if (result.errors) {
           let messages = Object.values(result.errors).flat().join('\n');
-          alert('Validation failed:\n' + messages);
-          console.error(result.errors);
+          showNotification('Validation failed:\n' + messages, 'error');
         } else {
-          alert('Error: ' + (result.message || 'Unknown error'));
+          showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
         }
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error creating anecdotal records.');
+      showNotification('Error creating anecdotal records.', 'error');
     } finally {
       submitBtn.innerHTML = originalText;
       submitBtn.disabled = false;
@@ -1898,20 +2004,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (result.success) {
-        alert('Appointments created successfully!');
+        showNotification('Appointments created successfully!', 'success');
         document.getElementById('appointmentModal').style.display = 'none';
         location.reload();
       } else {
         if (result.errors) {
           let messages = Object.values(result.errors).flat().join('\n');
-          alert('Validation failed:\n' + messages);
+          showNotification('Validation failed:\n' + messages, 'error');
         } else {
-          alert('Error: ' + (result.message || 'Unknown error'));
+          showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
         }
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error creating appointments.');
+      showNotification('Error creating appointments.', 'error');
     } finally {
       submitBtn.innerHTML = originalText;
       submitBtn.disabled = false;
@@ -1921,7 +2027,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Print Anecdotal Records
   document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
     if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
-      alert('No anecdotal records to print.');
+      showNotification('No anecdotal records to print.', 'warning');
       return;
     }
 
@@ -2000,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (result.success) {
-        alert('Record updated successfully!');
+        showNotification('Record updated successfully!', 'success');
         // Close the appropriate modal based on form ID
         if (form.id === 'editComplaintForm') {
           complaintModal.style.display = 'none';
@@ -2013,14 +2119,14 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         if (result.errors) {
           let messages = Object.values(result.errors).flat().join('\n');
-          alert('Validation failed:\n' + messages);
+          showNotification('Validation failed:\n' + messages, 'error');
         } else {
-          alert('Error: ' + (result.message || 'Unknown error'));
+          showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
         }
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error updating record.');
+      showNotification('Error updating record.', 'error');
     } finally {
       submitBtn.innerHTML = originalText;
       submitBtn.disabled = false;

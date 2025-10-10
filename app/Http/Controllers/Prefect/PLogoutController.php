@@ -12,19 +12,13 @@ use Illuminate\Support\Facades\Auth;
 class PLogoutController extends Controller
 {
 
-        public function logout(Request $request)
+      public function logout(Request $request)
 {
-    Auth::guard('prefect')->logout();
-
-    // Optionally invalidate the session
+    Auth::logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-     return response()->json([
-                'success' => true,
-                'message' => 'Logout successful!',
-                'redirect' => route('login')
-            ]);
+    return redirect()->route('login');
 }
 
 }

@@ -111,7 +111,14 @@
       {{ $students->links() }}
     </div>
   </div>
-
+<!-- Notification Modal -->
+<div class="notification-modal" id="notificationModal">
+    <div class="notification-content">
+        <div class="notification-icon" id="notificationIcon"></div>
+        <div class="notification-message" id="notificationMessage"></div>
+        <div class="notification-actions" id="notificationActions"></div>
+    </div>
+</div>
   <!-- ✏️ Edit Student Modal -->
   <div class="modal" id="editModal">
     <div class="modal-content">
@@ -224,6 +231,68 @@ function getCsrfToken() {
 
 const csrfToken = getCsrfToken();
 
+// Notification Modal Functions
+function showNotification(message, type = 'info', confirmCallback = null, cancelCallback = null) {
+    const modal = document.getElementById('notificationModal');
+    const messageEl = document.getElementById('notificationMessage');
+    const iconEl = document.getElementById('notificationIcon');
+    const actionsEl = document.getElementById('notificationActions');
+    
+    // Set message
+    messageEl.textContent = message;
+    
+    // Set icon and styling based on type
+    modal.className = 'notification-modal notification-' + type;
+    if (type === 'success') {
+        iconEl.textContent = '✅';
+    } else if (type === 'error') {
+        iconEl.textContent = '❌';
+    } else if (type === 'warning') {
+        iconEl.textContent = '⚠️';
+    } else {
+        iconEl.textContent = 'ℹ️';
+    }
+    
+    // Set up actions
+    actionsEl.innerHTML = '';
+    
+    if (confirmCallback) {
+        // This is a confirmation dialog (with OK/Cancel)
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn-confirm';
+        confirmBtn.textContent = 'OK';
+        confirmBtn.onclick = function() {
+            hideNotification();
+            confirmCallback();
+        };
+        actionsEl.appendChild(confirmBtn);
+        
+        // Always add cancel button for confirmation dialogs
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = function() {
+            hideNotification();
+            if (cancelCallback) cancelCallback();
+        };
+        actionsEl.appendChild(cancelBtn);
+    } else {
+        // This is just an alert (only OK button)
+        const okBtn = document.createElement('button');
+        okBtn.className = 'btn-confirm';
+        okBtn.textContent = 'OK';
+        okBtn.onclick = hideNotification;
+        actionsEl.appendChild(okBtn);
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+function hideNotification() {
+    document.getElementById('notificationModal').style.display = 'none';
+}
+
 // 🔍 Search Functionality
 document.getElementById('searchInput').addEventListener('input', function() {
     const filter = this.value.toLowerCase();
@@ -258,51 +327,53 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one student.');
+        showNotification('Please select at least one student.', 'warning');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to archive ${studentIds.length} student(s)?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to archive ${studentIds.length} student(s)?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('{{ route("students.archive") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
 
-    try {
-        const response = await fetch('{{ route("students.archive") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ student_ids: studentIds })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${studentIds.length} student(s) moved to archive.`, 'success');
+                    // Remove the archived rows from the main table
+                    studentIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-student-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${studentIds.length} student(s) moved to archive.`);
-            // Remove the archived rows from the main table
-            studentIds.forEach(id => {
-                const row = document.querySelector(`tr[data-student-id="${id}"]`);
-                if (row) row.remove();
-            });
+                    // Update UI
+                    document.getElementById('selectAll').checked = false;
 
-            // Update UI
-            document.getElementById('selectAll').checked = false;
-
-            // Reload to update counts
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    // Reload to update counts
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error moving students to archive.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error moving students to archive.');
-    }
+    );
 });
 
 // 🗃️ Archive Modal - Load archived students
@@ -340,7 +411,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
         document.getElementById('archiveModal').style.display = 'flex';
     } catch (error) {
         console.error('Error loading archived students:', error);
-        alert('Error loading archived students.');
+        showNotification('Error loading archived students.', 'error');
     }
 });
 
@@ -349,46 +420,48 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one student to restore.');
+        showNotification('Please select at least one student to restore.', 'warning');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to restore ${studentIds.length} student(s)?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to restore ${studentIds.length} student(s)?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('{{ route("students.restore") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
 
-    try {
-        const response = await fetch('{{ route("students.restore") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ student_ids: studentIds })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${studentIds.length} student(s) restored successfully.`, 'success');
+                    // Remove the restored rows from archive table
+                    studentIds.forEach(id => {
+                        const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${studentIds.length} student(s) restored successfully.`);
-            // Remove the restored rows from archive table
-            studentIds.forEach(id => {
-                const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            // Reload the page to show restored students in main table
-            location.reload();
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    // Reload the page to show restored students in main table
+                    location.reload();
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error restoring students.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error restoring students.');
-    }
+    );
 });
 
 // 🗑️ Delete Archived Students Permanently
@@ -396,49 +469,51 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one student to delete permanently.');
-        return;
-    }
-
-    if (!confirm('WARNING: This will permanently delete these students. This action cannot be undone!')) {
+        showNotification('Please select at least one student to delete permanently.', 'warning');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    try {
-        const response = await fetch('{{ route("students.destroyMultiple") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ student_ids: studentIds })
-        });
+    showNotification(
+        'WARNING: This will permanently delete these students. This action cannot be undone!',
+        'error',
+        async function() {
+            try {
+                const response = await fetch('{{ route("students.destroyMultiple") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
 
-        const result = await response.json();
+                const result = await response.json();
 
-        if (result.success) {
-            alert(`${studentIds.length} student(s) deleted permanently.`);
-            // Remove the deleted rows from archive table
-            studentIds.forEach(id => {
-                const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
-                if (row) row.remove();
-            });
+                if (result.success) {
+                    showNotification(`${studentIds.length} student(s) deleted permanently.`, 'success');
+                    // Remove the deleted rows from archive table
+                    studentIds.forEach(id => {
+                        const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-            // If no more archived students, show message
-            const remainingRows = document.querySelectorAll('#archiveTableBody tr');
-            if (remainingRows.length === 0) {
-                document.getElementById('archiveTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
+                    // If no more archived students, show message
+                    const remainingRows = document.querySelectorAll('#archiveTableBody tr');
+                    if (remainingRows.length === 0) {
+                        document.getElementById('archiveTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
+                    }
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error deleting students.', 'error');
             }
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting students.');
-    }
+    );
 });
 
 // Close Archive Modal
@@ -461,6 +536,11 @@ document.addEventListener('click', function(event) {
     const archiveModal = document.getElementById('archiveModal');
     if (event.target === archiveModal) {
         archiveModal.style.display = 'none';
+    }
+    
+    const notificationModal = document.getElementById('notificationModal');
+    if (event.target === notificationModal) {
+        hideNotification();
     }
 });
 

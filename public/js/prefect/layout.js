@@ -739,6 +739,41 @@ function hideProfileImageError() {
     }
 }
 
+// Logout Modal Functions
+function logout() {
+    // Show the logout confirmation modal
+    const logoutModal = document.getElementById('logoutModal');
+    if (logoutModal) {
+        logoutModal.style.display = 'block';
+    }
+    closeProfileDropdown();
+}
+
+function closeLogoutModal() {
+    const logoutModal = document.getElementById('logoutModal');
+    if (logoutModal) {
+        logoutModal.style.display = 'none';
+    }
+}
+
+function confirmLogout() {
+    // Create a form to submit the logout request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = ROUTES.logout;
+    
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = CSRF_TOKEN;
+    form.appendChild(csrfInput);
+    
+    // Add to document and submit
+    document.body.appendChild(form);
+    form.submit();
+}
+
 // Initialize all event listeners
 function initializeEventListeners() {
     console.log("Initializing event listeners...");
@@ -768,11 +803,16 @@ function initializeEventListeners() {
         });
     });
 
-    // Close modal when clicking outside
+    // Close modals when clicking outside
     window.onclick = function (event) {
         const modal = document.getElementById("profileSettingsModal");
         if (event.target === modal) {
             closeProfileModal();
+        }
+
+        const logoutModal = document.getElementById('logoutModal');
+        if (event.target === logoutModal) {
+            closeLogoutModal();
         }
 
         // Close dropdown when clicking outside
@@ -788,17 +828,24 @@ function initializeEventListeners() {
         }
     };
 
-    // Close modal with escape key
+    // Close modals with escape key
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
             closeProfileModal();
+            closeLogoutModal();
         }
     });
 
-    // Close modal when clicking X
+    // Close modals when clicking X
     const closeBtn = document.querySelector(".close");
     if (closeBtn) {
         closeBtn.addEventListener("click", closeProfileModal);
+    }
+
+    // Close logout modal when clicking its close button
+    const logoutCloseBtn = document.querySelector("#logoutModal .close");
+    if (logoutCloseBtn) {
+        logoutCloseBtn.addEventListener("click", closeLogoutModal);
     }
 
     // Initialize form handlers
@@ -817,21 +864,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadUserProfile();
     initializeEventListeners();
 });
-
-window.logout = () => {
-    if (!confirm("Are you sure you want to logout?")) return;
-    fetch(ROUTES.logout, {
-        method: "POST",
-        headers: {
-            "X-CSRF-TOKEN": CSRF_TOKEN,
-            Accept: "application/json",
-        },
-    })
-        .then((response) => {
-            if (response.ok) window.location.href = ROUTES.login;
-        })
-        .catch((err) => console.error("Logout failed:", err));
-};
 
 // Debug function to check modal state
 function debugModalState() {

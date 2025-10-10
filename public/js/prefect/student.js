@@ -180,8 +180,7 @@ document.querySelectorAll('#archiveModal .btn-close').forEach(btn => {
   });
 
 // Select all archived checkboxes
-const selectAllArchived = document.getElementById('selectAllArchived');
-const archivedCheckboxes = document.querySelectorAll('.archivedCheckbox');
+
 
 selectAllArchived.addEventListener('change', () => {
   archivedCheckboxes.forEach(cb => cb.checked = selectAllArchived.checked);

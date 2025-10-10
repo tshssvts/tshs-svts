@@ -272,7 +272,14 @@
       </div>
     </div>
   </div>
-
+<!-- Notification Modal -->
+<div class="notification-modal" id="notificationModal">
+    <div class="notification-content">
+        <div class="notification-icon" id="notificationIcon"></div>
+        <div class="notification-message" id="notificationMessage"></div>
+        <div class="notification-actions" id="notificationActions"></div>
+    </div>
+</div>
   <!-- 👁️ Violation Details Modal -->
   <div class="modal" id="violationDetailsModal">
     <div class="modal-content">
@@ -1388,6 +1395,68 @@ function getCsrfToken() {
 
 const csrfToken = getCsrfToken();
 
+// Notification Modal Functions
+function showNotification(message, type = 'info', confirmCallback = null, cancelCallback = null) {
+    const modal = document.getElementById('notificationModal');
+    const messageEl = document.getElementById('notificationMessage');
+    const iconEl = document.getElementById('notificationIcon');
+    const actionsEl = document.getElementById('notificationActions');
+    
+    // Set message
+    messageEl.textContent = message;
+    
+    // Set icon and styling based on type
+    modal.className = 'notification-modal notification-' + type;
+    if (type === 'success') {
+        iconEl.textContent = '✅';
+    } else if (type === 'error') {
+        iconEl.textContent = '❌';
+    } else if (type === 'warning') {
+        iconEl.textContent = '⚠️';
+    } else {
+        iconEl.textContent = 'ℹ️';
+    }
+    
+    // Set up actions
+    actionsEl.innerHTML = '';
+    
+    if (confirmCallback) {
+        // This is a confirmation dialog (with OK/Cancel)
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn-confirm';
+        confirmBtn.textContent = 'OK';
+        confirmBtn.onclick = function() {
+            hideNotification();
+            confirmCallback();
+        };
+        actionsEl.appendChild(confirmBtn);
+        
+        // Always add cancel button for confirmation dialogs
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = function() {
+            hideNotification();
+            if (cancelCallback) cancelCallback();
+        };
+        actionsEl.appendChild(cancelBtn);
+    } else {
+        // This is just an alert (only OK button)
+        const okBtn = document.createElement('button');
+        okBtn.className = 'btn-confirm';
+        okBtn.textContent = 'OK';
+        okBtn.onclick = hideNotification;
+        actionsEl.appendChild(okBtn);
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+function hideNotification() {
+    document.getElementById('notificationModal').style.display = 'none';
+}
+
 // Current active table type
 let currentTableType = 'violationRecords';
 
@@ -1561,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success) {
-                alert(`${type} updated successfully!`);
+                showNotification(`${type} updated successfully!`, 'success');
                 // Close the appropriate modal
                 if (type === 'Violation') editViolationModal.style.display = 'none';
                 if (type === 'Appointment') editAppointmentModal.style.display = 'none';
@@ -1572,14 +1641,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (result.errors) {
                     let messages = Object.values(result.errors).flat().join('\n');
-                    alert('Validation failed:\n' + messages);
+                    showNotification('Validation failed:\n' + messages, 'error');
                 } else {
-                    alert('Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             }
         } catch (error) {
             console.error('Error:', error);
-            alert(`Error updating ${type.toLowerCase()}.`);
+            showNotification(`Error updating ${type.toLowerCase()}.`, 'error');
         } finally {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
@@ -1666,7 +1735,8 @@ document.addEventListener('click', function(event) {
         'violationAnecdotalsArchiveModal',
         'setScheduleModal',
         'createAnecdotalModal',
-        'anecdotalSuccessModal'
+        'anecdotalSuccessModal',
+        'notificationModal'
     ];
 
     modals.forEach(modalId => {
@@ -1706,7 +1776,7 @@ document.getElementById('setScheduleBtn').addEventListener('click', function() {
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one violation to schedule.');
+        showNotification('Please select at least one violation to schedule.', 'warning');
         return;
     }
 
@@ -1768,15 +1838,15 @@ document.getElementById('setScheduleForm').addEventListener('submit', async func
         const result = await response.json();
 
         if (result.success) {
-            alert('Appointments scheduled successfully!');
+            showNotification('Appointments scheduled successfully!', 'success');
             document.getElementById('setScheduleModal').style.display = 'none';
             location.reload();
         } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error scheduling appointments.');
+        showNotification('Error scheduling appointments.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
@@ -1788,7 +1858,7 @@ document.getElementById('createAnecdotalBtn').addEventListener('click', function
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one violation to create anecdotal record.');
+        showNotification('Please select at least one violation to create anecdotal record.', 'warning');
         return;
     }
 
@@ -1861,14 +1931,14 @@ document.getElementById('createAnecdotalForm').addEventListener('submit', async 
         } else {
             if (result.errors) {
                 let messages = Object.values(result.errors).flat().join('\n');
-                alert('Validation failed:\n' + messages);
+                showNotification('Validation failed:\n' + messages, 'error');
             } else {
-                alert('Error: ' + (result.message || 'Unknown error'));
+                showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
             }
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error creating anecdotal records.');
+        showNotification('Error creating anecdotal records.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
@@ -1878,7 +1948,7 @@ document.getElementById('createAnecdotalForm').addEventListener('submit', async 
 // Print Anecdotal Records
 document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
     if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
-        alert('No anecdotal records to print.');
+        showNotification('No anecdotal records to print.', 'warning');
         return;
     }
 
@@ -2220,21 +2290,21 @@ closeAnecdotalDetailsModal.addEventListener('click', function() {
 sendSmsBtn.addEventListener('click', function() {
     const studentName = document.getElementById('detail-student-name').textContent;
     const violationId = document.getElementById('detail-violation-id').textContent;
-    alert(`SMS would be sent for violation ${violationId} - ${studentName}`);
+    showNotification(`SMS would be sent for violation ${violationId} - ${studentName}`, 'info');
 });
 
 // View Appointments button functionality
 viewAppointmentsBtn.addEventListener('click', function() {
     const violationId = document.getElementById('detail-violation-id').textContent;
     const studentName = document.getElementById('detail-student-name').textContent;
-    alert(`Viewing appointments for violation ${violationId} - ${studentName}`);
+    showNotification(`Viewing appointments for violation ${violationId} - ${studentName}`, 'info');
 });
 
 // View Related Violation button functionality
 viewRelatedViolationBtn.addEventListener('click', function() {
     const anecdotalId = document.getElementById('detail-anecdotal-id').textContent;
     const studentName = document.getElementById('detail-anecdotal-student-name').textContent;
-    alert(`Viewing related violation for anecdotal ${anecdotalId} - ${studentName}`);
+    showNotification(`Viewing related violation for anecdotal ${anecdotalId} - ${studentName}`, 'info');
 });
 
 // ==================== VIOLATION RECORDS FUNCTIONALITY ====================
@@ -2243,50 +2313,52 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one violation.');
+        showNotification('Please select at least one violation.', 'warning');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to move ${violationIds.length} violation(s) to archive as Inactive?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to move ${violationIds.length} violation(s) to archive as Inactive?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/archive', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        violation_ids: violationIds,
+                        status: 'inactive'
+                    })
+                });
 
-    try {
-        const response = await fetch('/prefect/violations/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                violation_ids: violationIds,
-                status: 'inactive'
-            })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${violationIds.length} violation(s) moved to archive as Inactive.`, 'success');
+                    violationIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-violation-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${violationIds.length} violation(s) moved to archive as Inactive.`);
-            violationIds.forEach(id => {
-                const row = document.querySelector(`tr[data-violation-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            document.getElementById('selectAll').checked = false;
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error moving violations to archive.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error moving violations to archive.');
-    }
+    );
 });
 
 // ✅ Mark as Cleared (Archive as Cleared)
@@ -2294,50 +2366,52 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one violation.');
+        showNotification('Please select at least one violation.', 'warning');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to mark ${violationIds.length} violation(s) as Cleared?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to mark ${violationIds.length} violation(s) as Cleared?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/archive', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        violation_ids: violationIds,
+                        status: 'cleared'
+                    })
+                });
 
-    try {
-        const response = await fetch('/prefect/violations/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                violation_ids: violationIds,
-                status: 'cleared'
-            })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${violationIds.length} violation(s) marked as Cleared and moved to archive.`, 'success');
+                    violationIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-violation-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${violationIds.length} violation(s) marked as Cleared and moved to archive.`);
-            violationIds.forEach(id => {
-                const row = document.querySelector(`tr[data-violation-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            document.getElementById('selectAll').checked = false;
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error marking violations as cleared.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error marking violations as cleared.');
-    }
+    );
 });
 
 // ==================== VIOLATION APPOINTMENTS FUNCTIONALITY ====================
@@ -2346,50 +2420,52 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one appointment.');
+        showNotification('Please select at least one appointment.', 'warning');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to mark ${appointmentIds.length} appointment(s) as Completed?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to mark ${appointmentIds.length} appointment(s) as Completed?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violation-appointments/archive', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appointment_ids: appointmentIds,
+                        status: 'Completed'
+                    })
+                });
 
-    try {
-        const response = await fetch('/prefect/violation-appointments/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                appointment_ids: appointmentIds,
-                status: 'Completed'
-            })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${appointmentIds.length} appointment(s) marked as Completed and moved to archive.`, 'success');
+                    appointmentIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-app-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${appointmentIds.length} appointment(s) marked as Completed and moved to archive.`);
-            appointmentIds.forEach(id => {
-                const row = document.querySelector(`tr[data-app-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            document.getElementById('selectAll').checked = false;
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error marking appointments as completed.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error marking appointments as completed.');
-    }
+    );
 });
 
 // 🗑️ Move Appointment to Trash (Archive as Cancelled)
@@ -2397,50 +2473,52 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one appointment.');
+        showNotification('Please select at least one appointment.', 'warning');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to move ${appointmentIds.length} appointment(s) to archive as Cancelled?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to move ${appointmentIds.length} appointment(s) to archive as Cancelled?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violation-appointments/archive', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appointment_ids: appointmentIds,
+                        status: 'Cancelled'
+                    })
+                });
 
-    try {
-        const response = await fetch('/prefect/violation-appointments/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                appointment_ids: appointmentIds,
-                status: 'Cancelled'
-            })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${appointmentIds.length} appointment(s) moved to archive as Cancelled.`, 'success');
+                    appointmentIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-app-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${appointmentIds.length} appointment(s) moved to archive as Cancelled.`);
-            appointmentIds.forEach(id => {
-                const row = document.querySelector(`tr[data-app-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            document.getElementById('selectAll').checked = false;
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error moving appointments to archive.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error moving appointments to archive.');
-    }
+    );
 });
 
 // ==================== VIOLATION ANECDOTALS FUNCTIONALITY ====================
@@ -2449,50 +2527,52 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one anecdotal record.');
+        showNotification('Please select at least one anecdotal record.', 'warning');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to mark ${anecdotalIds.length} anecdotal record(s) as Completed?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to mark ${anecdotalIds.length} anecdotal record(s) as Completed?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violation-anecdotals/archive', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        anecdotal_ids: anecdotalIds,
+                        status: 'completed'
+                    })
+                });
 
-    try {
-        const response = await fetch('/prefect/violation-anecdotals/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                anecdotal_ids: anecdotalIds,
-                status: 'completed'
-            })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`, 'success');
+                    anecdotalIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-anec-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`);
-            anecdotalIds.forEach(id => {
-                const row = document.querySelector(`tr[data-anec-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            document.getElementById('selectAll').checked = false;
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error marking anecdotal records as completed.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error marking anecdotal records as completed.');
-    }
+    );
 });
 
 // 🗑️ Move Anecdotal to Trash (Archive as Closed)
@@ -2500,50 +2580,52 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one anecdotal record.');
+        showNotification('Please select at least one anecdotal record.', 'warning');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to move ${anecdotalIds.length} anecdotal record(s) to archive as Closed?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to move ${anecdotalIds.length} anecdotal record(s) to archive as Closed?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violation-anecdotals/archive', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        anecdotal_ids: anecdotalIds,
+                        status: 'closed'
+                    })
+                });
 
-    try {
-        const response = await fetch('/prefect/violation-anecdotals/archive', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                anecdotal_ids: anecdotalIds,
-                status: 'closed'
-            })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification(`${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`, 'success');
+                    anecdotalIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-anec-id="${id}"]`);
+                        if (row) row.remove();
+                    });
 
-        if (result.success) {
-            alert(`${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`);
-            anecdotalIds.forEach(id => {
-                const row = document.querySelector(`tr[data-anec-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            document.getElementById('selectAll').checked = false;
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error moving anecdotal records to archive.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error moving anecdotal records to archive.');
-    }
+    );
 });
 
 // ==================== ARCHIVE MODAL FUNCTIONALITY ====================
@@ -2581,7 +2663,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
         }
     } catch (error) {
         console.error('Error loading archived data:', error);
-        alert('Error loading archived data. Check console for details.');
+        showNotification('Error loading archived data. Check console for details.', 'error');
     }
 });
 
@@ -2749,7 +2831,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to restore.');
+        showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2758,37 +2840,39 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
         type: cb.dataset.type
     }));
 
-    if (!confirm(`Are you sure you want to restore ${records.length} record(s)?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to restore ${records.length} record(s)?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/restore-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ records: records })
+                });
 
-    try {
-        const response = await fetch('/prefect/violations/restore-multiple', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
-
-        if (result.success) {
-            alert(`${records.length} record(s) restored successfully.`);
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
-            location.reload();
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                if (result.success) {
+                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
+                    });
+                    location.reload();
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error restoring records.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error restoring records.');
-    }
+    );
 });
 
 document.getElementById('restoreViolationAppointmentsBtn').addEventListener('click', async function() {
@@ -2796,7 +2880,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to restore.');
+        showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2805,37 +2889,39 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
         type: cb.dataset.type
     }));
 
-    if (!confirm(`Are you sure you want to restore ${records.length} record(s)?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to restore ${records.length} record(s)?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/restore-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ records: records })
+                });
 
-    try {
-        const response = await fetch('/prefect/violations/restore-multiple', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
-
-        if (result.success) {
-            alert(`${records.length} record(s) restored successfully.`);
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
-            location.reload();
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                if (result.success) {
+                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
+                    });
+                    location.reload();
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error restoring records.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error restoring records.');
-    }
+    );
 });
 
 document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click', async function() {
@@ -2843,7 +2929,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to restore.');
+        showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2852,37 +2938,39 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
         type: cb.dataset.type
     }));
 
-    if (!confirm(`Are you sure you want to restore ${records.length} record(s)?`)) {
-        return;
-    }
+    showNotification(
+        `Are you sure you want to restore ${records.length} record(s)?`,
+        'warning',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/restore-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ records: records })
+                });
 
-    try {
-        const response = await fetch('/prefect/violations/restore-multiple', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
-
-        if (result.success) {
-            alert(`${records.length} record(s) restored successfully.`);
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
-            location.reload();
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                if (result.success) {
+                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
+                    });
+                    location.reload();
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error restoring records.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error restoring records.');
-    }
+    );
 });
 
 // 🗑️ Delete Archived Records Permanently for each type
@@ -2891,11 +2979,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to delete permanently.');
-        return;
-    }
-
-    if (!confirm('WARNING: This will permanently delete these records. This action cannot be undone!')) {
+        showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -2904,37 +2988,43 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
         type: cb.dataset.type
     }));
 
-    try {
-        const response = await fetch('/prefect/violations/destroy-multiple-archived', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
+    showNotification(
+        'WARNING: This will permanently delete these records. This action cannot be undone!',
+        'error',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/destroy-multiple-archived', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ records: records })
+                });
 
-        const result = await response.json();
+                const result = await response.json();
 
-        if (result.success) {
-            alert(`${records.length} record(s) deleted permanently.`);
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
+                if (result.success) {
+                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
+                    });
 
-            const remainingRows = tableBody.querySelectorAll('tr');
-            if (remainingRows.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    const remainingRows = tableBody.querySelectorAll('tr');
+                    if (remainingRows.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    }
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error deleting records.', 'error');
             }
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting records.');
-    }
+    );
 });
 
 document.getElementById('deleteViolationAppointmentsBtn').addEventListener('click', async function() {
@@ -2942,11 +3032,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to delete permanently.');
-        return;
-    }
-
-    if (!confirm('WARNING: This will permanently delete these records. This action cannot be undone!')) {
+        showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -2955,37 +3041,43 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
         type: cb.dataset.type
     }));
 
-    try {
-        const response = await fetch('/prefect/violations/destroy-multiple-archived', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
+    showNotification(
+        'WARNING: This will permanently delete these records. This action cannot be undone!',
+        'error',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/destroy-multiple-archived', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ records: records })
+                });
 
-        const result = await response.json();
+                const result = await response.json();
 
-        if (result.success) {
-            alert(`${records.length} record(s) deleted permanently.`);
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
+                if (result.success) {
+                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
+                    });
 
-            const remainingRows = tableBody.querySelectorAll('tr');
-            if (remainingRows.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    const remainingRows = tableBody.querySelectorAll('tr');
+                    if (remainingRows.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    }
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error deleting records.', 'error');
             }
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting records.');
-    }
+    );
 });
 
 document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click', async function() {
@@ -2993,11 +3085,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one record to delete permanently.');
-        return;
-    }
-
-    if (!confirm('WARNING: This will permanently delete these records. This action cannot be undone!')) {
+        showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -3006,37 +3094,43 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
         type: cb.dataset.type
     }));
 
-    try {
-        const response = await fetch('/prefect/violations/destroy-multiple-archived', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ records: records })
-        });
+    showNotification(
+        'WARNING: This will permanently delete these records. This action cannot be undone!',
+        'error',
+        async function() {
+            try {
+                const response = await fetch('/prefect/violations/destroy-multiple-archived', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ records: records })
+                });
 
-        const result = await response.json();
+                const result = await response.json();
 
-        if (result.success) {
-            alert(`${records.length} record(s) deleted permanently.`);
-            records.forEach(record => {
-                const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                if (row) row.remove();
-            });
+                if (result.success) {
+                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
+                    });
 
-            const remainingRows = tableBody.querySelectorAll('tr');
-            if (remainingRows.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    const remainingRows = tableBody.querySelectorAll('tr');
+                    if (remainingRows.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    }
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error deleting records.', 'error');
             }
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting records.');
-    }
+    );
 });
 
 // Close Archive Modals

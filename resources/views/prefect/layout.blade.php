@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="{{ asset('css/prefect(1)/createParent.css') }}">
   <link rel="stylesheet" href="{{ asset('css/prefect(1)/createStudent.css') }}">
   <link rel="stylesheet" href="{{ asset('css/prefect(1)/createComplaint.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/prefect(1)/notificationsmodal.css') }}">
   <style>
     /* Add these styles for alerts and image upload */
     .alert {
@@ -251,6 +252,31 @@
     </div>
 </div>
 
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-sign-out-alt"></i> Confirm Logout</h3>
+            <span class="close" onclick="closeLogoutModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; padding: 20px 0;">
+                <i class="fas fa-question-circle" style="font-size: 48px; color: #e74c3c; margin-bottom: 15px;"></i>
+                <p style="font-size: 16px; margin-bottom: 25px; color: #333;">
+                    Are you sure you want to logout?
+                </p>
+            </div>
+            <div class="modal-actions" style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn-cancel" onclick="closeLogoutModal()" style="padding: 10px 20px;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-logout" onclick="confirmLogout()" style="padding: 10px 20px;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Main content area -->
 <main class="main-content">

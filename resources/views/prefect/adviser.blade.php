@@ -220,6 +220,11 @@
 
 
 <script>
+  // Select all checkboxes
+// ==========================
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = this.checked);
+});
 // ==========================
 // ✏️ Edit Adviser Modal Logic
 // ==========================
