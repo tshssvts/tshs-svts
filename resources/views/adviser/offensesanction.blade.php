@@ -56,8 +56,6 @@
         <!-- Content will be filled dynamically via JS -->
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" id="setScheduleBtn">📅 Set Schedule</button>
-        <button class="btn-info" id="sendSmsBtn">📩 Send SMS</button>
         <button class="btn-close">❌ Close</button>
       </div>
     </div>

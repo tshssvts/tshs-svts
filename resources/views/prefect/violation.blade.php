@@ -53,8 +53,8 @@
     <div class="right-controls">
       <!-- Violation Records Buttons -->
       <div id="violationRecordsActions" class="action-buttons">
-        <button class="btn-cleared" id="markAsClearedBtn">Mark as Cleared</button>
-        <button class="btn-schedule" id="setScheduleBtn">📅 Set Schedule</button>
+        <button class="btn-cleared" id="markAsClearedBtn">✅ Mark as Cleared</button>
+        <button class="btn-schedule" id="setScheduleBtn">📅 Set Appointment</button>
         <button class="btn-anecdotal" id="createAnecdotalBtn">📝 Create Anecdotal</button>
         <button class="btn-danger" id="moveToTrashBtn">🗑️ Move to Trash</button>
       </div>
@@ -1401,10 +1401,10 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
     const messageEl = document.getElementById('notificationMessage');
     const iconEl = document.getElementById('notificationIcon');
     const actionsEl = document.getElementById('notificationActions');
-    
+
     // Set message
     messageEl.textContent = message;
-    
+
     // Set icon and styling based on type
     modal.className = 'notification-modal notification-' + type;
     if (type === 'success') {
@@ -1416,10 +1416,10 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
     } else {
         iconEl.textContent = 'ℹ️';
     }
-    
+
     // Set up actions
     actionsEl.innerHTML = '';
-    
+
     if (confirmCallback) {
         // This is a confirmation dialog (with OK/Cancel)
         const confirmBtn = document.createElement('button');
@@ -1430,7 +1430,7 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
             confirmCallback();
         };
         actionsEl.appendChild(confirmBtn);
-        
+
         // Always add cancel button for confirmation dialogs
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'btn-cancel';
@@ -1448,7 +1448,7 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
         okBtn.onclick = hideNotification;
         actionsEl.appendChild(okBtn);
     }
-    
+
     // Show modal
     modal.style.display = 'flex';
 }

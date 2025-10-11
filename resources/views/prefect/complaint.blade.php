@@ -292,49 +292,49 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.status-active { 
+.status-active {
   background: linear-gradient(135deg, #d4edda, #c3e6cb);
   color: #155724;
   border: 1px solid #c3e6cb;
 }
 
-.status-cleared { 
+.status-cleared {
   background: linear-gradient(135deg, #e2e3e5, #d6d8db);
   color: #383d41;
   border: 1px solid #d6d8db;
 }
 
-.status-inactive { 
+.status-inactive {
   background: linear-gradient(135deg, #f8d7da, #f1b0b7);
   color: #721c24;
   border: 1px solid #f1b0b7;
 }
 
-.status-scheduled { 
+.status-scheduled {
   background: linear-gradient(135deg, #cce7ff, #b3d9ff);
   color: #004085;
   border: 1px solid #b3d9ff;
 }
 
-.status-completed { 
+.status-completed {
   background: linear-gradient(135deg, #d4edda, #c3e6cb);
   color: #155724;
   border: 1px solid #c3e6cb;
 }
 
-.status-cancelled { 
+.status-cancelled {
   background: linear-gradient(135deg, #f8d7da, #f1b0b7);
   color: #721c24;
   border: 1px solid #f1b0b7;
 }
 
-.status-pending { 
+.status-pending {
   background: linear-gradient(135deg, #fff3cd, #ffeaa7);
   color: #856404;
   border: 1px solid #ffeaa7;
 }
 
-.status-rescheduled { 
+.status-rescheduled {
   background: linear-gradient(135deg, #d1ecf1, #b9e3ea);
   color: #0c5460;
   border: 1px solid #b9e3ea;
@@ -386,34 +386,34 @@
     flex-direction: column;
     gap: 5px;
   }
-  
+
   .archive-tab {
     margin-right: 0;
     text-align: center;
   }
-  
+
   .archive-search {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .archive-search select {
     min-width: 100%;
   }
-  
+
   .archive-actions {
     flex-direction: column;
   }
-  
+
   .archive-table-wrapper {
     font-size: 0.9em;
   }
-  
+
   .archive-table-wrapper th,
   .archive-table-wrapper td {
     padding: 8px 6px;
   }
-  
+
   .btn-restore,
   .btn-delete-permanent {
     padding: 6px 12px;
@@ -506,8 +506,8 @@
     <div class="right-controls">
       <button class="btn-appointment" id="setAppointmentBtn">📅 Set Appointment</button>
       <button class="btn-anecdotal" id="createAnecdotalBtn">📝 Create Anecdotal</button>
-      <button class="btn-cleared" id="clearedBtn">✅ Cleared</button>
-      <button class="btn-danger" id="moveToTrashBtn">🗑️ Move Selected to Trash</button>
+      <button class="btn-cleared" id="clearedBtn">✅ Mark as Cleared</button>
+      <button class="btn-danger" id="moveToTrashBtn">🗑️ Move to Trash</button>
     </div>
   </div>
 
@@ -650,7 +650,7 @@
     <div class="modal-content" style="max-width: 95%; width: 95%;">
       <button class="close-btn" id="closeArchiveModal">✖</button>
       <h2>🗃️ Archive Records</h2>
-      
+
       <!-- Archive Tabs -->
       <div class="archive-tabs">
         <button class="archive-tab active" data-tab="complaintRecordsArchive">Complaint Records</button>
@@ -1136,10 +1136,10 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
     const messageEl = document.getElementById('notificationMessage');
     const iconEl = document.getElementById('notificationIcon');
     const actionsEl = document.getElementById('notificationActions');
-    
+
     // Set message
     messageEl.textContent = message;
-    
+
     // Set icon and styling based on type
     modal.className = 'notification-modal notification-' + type;
     if (type === 'success') {
@@ -1151,10 +1151,10 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
     } else {
         iconEl.textContent = 'ℹ️';
     }
-    
+
     // Set up actions
     actionsEl.innerHTML = '';
-    
+
     if (confirmCallback) {
         // This is a confirmation dialog (with OK/Cancel)
         const confirmBtn = document.createElement('button');
@@ -1165,7 +1165,7 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
             confirmCallback();
         };
         actionsEl.appendChild(confirmBtn);
-        
+
         // Always add cancel button for confirmation dialogs
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'btn-cancel';
@@ -1183,7 +1183,7 @@ function showNotification(message, type = 'info', confirmCallback = null, cancel
         okBtn.onclick = hideNotification;
         actionsEl.appendChild(okBtn);
     }
-    
+
     // Show modal
     modal.style.display = 'flex';
 }
@@ -1246,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Remove active class from all tabs
       document.querySelectorAll('.archive-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.archive-table-wrapper').forEach(t => t.classList.remove('active'));
-      
+
       // Add active class to clicked tab
       this.classList.add('active');
       const tabId = this.getAttribute('data-tab');
@@ -1295,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function getSelectedItems() {
     const activeTable = getActiveTable();
     const checkboxes = document.querySelectorAll(`#${activeTable} .rowCheckbox:checked`);
-    
+
     return Array.from(checkboxes).map(checkbox => {
       const row = checkbox.closest('tr');
       return {
@@ -1320,7 +1320,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const requests = selectedItems.map(item => {
         let url, data;
-        
+
         switch(item.type) {
           case 'complaint':
             url = `/prefect/complaints/update-status/${item.id}`;
@@ -1352,7 +1352,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Check if all requests were successful
       const allSuccess = results.every(result => result.success);
-      
+
       if (allSuccess) {
         // Remove rows from main table
         selectedItems.forEach(item => {
@@ -1362,7 +1362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         showNotification(`Successfully updated ${selectedItems.length} record(s) to ${status}.`, 'success');
-        
+
         // Reload archive data if archive modal is open
         if (document.getElementById('archiveModal').style.display === 'flex') {
           loadArchiveData();
@@ -1577,7 +1577,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const results = await Promise.all(responses.map(r => r.json()));
 
       const allSuccess = results.every(result => result.success);
-      
+
       if (allSuccess) {
         showNotification(`Successfully restored ${selectedItems.length} record(s).`, 'success');
         loadArchiveData(); // Reload archive data
@@ -1620,7 +1620,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const results = await Promise.all(responses.map(r => r.json()));
 
       const allSuccess = results.every(result => result.success);
-      
+
       if (allSuccess) {
         showNotification(`Successfully permanently deleted ${selectedItems.length} record(s).`, 'success');
         loadArchiveData(); // Reload archive data

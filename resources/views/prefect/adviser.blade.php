@@ -40,15 +40,7 @@
         <span>Select All</span>
       </label>
 
-      <!-- Dropdown Button -->
-      <div class="dropdown">
-        <button class="btn-info dropdown-btn">⬇️ View Records</button>
-        <div class="dropdown-content">
-          <a href="#" id="violationRecords">Violation Records</a>
-          <a href="#" id="violationAppointments">Violation Appointments</a>
-          <a href="#" id="violationAnecdotals">Violation Anecdotals</a>
-        </div>
-      </div>
+
     </div>
 
     <div class="right-controls">

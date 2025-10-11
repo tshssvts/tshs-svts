@@ -42,7 +42,7 @@
     <div class="right-controls">
       <button class="btn-appointment" id="setAppointmentBtn">📅 Set Appointment</button>
       <button class="btn-anecdotal" id="createAnecdotalBtn">📝 Create Anecdotal</button>
-      <button class="btn-cleared">✅ Cleared</button>
+      <button class="btn-cleared">✅ Mark as Cleared</button>
       <button class="btn-danger">🗑️ Move Selected to Trash</button>
     </div>
   </div>

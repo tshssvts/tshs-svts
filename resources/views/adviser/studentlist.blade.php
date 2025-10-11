@@ -24,11 +24,11 @@
     </div>
     <div class="card">
         <h2>{{ $grade11Students }}</h2>
-        <p>Grade 11 Students</p>
+        <p>Male Students</p>
     </div>
     <div class="card">
         <h2>{{ $grade12Students }}</h2>
-        <p>Grade 12 Students</p>
+        <p>Female Students</p>
     </div>
 </div>
 
@@ -41,17 +41,11 @@
         <span>Select All</span>
       </label>
 
-      <div class="dropdown">
-        <button class="btn-info dropdown-btn">⬇️ View Records</button>
-        <div class="dropdown-content">
-          <a href="#" id="violationRecords">Violation Records</a>
-          <a href="#" id="violationAppointments">Violation Appointments</a>
-          <a href="#" id="violationAnecdotals">Violation Anecdotals</a>
-        </div>
-      </div>
+
     </div>
 
     <div class="right-controls">
+      <button class="btn-cleared" id="markAsClearedBtn">✅ Mark as Graduated</button>
       <button class="btn-danger" id="moveToTrashBtn">🗑️ Move Selected to Trash</button>
     </div>
   </div>
