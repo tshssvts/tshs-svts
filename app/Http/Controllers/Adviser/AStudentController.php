@@ -91,6 +91,43 @@ public function studentlist()
 }
 
 
+public function store(Request $request)
+{
+    // Get the logged-in adviser's ID
+    $adviserId = Auth::guard('adviser')->id();
+
+    $validated = $request->validate([
+        'students' => 'required|array|min:1',
+        'students.*.student_fname' => 'required|string|max:255',
+        'students.*.student_lname' => 'required|string|max:255',
+        'students.*.student_sex' => 'nullable|string|in:male,female,other',
+        'students.*.student_birthdate' => 'required|date',
+        'students.*.student_address' => 'required|string|max:255',
+        'students.*.student_contactinfo' => 'required|string|max:50',
+        'students.*.parent_id' => 'required|exists:tbl_parent,parent_id', // PARENT IS INCLUDED HERE
+        'students.*.status' => 'nullable|string|in:active,inactive,transferred,graduated',
+    ]);
+
+    foreach ($validated['students'] as $studentData) {
+        Student::create([
+            'student_fname' => $studentData['student_fname'],
+            'student_lname' => $studentData['student_lname'],
+            'student_sex' => $studentData['student_sex'] ?? null,
+            'student_birthdate' => $studentData['student_birthdate'],
+            'student_address' => $studentData['student_address'],
+            'student_contactinfo' => $studentData['student_contactinfo'],
+            'parent_id' => $studentData['parent_id'], // PARENT IS ASSIGNED HERE
+            'adviser_id' => $adviserId, // Automatically assign logged-in adviser
+            'status' => $studentData['status'] ?? 'active',
+        ]);
+    }
+
+    return redirect()->route('student.list')->with('success', 'Students saved successfully!');
+}
+
+
+
+
     public function createStudent(Request $request){
         $parents = ParentModel::with('students')->get();
         $advisers = Adviser::all();
@@ -189,39 +226,9 @@ public function archive(Request $request)
                 'message' => 'Error deleting students: ' . $e->getMessage()
             ], 500);
         }
-    }public function store(Request $request)
-{
-    // Get the logged-in adviser's ID
-    $adviserId = Auth::guard('adviser')->id();
-
-    $validated = $request->validate([
-        'students' => 'required|array|min:1',
-        'students.*.student_fname' => 'required|string|max:255',
-        'students.*.student_lname' => 'required|string|max:255',
-        'students.*.student_sex' => 'nullable|string|in:male,female,other',
-        'students.*.student_birthdate' => 'required|date',
-        'students.*.student_address' => 'required|string|max:255',
-        'students.*.student_contactinfo' => 'required|string|max:50',
-        'students.*.parent_id' => 'required|exists:tbl_parent,parent_id', // PARENT IS INCLUDED HERE
-        'students.*.status' => 'nullable|string|in:active,inactive,transferred,graduated',
-    ]);
-
-    foreach ($validated['students'] as $studentData) {
-        Student::create([
-            'student_fname' => $studentData['student_fname'],
-            'student_lname' => $studentData['student_lname'],
-            'student_sex' => $studentData['student_sex'] ?? null,
-            'student_birthdate' => $studentData['student_birthdate'],
-            'student_address' => $studentData['student_address'],
-            'student_contactinfo' => $studentData['student_contactinfo'],
-            'parent_id' => $studentData['parent_id'], // PARENT IS ASSIGNED HERE
-            'adviser_id' => $adviserId, // Automatically assign logged-in adviser
-            'status' => $studentData['status'] ?? 'active',
-        ]);
     }
 
-    return redirect()->route('student.list')->with('success', 'Students saved successfully!');
-}
+
     public function update(Request $request, $id)
     {
         $request->validate([

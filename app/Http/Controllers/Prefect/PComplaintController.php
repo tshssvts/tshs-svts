@@ -19,11 +19,6 @@ use Carbon\Carbon;
 class PComplaintController extends Controller
 {
 
-    public function create()
-    {
-        return view('prefect.create-complaints');
-    }
-
     public function index()
     {
         // ✅ Load Anecdotal + Appointment models with relationships
@@ -94,6 +89,7 @@ class PComplaintController extends Controller
             'monthlyComplaints'
         ));
     }
+
 
     public function store(Request $request)
     {
@@ -187,6 +183,112 @@ class PComplaintController extends Controller
             return back()->with('error', 'Error saving complaints: ' . $e->getMessage());
         }
     }
+
+// Store multiple anecdotal records
+    public function storeMultipleAnecdotals(Request $request)
+    {
+        $request->validate([
+            'complaint_ids' => 'required|array',
+            'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
+            'comp_anec_solution' => 'required|string',
+            'comp_anec_recommendation' => 'required|string',
+            'anecdotal_date' => 'required|date',
+            'anecdotal_time' => 'required',
+        ]);
+
+        $complaintIds = $request->complaint_ids;
+
+        try {
+            DB::beginTransaction();
+
+            $createdAnecdotals = [];
+
+            foreach ($complaintIds as $complaintId) {
+                $anecdotal = ComplaintsAnecdotal::create([
+                    'complaints_id' => $complaintId,
+                    'comp_anec_solution' => $request->comp_anec_solution,
+                    'comp_anec_recommendation' => $request->comp_anec_recommendation,
+                    'comp_anec_date' => $request->anecdotal_date,
+                    'comp_anec_time' => $request->anecdotal_time,
+                    'status' => 'active'
+                ]);
+
+                // Load relationships for the response
+                $anecdotal->load(['complaint.complainant', 'complaint.respondent']);
+                $createdAnecdotals[] = $anecdotal;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Anecdotal records created successfully!',
+                'data' => $createdAnecdotals
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating anecdotal records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Store multiple appointment records
+    public function storeMultipleAppointments(Request $request)
+    {
+        $request->validate([
+            'complaint_ids' => 'required|array',
+            'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
+            'comp_app_date' => 'required|date',
+            'comp_app_time' => 'required',
+            'comp_app_status' => 'required|string',
+        ]);
+
+        $complaintIds = $request->complaint_ids;
+
+        try {
+            DB::beginTransaction();
+
+            $createdAppointments = [];
+
+            foreach ($complaintIds as $complaintId) {
+                $appointment = ComplaintsAppointment::create([
+                    'complaints_id' => $complaintId,
+                    'comp_app_date' => $request->comp_app_date,
+                    'comp_app_time' => $request->comp_app_time,
+                    'comp_app_status' => $request->comp_app_status,
+                    'status' => 'active'
+                ]);
+
+                $createdAppointments[] = $appointment;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Appointments created successfully!',
+                'data' => $createdAppointments
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating appointments: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    
+
+        public function create()
+    {
+        return view('prefect.create-complaints');
+    }
+
 
     /**
      * Search students for complainant/respondent.
@@ -386,103 +488,7 @@ class PComplaintController extends Controller
         }
     }
 
-    // Store multiple anecdotal records
-    public function storeMultipleAnecdotals(Request $request)
-    {
-        $request->validate([
-            'complaint_ids' => 'required|array',
-            'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
-            'comp_anec_solution' => 'required|string',
-            'comp_anec_recommendation' => 'required|string',
-            'anecdotal_date' => 'required|date',
-            'anecdotal_time' => 'required',
-        ]);
 
-        $complaintIds = $request->complaint_ids;
-
-        try {
-            DB::beginTransaction();
-
-            $createdAnecdotals = [];
-
-            foreach ($complaintIds as $complaintId) {
-                $anecdotal = ComplaintsAnecdotal::create([
-                    'complaints_id' => $complaintId,
-                    'comp_anec_solution' => $request->comp_anec_solution,
-                    'comp_anec_recommendation' => $request->comp_anec_recommendation,
-                    'comp_anec_date' => $request->anecdotal_date,
-                    'comp_anec_time' => $request->anecdotal_time,
-                    'status' => 'active'
-                ]);
-
-                // Load relationships for the response
-                $anecdotal->load(['complaint.complainant', 'complaint.respondent']);
-                $createdAnecdotals[] = $anecdotal;
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Anecdotal records created successfully!',
-                'data' => $createdAnecdotals
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Error creating anecdotal records: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Store multiple appointment records
-    public function storeMultipleAppointments(Request $request)
-    {
-        $request->validate([
-            'complaint_ids' => 'required|array',
-            'complaint_ids.*' => 'exists:tbl_complaints,complaints_id',
-            'comp_app_date' => 'required|date',
-            'comp_app_time' => 'required',
-            'comp_app_status' => 'required|string',
-        ]);
-
-        $complaintIds = $request->complaint_ids;
-
-        try {
-            DB::beginTransaction();
-
-            $createdAppointments = [];
-
-            foreach ($complaintIds as $complaintId) {
-                $appointment = ComplaintsAppointment::create([
-                    'complaints_id' => $complaintId,
-                    'comp_app_date' => $request->comp_app_date,
-                    'comp_app_time' => $request->comp_app_time,
-                    'comp_app_status' => $request->comp_app_status,
-                    'status' => 'active'
-                ]);
-
-                $createdAppointments[] = $appointment;
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointments created successfully!',
-                'data' => $createdAppointments
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Error creating appointments: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * Get complaint details for editing

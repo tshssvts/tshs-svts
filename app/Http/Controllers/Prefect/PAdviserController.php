@@ -35,10 +35,7 @@ public function index(Request $request)
     return view('prefect.adviser', compact('advisers', 'totalAdvisers', 'grade11Advisers', 'grade12Advisers'));
 
 }
- public function createAdviser()
-    {
-        return view('prefect.create-adviser'); // Blade file
-    }
+
 
  public function store(Request $request)
     {
@@ -78,6 +75,13 @@ public function index(Request $request)
         }
 
         return redirect()->back()->with('messages', $messages);
+    }
+
+
+    
+ public function createAdviser()
+    {
+        return view('prefect.create-adviser'); // Blade file
     }
 
     public function update(Request $request)

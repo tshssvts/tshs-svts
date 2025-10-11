@@ -36,17 +36,12 @@ class PParentController extends Controller
         return view('prefect.parentlists', compact('parents', 'archivedParents','totalParents','activeParents','archivedParents'));
     }
 
-    /**
-     * Show create parent form
-     */
-    public function createParent()
-    {
-        return view('prefect.create-parent');
-    }
+
 
     /**
      * Store new parent
-     */public function parentStore(Request $request)
+     */
+    public function parentStore(Request $request)
 {
     // Debug: Check what's being received
     \Log::info('Received data:', $request->all());
@@ -105,6 +100,17 @@ class PParentController extends Controller
         return back()->withInput()->with('error', 'Error saving parents: ' . $e->getMessage());
     }
 }
+
+
+
+    /**
+     * Show create parent form
+     */
+    public function createParent()
+    {
+        return view('prefect.create-parent');
+    }
+
     /**
      * Update parent
      */

@@ -36,12 +36,7 @@ class AParentController extends Controller
 
 }
 
- public function createParent()
-    {
-        return view('adviser.create-parent');
-    }
-
-    /**
+ /**
      * Store new parent
      */public function parentStore(Request $request)
 {
@@ -102,6 +97,13 @@ class AParentController extends Controller
         return back()->withInput()->with('error', 'Error saving parents: ' . $e->getMessage());
     }
 }
+
+ public function createParent()
+    {
+        return view('adviser.create-parent');
+    }
+
+
     /**
      * Update parent
      */

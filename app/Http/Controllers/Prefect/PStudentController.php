@@ -15,17 +15,6 @@ use Illuminate\Support\Facades\Log;
 class PStudentController extends Controller
 {
 
-
-    public function createStudent(Request $request){
-        $parents = ParentModel::with('students')->get();
-        $advisers = Adviser::all();
-        $students = Student::with(['parent', 'adviser'])
-                        ->orderBy('created_at', 'desc')
-                        ->get();
-
-        return view('prefect.create-student', compact('students', 'parents','advisers'));
-    }
-
     public function studentmanagement()
     {
 
@@ -71,6 +60,52 @@ class PStudentController extends Controller
         ));
     }
 
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'students' => 'required|array|min:1',
+            'students.*.student_fname' => 'required|string|max:255',
+            'students.*.student_lname' => 'required|string|max:255',
+            'students.*.student_sex' => 'nullable|string|in:male,female,other',
+            'students.*.student_birthdate' => 'required|date',
+            'students.*.student_address' => 'required|string|max:255',
+            'students.*.student_contactinfo' => 'required|string|max:50',
+            'students.*.parent_id' => 'required|exists:tbl_parent,parent_id',
+            'students.*.adviser_id' => 'required|exists:tbl_adviser,adviser_id',
+            'students.*.status' => 'nullable|string|in:active,inactive,transferred,graduated',
+        ]);
+
+        foreach ($validated['students'] as $studentData) {
+            Student::create([
+                'student_fname' => $studentData['student_fname'],
+                'student_lname' => $studentData['student_lname'],
+                'student_sex' => $studentData['student_sex'] ?? null,
+                'student_birthdate' => $studentData['student_birthdate'],
+                'student_address' => $studentData['student_address'],
+                'student_contactinfo' => $studentData['student_contactinfo'],
+                'parent_id' => $studentData['parent_id'],
+                'adviser_id' => $studentData['adviser_id'],
+                'status' => $studentData['status'] ?? 'active',
+            ]);
+        }
+
+        return redirect()->route('student.management')->with('success', 'Students saved successfully!');
+    }
+
+
+    public function createStudent(Request $request){
+        $parents = ParentModel::with('students')->get();
+        $advisers = Adviser::all();
+        $students = Student::with(['parent', 'adviser'])
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
+        return view('prefect.create-student', compact('students', 'parents','advisers'));
+    }
+
+
+    
     /**
      * Archive students (move to inactive status)
      */
@@ -164,37 +199,6 @@ class PStudentController extends Controller
         }
     }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'students' => 'required|array|min:1',
-            'students.*.student_fname' => 'required|string|max:255',
-            'students.*.student_lname' => 'required|string|max:255',
-            'students.*.student_sex' => 'nullable|string|in:male,female,other',
-            'students.*.student_birthdate' => 'required|date',
-            'students.*.student_address' => 'required|string|max:255',
-            'students.*.student_contactinfo' => 'required|string|max:50',
-            'students.*.parent_id' => 'required|exists:tbl_parent,parent_id',
-            'students.*.adviser_id' => 'required|exists:tbl_adviser,adviser_id',
-            'students.*.status' => 'nullable|string|in:active,inactive,transferred,graduated',
-        ]);
-
-        foreach ($validated['students'] as $studentData) {
-            Student::create([
-                'student_fname' => $studentData['student_fname'],
-                'student_lname' => $studentData['student_lname'],
-                'student_sex' => $studentData['student_sex'] ?? null,
-                'student_birthdate' => $studentData['student_birthdate'],
-                'student_address' => $studentData['student_address'],
-                'student_contactinfo' => $studentData['student_contactinfo'],
-                'parent_id' => $studentData['parent_id'],
-                'adviser_id' => $studentData['adviser_id'],
-                'status' => $studentData['status'] ?? 'active',
-            ]);
-        }
-
-        return redirect()->route('student.management')->with('success', 'Students saved successfully!');
-    }
 
     public function update(Request $request, $id)
     {
