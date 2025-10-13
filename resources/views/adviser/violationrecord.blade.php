@@ -27,6 +27,9 @@
     </div>
   </div>
 
+  <div class="main-container">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
   <!-- ✅ Toolbar -->
   <div class="toolbar">
     <h2>Violation Management</h2>
@@ -35,9 +38,6 @@
       <a href="{{ route('adviser.violations.create') }}" class="btn-primary" id="createBtn">
         <i class="fas fa-plus"></i> Add Violation
       </a>
-      {{-- <a href="{{ route('violation-anecdotal.create') }}" class="btn-primary" id="createAnecBtn">
-        <i class="fas fa-plus"></i>📝 Create Anecdotal
-      </a> --}}
       <button class="btn-info" id="archiveBtn">🗃️ Archive</button>
     </div>
   </div>
@@ -79,8 +79,8 @@
     <div class="right-controls">
       <!-- Violation Records Buttons -->
       <div id="violationRecordsActions" class="action-buttons">
-        <button class="btn-cleared" id="markAsClearedBtn">Mark as Cleared</button>
-        <button class="btn-schedule" id="setScheduleBtn">📅 Set Schedule</button>
+        <button class="btn-cleared" id="markAsClearedBtn">✅ Mark as Cleared</button>
+        <button class="btn-schedule" id="setScheduleBtn">📅 Set Appointment</button>
         <button class="btn-anecdotal" id="createAnecdotalBtn">📝 Create Anecdotal</button>
         <button class="btn-danger" id="moveToTrashBtn">🗑️ Move to Trash</button>
       </div>
@@ -217,7 +217,7 @@
           @endforelse
         </tbody>
       </table>
-            <div class="pagination-wrapper">
+      <div class="pagination-wrapper">
         <div class="pagination-summary">
           @if($appointments instanceof \Illuminate\Pagination\LengthAwarePaginator)
             @php
@@ -298,13 +298,19 @@
       </div>
     </div>
   </div>
-
+<!-- Notification Modal -->
+<div class="notification-modal" id="notificationModal">
+    <div class="notification-content">
+        <div class="notification-icon" id="notificationIcon"></div>
+        <div class="notification-message" id="notificationMessage"></div>
+        <div class="notification-actions" id="notificationActions"></div>
+    </div>
+</div>
   <!-- 👁️ Violation Details Modal -->
   <div class="modal" id="violationDetailsModal">
     <div class="modal-content">
       <button class="close-btn" id="closeViolationDetailsModal">✖</button>
       <h2>Violation Details</h2>
-
       <div class="violation-details-container">
         <div class="detail-section">
           <h3>Student Information</h3>
@@ -319,7 +325,6 @@
             </div>
           </div>
         </div>
-
         <div class="detail-section">
           <h3>Violation Information</h3>
           <div class="detail-grid">
@@ -354,7 +359,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal-actions">
         <button class="btn-sms" id="sendSmsBtn">📱 SEND SMS</button>
         <button class="btn-primary" id="viewAppointmentsBtn">📅 VIEW APPOINTMENTS</button>
@@ -367,7 +371,6 @@
     <div class="modal-content">
       <button class="close-btn" id="closeAnecdotalDetailsModal">✖</button>
       <h2>Anecdotal Details</h2>
-
       <div class="anecdotal-details-container">
         <div class="detail-section">
           <h3>Student Information</h3>
@@ -378,7 +381,6 @@
             </div>
           </div>
         </div>
-
         <div class="detail-section">
           <h3>Anecdotal Information</h3>
           <div class="detail-grid">
@@ -409,7 +411,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal-actions">
         <button class="btn-primary" id="viewRelatedViolationBtn">📋 VIEW RELATED VIOLATION</button>
       </div>
@@ -420,32 +421,81 @@
   <div class="modal" id="editViolationModal">
     <div class="modal-content">
       <button class="close-btn" id="closeViolationEditModal">✖</button>
-      <h2>Edit Record</h2>
-
+      <h2>Edit Violation Record</h2>
       <form id="editViolationForm" method="POST" action="">
         @csrf
         @method('PUT')
-
-        <input type="hidden" name="record_id" id="edit_record_id">
-
+        <input type="hidden" name="record_id" id="edit_violation_record_id">
         <div class="form-grid">
-          <div class="form-group">
-            <label>Details</label>
-            <textarea id="edit_details" name="details"></textarea>
+          <div class="form-group full-width">
+            <label>Incident Details</label>
+            <textarea id="edit_violation_incident" name="violation_incident" required></textarea>
           </div>
           <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="edit_date" name="date" required>
+            <label>Violation Date</label>
+            <input type="date" id="edit_violation_date" name="violation_date" required>
           </div>
           <div class="form-group">
-            <label>Time</label>
-            <input type="time" id="edit_time" name="time" required>
+            <label>Violation Time</label>
+            <input type="time" id="edit_violation_time" name="violation_time" required>
+          </div>
+          <div class="form-group">
+            <label>Offense Type</label>
+            <select id="edit_offense_type" name="offense_type" required>
+              <option value="">Select Offense Type</option>
+              @foreach($offenses as $offense)
+                <option value="{{ $offense->offense_sanc_id }}">{{ $offense->offense_type }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="edit_violation_status" name="status" required>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="cleared">Cleared</option>
+            </select>
           </div>
         </div>
-
         <div class="actions">
           <button type="submit" class="btn-primary">💾 Save Changes</button>
           <button type="button" class="btn-secondary" id="cancelViolationEditBtn">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ✏️ Edit Appointment Modal -->
+  <div class="modal" id="editAppointmentModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeAppointmentEditModal">✖</button>
+      <h2>Edit Appointment</h2>
+      <form id="editAppointmentForm" method="POST" action="">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="record_id" id="edit_appointment_record_id">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Appointment Date</label>
+            <input type="date" id="edit_appointment_date" name="appointment_date" required>
+          </div>
+          <div class="form-group">
+            <label>Appointment Time</label>
+            <input type="time" id="edit_appointment_time" name="appointment_time" required>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="edit_appointment_status" name="appointment_status" required>
+              <option value="Pending">Pending</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="button" class="btn-secondary" id="cancelAppointmentEditBtn">❌ Cancel</button>
         </div>
       </form>
     </div>
@@ -456,13 +506,10 @@
     <div class="modal-content">
       <button class="close-btn" id="closeAnecdotalEditModal">✖</button>
       <h2>Edit Anecdotal Record</h2>
-
       <form id="editAnecdotalForm" method="POST" action="">
         @csrf
         @method('PUT')
-
         <input type="hidden" name="record_id" id="edit_anecdotal_record_id">
-
         <div class="form-grid">
           <div class="form-group">
             <label>Solution</label>
@@ -489,7 +536,6 @@
             </select>
           </div>
         </div>
-
         <div class="actions">
           <button type="submit" class="btn-primary">💾 Save Changes</button>
           <button type="button" class="btn-secondary" id="cancelAnecdotalEditBtn">❌ Cancel</button>
@@ -503,17 +549,12 @@
     <div class="modal-content">
         <button class="close-btn" id="closeScheduleModal">✖</button>
         <h2>Set Schedule for Selected Violations</h2>
-
         <form id="setScheduleForm" method="POST" action="{{ route('adviser.storeMultipleAppointments') }}">
             @csrf
-
             <div class="selected-violations">
                 <h3>Selected Violations:</h3>
-                <div id="selectedViolationsList" class="selected-list">
-                    <!-- Selected violations will be listed here -->
-                </div>
+                <div id="selectedViolationsList" class="selected-list"></div>
             </div>
-
             <div class="form-grid">
                 <div class="form-group">
                     <label for="schedule_date">Appointment Date</label>
@@ -524,7 +565,6 @@
                     <input type="time" id="schedule_time" name="schedule_time" required>
                 </div>
             </div>
-
             <div class="actions">
                 <button type="submit" class="btn-primary">📅 Create Appointments</button>
                 <button type="button" class="btn-secondary" id="cancelScheduleBtn">❌ Cancel</button>
@@ -538,17 +578,12 @@
     <div class="modal-content">
         <button class="close-btn" id="closeAnecdotalModal">✖</button>
         <h2>Create Anecdotal Record for Selected Violations</h2>
-
         <form id="createAnecdotalForm" method="POST" action="{{ route('adviser.storeMultipleAnecdotals') }}">
             @csrf
-
             <div class="selected-violations">
                 <h3>Selected Violations:</h3>
-                <div id="selectedViolationsForAnecdotal" class="selected-list">
-                    <!-- Selected violations for anecdotal will be listed here -->
-                </div>
+                <div id="selectedViolationsForAnecdotal" class="selected-list"></div>
             </div>
-
             <div class="form-grid">
                 <div class="form-group">
                     <label for="anecdotal_date">Anecdotal Date</label>
@@ -567,7 +602,6 @@
                     <textarea id="violation_anec_recommendation" name="violation_anec_recommendation" placeholder="Provide recommendations for future prevention..." required rows="4"></textarea>
                 </div>
             </div>
-
             <div class="actions">
                 <button type="submit" class="btn-primary">📝 Create Anecdotal Records</button>
                 <button type="button" class="btn-secondary" id="cancelAnecdotalBtn">❌ Cancel</button>
@@ -949,127 +983,440 @@ textarea {
   gap: 10px;
   justify-content: flex-end;
 }
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-scheduled {
+  background-color: #cce7ff;
+  color: #004085;
+}
+
+.status-cleared {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-in-progress {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #545b62;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-cleared {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-cleared:hover {
+  background-color: #218838;
+}
+
+.btn-info {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-info:hover {
+  background-color: #138496;
+}
+
+.btn-print {
+  background-color: #6f42c1;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-print:hover {
+  background-color: #5a2d91;
+}
+
+.table-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+  color: #333;
+}
+
+tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.pagination-links {
+  display: flex;
+  gap: 5px;
+}
+
+.pagination-links a, .pagination-links span {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #007bff;
+}
+
+.pagination-links a:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.pagination-links .current {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.toolbar h2 {
+  margin: 0;
+  color: #333;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.actions input[type="search"] {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 300px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 2em;
+  color: #007bff;
+}
+
+.card p {
+  margin: 5px 0 0 0;
+  color: #666;
+}
+
+.select-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.left-controls, .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.select-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-btn {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: white;
+  min-width: 200px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.dropdown-content a {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333;
+}
+
+.dropdown-content a:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.no-data-row {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.rowCheckbox {
+  cursor: pointer;
+}
+
+.archive-table-container {
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 15px 0;
+}
+
+.archive-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.archive-table th, .archive-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.archive-table th {
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+}
+
+.modal-header {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.filter-container, .search-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-select, .search-input {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.success-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+
+
 </style>
 
 <script>
-// ==========================
-// Notification System
-// ==========================
-function showNotification(type, message, callback = null) {
-  const modal = document.getElementById('notificationModal');
-  const content = document.getElementById('notificationContent');
-  const icon = document.getElementById('notificationIcon');
-  const messageEl = document.getElementById('notificationMessage');
-  const actionsEl = document.getElementById('notificationActions');
-  const confirmBtn = document.getElementById('notificationConfirm');
-
-  // Set content based on type
-  messageEl.textContent = message;
-  
-  // Remove existing classes
-  content.className = 'notification-content';
-  
-  // Add appropriate class and icon
-  switch(type) {
-    case 'success':
-      content.classList.add('notification-success');
-      icon.textContent = '✅';
-      // Hide OK button for success messages
-      actionsEl.style.display = 'none';
-      
-      // Auto-close after 1 second
-      modal.style.display = 'flex';
-      setTimeout(() => {
-        modal.style.display = 'none';
-        if (callback && typeof callback === 'function') {
-          callback();
-        }
-      }, 1000);
-      return; // Exit early for success type
-      
-    case 'error':
-      content.classList.add('notification-error');
-      icon.textContent = '❌';
-      break;
-    case 'warning':
-      content.classList.add('notification-warning');
-      icon.textContent = '⚠️';
-      break;
-    case 'info':
-      content.classList.add('notification-info');
-      icon.textContent = 'ℹ️';
-      break;
-    default:
-      content.classList.add('notification-info');
-      icon.textContent = 'ℹ️';
-  }
-
-  // Show OK button for non-success types
-  actionsEl.style.display = 'flex';
-
-  // Show modal
-  modal.style.display = 'flex';
-
-  // Handle confirm button click
-  confirmBtn.onclick = function() {
-    modal.style.display = 'none';
-    if (callback && typeof callback === 'function') {
-      callback();
-    }
-  };
-
-  // Close on background click
-  modal.onclick = function(e) {
-    if (e.target === modal) {
-      modal.style.display = 'none';
-      if (callback && typeof callback === 'function') {
-        callback();
-      }
-    }
-  };
-}
-
-// ==========================
-// Confirmation Modal
-// ==========================
-function showConfirmation(message, confirmCallback, cancelCallback = null) {
-  const modal = document.getElementById('confirmationModal');
-  const messageEl = document.getElementById('confirmationMessage');
-  const confirmBtn = document.getElementById('confirmAction');
-  const cancelBtn = document.getElementById('cancelAction');
-
-  messageEl.textContent = message;
-
-  // Show modal
-  modal.style.display = 'flex';
-
-  // Handle confirm button
-  confirmBtn.onclick = function() {
-    modal.style.display = 'none';
-    if (confirmCallback && typeof confirmCallback === 'function') {
-      confirmCallback();
-    }
-  };
-
-  // Handle cancel button
-  cancelBtn.onclick = function() {
-    modal.style.display = 'none';
-    if (cancelCallback && typeof cancelCallback === 'function') {
-      cancelCallback();
-    }
-  };
-
-  // Close on background click
-  modal.onclick = function(e) {
-    if (e.target === modal) {
-      modal.style.display = 'none';
-      if (cancelCallback && typeof cancelCallback === 'function') {
-        cancelCallback();
-      }
-    }
-  };
-}
-
 // Get CSRF Token
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1077,19 +1424,391 @@ function getCsrfToken() {
 
 const csrfToken = getCsrfToken();
 
+// Notification Modal Functions
+function showNotification(message, type = 'info', confirmCallback = null, cancelCallback = null) {
+    const modal = document.getElementById('notificationModal');
+    const messageEl = document.getElementById('notificationMessage');
+    const iconEl = document.getElementById('notificationIcon');
+    const actionsEl = document.getElementById('notificationActions');
+
+    // Set message
+    messageEl.textContent = message;
+
+    // Set icon and styling based on type
+    modal.className = 'notification-modal notification-' + type;
+    if (type === 'success') {
+        iconEl.textContent = '✅';
+    } else if (type === 'error') {
+        iconEl.textContent = '❌';
+    } else if (type === 'warning') {
+        iconEl.textContent = '⚠️';
+    } else {
+        iconEl.textContent = 'ℹ️';
+    }
+
+    // Set up actions
+    actionsEl.innerHTML = '';
+
+    if (confirmCallback) {
+        // This is a confirmation dialog (with OK/Cancel)
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn-confirm';
+        confirmBtn.textContent = 'OK';
+        confirmBtn.onclick = function() {
+            hideNotification();
+            confirmCallback();
+        };
+        actionsEl.appendChild(confirmBtn);
+
+        // Always add cancel button for confirmation dialogs
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = function() {
+            hideNotification();
+            if (cancelCallback) cancelCallback();
+        };
+        actionsEl.appendChild(cancelBtn);
+    } else {
+        // This is just an alert (only OK button)
+        const okBtn = document.createElement('button');
+        okBtn.className = 'btn-confirm';
+        okBtn.textContent = 'OK';
+        okBtn.onclick = hideNotification;
+        actionsEl.appendChild(okBtn);
+    }
+
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+function hideNotification() {
+    document.getElementById('notificationModal').style.display = 'none';
+}
+
 // Current active table type
 let currentTableType = 'violationRecords';
 
-// ==================== NEW FUNCTIONALITY: SET SCHEDULE ====================
+// ==================== EDIT MODAL FUNCTIONALITY ====================
+document.addEventListener('DOMContentLoaded', () => {
+    // Edit Violation Modal
+    const editViolationModal = document.getElementById('editViolationModal');
+    const editViolationForm = document.getElementById('editViolationForm');
+    const closeViolationModal = document.getElementById('closeViolationEditModal');
+    const cancelViolationBtn = document.getElementById('cancelViolationEditBtn');
+
+    // Edit Appointment Modal
+    const editAppointmentModal = document.getElementById('editAppointmentModal');
+    const editAppointmentForm = document.getElementById('editAppointmentForm');
+    const closeAppointmentModal = document.getElementById('closeAppointmentEditModal');
+    const cancelAppointmentBtn = document.getElementById('cancelAppointmentEditBtn');
+
+    // Edit Anecdotal Modal
+    const editAnecdotalModal = document.getElementById('editAnecdotalModal');
+    const editAnecdotalForm = document.getElementById('editAnecdotalForm');
+    const closeAnecdotalModal = document.getElementById('closeAnecdotalEditModal');
+    const cancelAnecdotalBtn = document.getElementById('cancelAnecdotalEditBtn');
+
+    function openViolationModal(action, data) {
+        editViolationForm.action = action;
+        document.getElementById('edit_violation_record_id').value = data.id || '';
+        document.getElementById('edit_violation_incident').value = data.incident || '';
+        document.getElementById('edit_violation_date').value = data.date || '';
+        document.getElementById('edit_violation_time').value = convertTo24Hour(data.time || '');
+        document.getElementById('edit_offense_type').value = data.offenseId || '';
+        document.getElementById('edit_violation_status').value = data.status || 'active';
+        editViolationModal.style.display = 'flex';
+    }
+
+    function openAppointmentModal(action, data) {
+        editAppointmentForm.action = action;
+        document.getElementById('edit_appointment_record_id').value = data.id || '';
+        document.getElementById('edit_appointment_date').value = data.date || '';
+        document.getElementById('edit_appointment_time').value = convertTo24Hour(data.time || '');
+        document.getElementById('edit_appointment_status').value = data.status || 'Pending';
+        editAppointmentModal.style.display = 'flex';
+    }
+
+    function openAnecdotalModal(action, data) {
+        editAnecdotalForm.action = action;
+        document.getElementById('edit_anecdotal_record_id').value = data.id || '';
+        document.getElementById('edit_solution').value = data.solution || '';
+        document.getElementById('edit_recommendation').value = data.recommendation || '';
+        document.getElementById('edit_anecdotal_date').value = data.date || '';
+        document.getElementById('edit_anecdotal_time').value = convertTo24Hour(data.time || '');
+        document.getElementById('edit_anecdotal_status').value = data.status || 'active';
+        editAnecdotalModal.style.display = 'flex';
+    }
+
+    function convertTo24Hour(timeStr) {
+        if (!timeStr || !timeStr.includes(' ')) return timeStr;
+
+        const [time, mod] = timeStr.split(' ');
+        let [h, m] = time.split(':');
+        h = parseInt(h);
+        if (mod === 'PM' && h !== 12) h += 12;
+        if (mod === 'AM' && h === 12) h = 0;
+        return `${h.toString().padStart(2, '0')}:${m}`;
+    }
+
+    // Edit Violation Button functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('editViolationBtn')) {
+            e.stopPropagation();
+            const row = e.target.closest('tr');
+            if (row) {
+                openViolationModal(`/prefect/violations/update/${row.dataset.violationId}`, {
+                    id: row.dataset.violationId,
+                    incident: row.dataset.incident,
+                    date: row.dataset.date,
+                    time: row.dataset.time,
+                    offenseId: row.dataset.offenseId,
+                    status: row.dataset.status
+                });
+            }
+        }
+    });
+
+    // Edit Appointment Button functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('editAppointmentBtn')) {
+            e.stopPropagation();
+            const row = e.target.closest('tr');
+            if (row) {
+                openAppointmentModal(`/prefect/violation-appointments/update/${row.dataset.appId}`, {
+                    id: row.dataset.appId,
+                    date: row.dataset.date,
+                    time: row.dataset.time,
+                    status: row.dataset.status
+                });
+            }
+        }
+    });
+
+    // Edit Anecdotal Button functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('editAnecdotalBtn')) {
+            e.stopPropagation();
+            const row = e.target.closest('tr');
+            if (row) {
+                openAnecdotalModal(`/prefect/violation-anecdotals/update/${row.dataset.anecId}`, {
+                    id: row.dataset.anecId,
+                    solution: row.dataset.solution,
+                    recommendation: row.dataset.recommendation,
+                    date: row.dataset.date,
+                    time: row.dataset.time,
+                    status: row.dataset.status
+                });
+            }
+        }
+    });
+
+    // Close modal events
+    [closeViolationModal, cancelViolationBtn].forEach(btn => {
+        if (btn) btn.addEventListener('click', () => editViolationModal.style.display = 'none');
+    });
+
+    [closeAppointmentModal, cancelAppointmentBtn].forEach(btn => {
+        if (btn) btn.addEventListener('click', () => editAppointmentModal.style.display = 'none');
+    });
+
+    [closeAnecdotalModal, cancelAnecdotalBtn].forEach(btn => {
+        if (btn) btn.addEventListener('click', () => editAnecdotalModal.style.display = 'none');
+    });
+
+    // Handle form submissions
+    if (editViolationForm) {
+        editViolationForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleFormSubmission(this, 'Violation');
+        });
+    }
+
+    if (editAppointmentForm) {
+        editAppointmentForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleFormSubmission(this, 'Appointment');
+        });
+    }
+
+    if (editAnecdotalForm) {
+        editAnecdotalForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleFormSubmission(this, 'Anecdotal');
+        });
+    }
+
+    async function handleFormSubmission(form, type) {
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+
+        try {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(`${type} updated successfully!`, 'success');
+                // Close the appropriate modal
+                if (type === 'Violation') editViolationModal.style.display = 'none';
+                if (type === 'Appointment') editAppointmentModal.style.display = 'none';
+                if (type === 'Anecdotal') editAnecdotalModal.style.display = 'none';
+
+                // Reload to show updated data
+                location.reload();
+            } else {
+                if (result.errors) {
+                    let messages = Object.values(result.errors).flat().join('\n');
+                    showNotification('Validation failed:\n' + messages, 'error');
+                } else {
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification(`Error updating ${type.toLowerCase()}.`, 'error');
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    // Table switching functionality
+    const sections = {
+        violationRecords: document.getElementById('violationRecordsTable'),
+        violationAppointments: document.getElementById('violationAppointmentsTable'),
+        violationAnecdotals: document.getElementById('violationAnecdotalsTable')
+    };
+
+    const actionButtons = {
+        violationRecords: document.getElementById('violationRecordsActions'),
+        violationAppointments: document.getElementById('violationAppointmentsActions'),
+        violationAnecdotals: document.getElementById('violationAnecdotalsActions')
+    };
+
+    // Setup table view links
+    const violationRecordsLink = document.getElementById('violationRecords');
+    const violationAppointmentsLink = document.getElementById('violationAppointments');
+    const violationAnecdotalsLink = document.getElementById('violationAnecdotals');
+
+    if (violationRecordsLink) {
+        violationRecordsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchTableView('violationRecords');
+        });
+    }
+
+    if (violationAppointmentsLink) {
+        violationAppointmentsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchTableView('violationAppointments');
+        });
+    }
+
+    if (violationAnecdotalsLink) {
+        violationAnecdotalsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchTableView('violationAnecdotals');
+        });
+    }
+
+    function switchTableView(tableType) {
+        // Hide all tables and action buttons
+        Object.values(sections).forEach(sec => {
+            if (sec) sec.style.display = 'none';
+        });
+        Object.values(actionButtons).forEach(btn => {
+            if (btn) btn.style.display = 'none';
+        });
+
+        // Show selected table and action buttons
+        if (sections[tableType]) {
+            sections[tableType].style.display = 'block';
+        }
+        if (actionButtons[tableType]) {
+            actionButtons[tableType].style.display = 'flex';
+        }
+
+        // Update current table type
+        currentTableType = tableType;
+
+        // Reset select all checkbox
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.checked = false;
+        }
+    }
+});
+
+// Close modals when clicking outside
+document.addEventListener('click', function(event) {
+    const modals = [
+        'editViolationModal',
+        'editAppointmentModal',
+        'editAnecdotalModal',
+        'violationDetailsModal',
+        'anecdotalDetailsModal',
+        'violationRecordsArchiveModal',
+        'violationAppointmentsArchiveModal',
+        'violationAnecdotalsArchiveModal',
+        'setScheduleModal',
+        'createAnecdotalModal',
+        'anecdotalSuccessModal',
+        'notificationModal'
+    ];
+
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal && event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+
+// 🔍 Search Functionality for Main Tables
+document.getElementById('searchInput').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const currentTable = document.querySelector('.table-wrapper:not([style*="display: none"])');
+    if (currentTable) {
+        const rows = currentTable.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(filter) ? '' : 'none';
+        });
+    }
+});
+
+// ✅ Select All - Main Table
+document.getElementById('selectAll').addEventListener('change', function() {
+    const currentTable = document.querySelector('.table-wrapper:not([style*="display: none"])');
+    if (currentTable) {
+        const checkboxes = currentTable.querySelectorAll('.rowCheckbox');
+        checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+    }
+});
+
+// ==================== SET SCHEDULE FUNCTIONALITY ====================
 document.getElementById('setScheduleBtn').addEventListener('click', function() {
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one violation to schedule.');
+        showNotification('Please select at least one violation to schedule.', 'warning');
         return;
     }
 
-    // Get selected violation data
     const selectedViolations = Array.from(selectedCheckboxes).map(cb => {
         const row = cb.closest('tr');
         return {
@@ -1099,7 +1818,6 @@ document.getElementById('setScheduleBtn').addEventListener('click', function() {
         };
     });
 
-    // Populate selected violations list
     const selectedList = document.getElementById('selectedViolationsList');
     selectedList.innerHTML = '';
 
@@ -1113,7 +1831,6 @@ document.getElementById('setScheduleBtn').addEventListener('click', function() {
         selectedList.appendChild(item);
     });
 
-    // Show the modal
     document.getElementById('setScheduleModal').style.display = 'flex';
 });
 
@@ -1126,16 +1843,54 @@ document.getElementById('cancelScheduleBtn').addEventListener('click', function(
     document.getElementById('setScheduleModal').style.display = 'none';
 });
 
+// Handle schedule form submission
+document.getElementById('setScheduleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scheduling...';
+        submitBtn.disabled = true;
+
+        const response = await fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Appointments scheduled successfully!', 'success');
+            document.getElementById('setScheduleModal').style.display = 'none';
+            location.reload();
+        } else {
+            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error scheduling appointments.', 'error');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
 // ==================== CREATE ANECDOTAL FUNCTIONALITY ====================
 document.getElementById('createAnecdotalBtn').addEventListener('click', function() {
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one violation to create anecdotal record.');
+        showNotification('Please select at least one violation to create anecdotal record.', 'warning');
         return;
     }
 
-    // Get selected violation data
     const selectedViolations = Array.from(selectedCheckboxes).map(cb => {
         const row = cb.closest('tr');
         return {
@@ -1147,7 +1902,6 @@ document.getElementById('createAnecdotalBtn').addEventListener('click', function
         };
     });
 
-    // Populate selected violations list
     const selectedList = document.getElementById('selectedViolationsForAnecdotal');
     selectedList.innerHTML = '';
 
@@ -1163,7 +1917,6 @@ document.getElementById('createAnecdotalBtn').addEventListener('click', function
         selectedList.appendChild(item);
     });
 
-    // Show the modal
     document.getElementById('createAnecdotalModal').style.display = 'flex';
 });
 
@@ -1200,25 +1953,21 @@ document.getElementById('createAnecdotalForm').addEventListener('submit', async 
         const result = await response.json();
 
         if (result.success) {
-            // Show success modal
             document.getElementById('createAnecdotalModal').style.display = 'none';
-            showNotification('success', result.message, function() {
-                // Store created anecdotal data for printing
-                window.lastCreatedAnecdotals = result.data;
-                document.getElementById('anecdotalSuccessModal').style.display = 'flex';
-            });
+            document.getElementById('successMessage').textContent = result.message;
+            document.getElementById('anecdotalSuccessModal').style.display = 'flex';
+            window.lastCreatedAnecdotals = result.data;
         } else {
             if (result.errors) {
                 let messages = Object.values(result.errors).flat().join('\n');
-                showNotification('error', 'Validation failed:\n' + messages);
-                console.error(result.errors);
+                showNotification('Validation failed:\n' + messages, 'error');
             } else {
-                showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
             }
         }
     } catch (error) {
         console.error('Error:', error);
-        showNotification('error', 'Error creating anecdotal records.');
+        showNotification('Error creating anecdotal records.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
@@ -1228,7 +1977,7 @@ document.getElementById('createAnecdotalForm').addEventListener('submit', async 
 // Print Anecdotal Records
 document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
     if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
-        showNotification('warning', 'No anecdotal records to print.');
+        showNotification('No anecdotal records to print.', 'warning');
         return;
     }
 
@@ -1269,7 +2018,7 @@ document.getElementById('printAnecdotalBtn').addEventListener('click', function(
 // Close Success Modal
 document.getElementById('closeSuccessModal').addEventListener('click', function() {
     document.getElementById('anecdotalSuccessModal').style.display = 'none';
-    location.reload(); // Reload to show the new anecdotal records
+    location.reload();
 });
 
 // Function to generate print content
@@ -1278,7 +2027,7 @@ function generateAnecdotalPrintContent(anecdotals) {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Complaint Anecdotal Record</title>
+            <title>Violation Anecdotal Record</title>
             <style>
                 body {
                     font-family: 'Times New Roman', serif;
@@ -1374,11 +2123,9 @@ function generateAnecdotalPrintContent(anecdotals) {
     `;
 
     anecdotals.forEach((anecdotal, index) => {
-        // Get the complaint incident from the stored data
-        const incident = anecdotal.complaint?.complaints_incident || anecdotal.incident || 'No incident details available.';
-        const complainantName = anecdotal.complaint?.complainant?.student_fname + ' ' + anecdotal.complaint?.complainant?.student_lname || 'Unknown Complainant';
-        const respondentName = anecdotal.complaint?.respondent?.student_fname + ' ' + anecdotal.complaint?.respondent?.student_lname || 'Unknown Respondent';
-        const prefectName = 'Prefect of Discipline'; // You can get this from your auth user
+        const studentName = anecdotal.student_name || 'Unknown Student';
+        const incident = anecdotal.incident || 'No incident details available.';
+        const prefectName = 'Prefect of Discipline';
 
         content += `
             <div class="container">
@@ -1390,28 +2137,29 @@ function generateAnecdotalPrintContent(anecdotals) {
                     <h1>ANECDOTAL RECORD</h1>
                     <p>Prefect of Discipline</p>
                     <div class="date-section">
-                        Date: ${new Date(anecdotal.comp_anec_date).toLocaleDateString()}
+                        Date: ${new Date(anecdotal.violation_anec_date).toLocaleDateString()}
                     </div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">INCIDENT:</div>
+                    <div class="section-title">STUDENT INFORMATION:</div>
                     <div class="incident-content">
-                        ${incident}
+                        <strong>Student Name:</strong> ${studentName}<br>
+                        <strong>Incident:</strong> ${incident}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">SOLUTION IMPLEMENTED:</div>
+                    <div class="incident-content">
+                        ${anecdotal.violation_anec_solution}
                     </div>
                 </div>
 
                 <div class="section">
                     <div class="section-title">RECOMMENDATION:</div>
                     <div class="incident-content">
-                        ${anecdotal.comp_anec_recommendation}
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">SOLUTION:</div>
-                    <div class="incident-content">
-                        ${anecdotal.comp_anec_solution}
+                        ${anecdotal.violation_anec_recommendation}
                     </div>
                 </div>
 
@@ -1419,13 +2167,8 @@ function generateAnecdotalPrintContent(anecdotals) {
                     <div class="signature-grid">
                         <div class="signature-item">
                             <div class="signature-line"></div>
-                            <div>Complainant's name and signature</div>
-                            <div style="margin-top: 5px; font-weight: bold;">${complainantName}</div>
-                        </div>
-                        <div class="signature-item">
-                            <div class="signature-line"></div>
-                            <div>Respondent's name and signature</div>
-                            <div style="margin-top: 5px; font-weight: bold;">${respondentName}</div>
+                            <div>Student's name and signature</div>
+                            <div style="margin-top: 5px; font-weight: bold;">${studentName}</div>
                         </div>
                         <div class="signature-item">
                             <div class="signature-line"></div>
@@ -1460,38 +2203,6 @@ function generateAnecdotalPrintContent(anecdotals) {
     return content;
 }
 
-// Handle form submissions for new modals
-document.getElementById('setScheduleForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this);
-
-    try {
-        const response = await fetch(this.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showNotification('success', 'Appointments scheduled successfully!', function() {
-                document.getElementById('setScheduleModal').style.display = 'none';
-                location.reload();
-            });
-        } else {
-            showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('error', 'Error scheduling appointments.');
-    }
-});
-
 // 👁️ Violation Details Modal Functionality
 const violationDetailsModal = document.getElementById('violationDetailsModal');
 const closeViolationDetailsModal = document.getElementById('closeViolationDetailsModal');
@@ -1500,7 +2211,6 @@ const viewAppointmentsBtn = document.getElementById('viewAppointmentsBtn');
 
 // Function to open violation details modal
 function openViolationDetailsModal(violationData) {
-    // Populate the modal with violation data
     document.getElementById('detail-student-id').textContent = violationData.studentId || '-';
     document.getElementById('detail-student-name').textContent = violationData.studentName || '-';
     document.getElementById('detail-violation-id').textContent = violationData.violationId || '-';
@@ -1510,12 +2220,10 @@ function openViolationDetailsModal(violationData) {
     document.getElementById('detail-date').textContent = violationData.date || '-';
     document.getElementById('detail-time').textContent = violationData.time || '-';
 
-    // Set status with appropriate badge
     const statusElement = document.getElementById('detail-status');
     statusElement.textContent = violationData.status || '-';
     statusElement.className = 'status-badge ' + (violationData.status === 'active' ? 'status-active' : 'status-inactive');
 
-    // Show the modal
     violationDetailsModal.style.display = 'flex';
 }
 
@@ -1526,7 +2234,6 @@ const viewRelatedViolationBtn = document.getElementById('viewRelatedViolationBtn
 
 // Function to open anecdotal details modal
 function openAnecdotalDetailsModal(anecdotalData) {
-    // Populate the modal with anecdotal data
     document.getElementById('detail-anecdotal-student-name').textContent = anecdotalData.studentName || '-';
     document.getElementById('detail-anecdotal-id').textContent = anecdotalData.anecdotalId || '-';
     document.getElementById('detail-solution').textContent = anecdotalData.solution || '-';
@@ -1534,7 +2241,6 @@ function openAnecdotalDetailsModal(anecdotalData) {
     document.getElementById('detail-anecdotal-date').textContent = anecdotalData.date || '-';
     document.getElementById('detail-anecdotal-time').textContent = anecdotalData.time || '-';
 
-    // Set status with appropriate badge
     const statusElement = document.getElementById('detail-anecdotal-status');
     statusElement.textContent = anecdotalData.status ? anecdotalData.status.charAt(0).toUpperCase() + anecdotalData.status.slice(1) : '-';
     statusElement.className = 'status-badge ' +
@@ -1542,7 +2248,6 @@ function openAnecdotalDetailsModal(anecdotalData) {
          anecdotalData.status === 'in_progress' ? 'status-in-progress' :
          anecdotalData.status === 'completed' ? 'status-completed' : 'status-closed');
 
-    // Show the modal
     anecdotalDetailsModal.style.display = 'flex';
 }
 
@@ -1552,7 +2257,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     violationRows.forEach(row => {
         row.addEventListener('click', function(e) {
-            // Don't trigger if clicking on checkbox or edit button
             if (e.target.type === 'checkbox' || e.target.classList.contains('editViolationBtn')) {
                 return;
             }
@@ -1581,7 +2285,6 @@ document.addEventListener('DOMContentLoaded', function() {
     anecdotalRows.forEach(row => {
         if (!row.classList.contains('no-data-row')) {
             row.addEventListener('click', function(e) {
-                // Don't trigger if clicking on checkbox or edit button
                 if (e.target.type === 'checkbox' || e.target.classList.contains('editAnecdotalBtn')) {
                     return;
                 }
@@ -1616,75 +2319,21 @@ closeAnecdotalDetailsModal.addEventListener('click', function() {
 sendSmsBtn.addEventListener('click', function() {
     const studentName = document.getElementById('detail-student-name').textContent;
     const violationId = document.getElementById('detail-violation-id').textContent;
-
-    showNotification('info', `SMS would be sent for violation ${violationId} - ${studentName}`);
-    // Here you would typically integrate with your SMS service
-    // Example: sendSMS(violationId, studentName);
+    showNotification(`SMS would be sent for violation ${violationId} - ${studentName}`, 'info');
 });
 
 // View Appointments button functionality
 viewAppointmentsBtn.addEventListener('click', function() {
     const violationId = document.getElementById('detail-violation-id').textContent;
     const studentName = document.getElementById('detail-student-name').textContent;
-
-    showNotification('info', `Viewing appointments for violation ${violationId} - ${studentName}`);
-    // Here you would typically navigate to appointments page or load appointments in a separate modal
-    // Example: window.location.href = `/appointments?violation_id=${violationId}`;
+    showNotification(`Viewing appointments for violation ${violationId} - ${studentName}`, 'info');
 });
 
 // View Related Violation button functionality
 viewRelatedViolationBtn.addEventListener('click', function() {
     const anecdotalId = document.getElementById('detail-anecdotal-id').textContent;
     const studentName = document.getElementById('detail-anecdotal-student-name').textContent;
-
-    showNotification('info', `Viewing related violation for anecdotal ${anecdotalId} - ${studentName}`);
-    // Here you would typically navigate to violations page or load related violation
-    // Example: window.location.href = `/violations?anecdotal_id=${anecdotalId}`;
-});
-
-// Close modal when clicking outside
-document.addEventListener('click', function(event) {
-    const modals = [
-        'violationDetailsModal',
-        'anecdotalDetailsModal',
-        'violationRecordsArchiveModal',
-        'violationAppointmentsArchiveModal',
-        'violationAnecdotalsArchiveModal',
-        'setScheduleModal',
-        'createAnecdotalModal',
-        'anecdotalSuccessModal'
-    ];
-
-    modals.forEach(modalId => {
-        const modal = document.getElementById(modalId);
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-});
-
-// 🔍 Search Functionality for Main Tables
-document.getElementById('searchInput').addEventListener('input', function() {
-    const filter = this.value.toLowerCase();
-    const currentTable = document.querySelector('.table-wrapper:not([style*="display: none"])');
-    if (currentTable) {
-        const rows = currentTable.querySelectorAll('tbody tr');
-        rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(filter) ? '' : 'none';
-        });
-    }
-});
-
-// ✅ Select All - Main Table
-document.getElementById('selectAll').addEventListener('change', function() {
-    const currentTable = document.querySelector('.table-wrapper:not([style*="display: none"])');
-    if (currentTable) {
-        const checkboxes = currentTable.querySelectorAll('.rowCheckbox');
-        checkboxes.forEach(cb => {
-            cb.checked = this.checked;
-        });
-    }
+    showNotification(`Viewing related violation for anecdotal ${anecdotalId} - ${studentName}`, 'info');
 });
 
 // ==================== VIOLATION RECORDS FUNCTIONALITY ====================
@@ -1693,14 +2342,15 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one violation.');
+        showNotification('Please select at least one violation.', 'warning');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to move ${violationIds.length} violation(s) to archive as Inactive?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/archive', {
@@ -1719,27 +2369,22 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${violationIds.length} violation(s) moved to archive as Inactive.`, function() {
-                        // Remove the archived rows from the main table
-                        violationIds.forEach(id => {
-                            const row = document.querySelector(`tr[data-violation-id="${id}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Update UI
-                        document.getElementById('selectAll').checked = false;
-
-                        // Reload to update counts
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                    showNotification(`${violationIds.length} violation(s) moved to archive as Inactive.`, 'success');
+                    violationIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-violation-id="${id}"]`);
+                        if (row) row.remove();
                     });
+
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error moving violations to archive.');
+                showNotification('Error moving violations to archive.', 'error');
             }
         }
     );
@@ -1750,14 +2395,15 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one violation.');
+        showNotification('Please select at least one violation.', 'warning');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to mark ${violationIds.length} violation(s) as Cleared?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/archive', {
@@ -1776,27 +2422,22 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${violationIds.length} violation(s) marked as Cleared and moved to archive.`, function() {
-                        // Remove the cleared rows from the main table
-                        violationIds.forEach(id => {
-                            const row = document.querySelector(`tr[data-violation-id="${id}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Update UI
-                        document.getElementById('selectAll').checked = false;
-
-                        // Reload to update counts
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                    showNotification(`${violationIds.length} violation(s) marked as Cleared and moved to archive.`, 'success');
+                    violationIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-violation-id="${id}"]`);
+                        if (row) row.remove();
                     });
+
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error marking violations as cleared.');
+                showNotification('Error marking violations as cleared.', 'error');
             }
         }
     );
@@ -1808,14 +2449,15 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one appointment.');
+        showNotification('Please select at least one appointment.', 'warning');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to mark ${appointmentIds.length} appointment(s) as Completed?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violation-appointments/archive', {
@@ -1834,27 +2476,22 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${appointmentIds.length} appointment(s) marked as Completed and moved to archive.`, function() {
-                        // Remove the completed rows from the main table
-                        appointmentIds.forEach(id => {
-                            const row = document.querySelector(`tr[data-app-id="${id}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Update UI
-                        document.getElementById('selectAll').checked = false;
-
-                        // Reload to update counts
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                    showNotification(`${appointmentIds.length} appointment(s) marked as Completed and moved to archive.`, 'success');
+                    appointmentIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-app-id="${id}"]`);
+                        if (row) row.remove();
                     });
+
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error marking appointments as completed.');
+                showNotification('Error marking appointments as completed.', 'error');
             }
         }
     );
@@ -1865,14 +2502,15 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one appointment.');
+        showNotification('Please select at least one appointment.', 'warning');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to move ${appointmentIds.length} appointment(s) to archive as Cancelled?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violation-appointments/archive', {
@@ -1891,27 +2529,22 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${appointmentIds.length} appointment(s) moved to archive as Cancelled.`, function() {
-                        // Remove the archived rows from the main table
-                        appointmentIds.forEach(id => {
-                            const row = document.querySelector(`tr[data-app-id="${id}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Update UI
-                        document.getElementById('selectAll').checked = false;
-
-                        // Reload to update counts
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                    showNotification(`${appointmentIds.length} appointment(s) moved to archive as Cancelled.`, 'success');
+                    appointmentIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-app-id="${id}"]`);
+                        if (row) row.remove();
                     });
+
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error moving appointments to archive.');
+                showNotification('Error moving appointments to archive.', 'error');
             }
         }
     );
@@ -1923,14 +2556,15 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one anecdotal record.');
+        showNotification('Please select at least one anecdotal record.', 'warning');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to mark ${anecdotalIds.length} anecdotal record(s) as Completed?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violation-anecdotals/archive', {
@@ -1949,27 +2583,22 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`, function() {
-                        // Remove the completed rows from the main table
-                        anecdotalIds.forEach(id => {
-                            const row = document.querySelector(`tr[data-anec-id="${id}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Update UI
-                        document.getElementById('selectAll').checked = false;
-
-                        // Reload to update counts
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                    showNotification(`${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`, 'success');
+                    anecdotalIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-anec-id="${id}"]`);
+                        if (row) row.remove();
                     });
+
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error marking anecdotal records as completed.');
+                showNotification('Error marking anecdotal records as completed.', 'error');
             }
         }
     );
@@ -1980,14 +2609,15 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one anecdotal record.');
+        showNotification('Please select at least one anecdotal record.', 'warning');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to move ${anecdotalIds.length} anecdotal record(s) to archive as Closed?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violation-anecdotals/archive', {
@@ -2006,27 +2636,22 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`, function() {
-                        // Remove the archived rows from the main table
-                        anecdotalIds.forEach(id => {
-                            const row = document.querySelector(`tr[data-anec-id="${id}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Update UI
-                        document.getElementById('selectAll').checked = false;
-
-                        // Reload to update counts
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                    showNotification(`${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`, 'success');
+                    anecdotalIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-anec-id="${id}"]`);
+                        if (row) row.remove();
                     });
+
+                    document.getElementById('selectAll').checked = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error moving anecdotal records to archive.');
+                showNotification('Error moving anecdotal records to archive.', 'error');
             }
         }
     );
@@ -2040,40 +2665,34 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
         console.log('Loading archived data for:', currentTableType);
 
         if (currentTableType === 'violationRecords') {
-            // Load archived violation records
             const violationResponse = await fetch('/adviser/violations/archived');
             console.log('Violation response status:', violationResponse.status);
             const archivedViolations = await violationResponse.json();
             console.log('Archived violations:', archivedViolations);
 
-            // Populate violation records table
             populateArchiveTable('archiveViolationRecordsBody', archivedViolations, 'violation');
             document.getElementById('violationRecordsArchiveModal').style.display = 'flex';
 
         } else if (currentTableType === 'violationAppointments') {
-            // Load archived appointments
             const appointmentResponse = await fetch('/adviser/violation-appointments/archived');
             console.log('Appointment response status:', appointmentResponse.status);
             const archivedAppointments = await appointmentResponse.json();
             console.log('Archived appointments:', archivedAppointments);
 
-            // Populate appointments table
             populateArchiveTable('archiveViolationAppointmentsBody', archivedAppointments, 'appointment');
             document.getElementById('violationAppointmentsArchiveModal').style.display = 'flex';
         } else if (currentTableType === 'violationAnecdotals') {
-            // Load archived anecdotals
             const anecdotalResponse = await fetch('/adviser/violation-anecdotals/archived');
             console.log('Anecdotal response status:', anecdotalResponse.status);
             const archivedAnecdotals = await anecdotalResponse.json();
             console.log('Archived anecdotals:', archivedAnecdotals);
 
-            // Populate anecdotals table
             populateArchiveTable('archiveViolationAnecdotalsBody', archivedAnecdotals, 'anecdotal');
             document.getElementById('violationAnecdotalsArchiveModal').style.display = 'flex';
         }
     } catch (error) {
         console.error('Error loading archived data:', error);
-        showNotification('error', 'Error loading archived data. Check console for details.');
+        showNotification('Error loading archived data. Check console for details.', 'error');
     }
 });
 
@@ -2110,9 +2729,9 @@ function populateArchiveTable(tableBodyId, data, type) {
                 <td><input type="checkbox" class="archiveCheckbox" value="${item.violation_app_id}" data-type="appointment"></td>
                 <td>${item.violation_app_id}</td>
                 <td>${item.student_fname} ${item.student_lname}</td>
-                <td><span class="status-badge ${item.violation_app_status === 'Completed' ? 'status-cleared' : 'status-inactive'}">${item.violation_app_status}</span></td>
                 <td>${item.violation_app_date}</td>
                 <td>${item.violation_app_time}</td>
+                <td><span class="status-badge ${item.violation_app_status === 'Completed' ? 'status-cleared' : 'status-inactive'}">${item.violation_app_status}</span></td>
                 <td>${new Date(item.updated_at).toLocaleDateString()}</td>
             `;
         } else if (type === 'anecdotal') {
@@ -2241,7 +2860,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one record to restore.');
+        showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2250,8 +2869,9 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
         type: cb.dataset.type
     }));
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to restore ${records.length} record(s)?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/restore-multiple', {
@@ -2267,22 +2887,18 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${records.length} record(s) restored successfully.`, function() {
-                        // Remove the restored rows from archive table
-                        records.forEach(record => {
-                            const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Reload the page to show restored records in main table
-                        location.reload();
+                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
                     });
+                    location.reload();
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error restoring records.');
+                showNotification('Error restoring records.', 'error');
             }
         }
     );
@@ -2293,7 +2909,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one record to restore.');
+        showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2302,8 +2918,9 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
         type: cb.dataset.type
     }));
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to restore ${records.length} record(s)?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/restore-multiple', {
@@ -2319,22 +2936,18 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${records.length} record(s) restored successfully.`, function() {
-                        // Remove the restored rows from archive table
-                        records.forEach(record => {
-                            const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Reload the page to show restored records in main table
-                        location.reload();
+                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
                     });
+                    location.reload();
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error restoring records.');
+                showNotification('Error restoring records.', 'error');
             }
         }
     );
@@ -2345,7 +2958,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one record to restore.');
+        showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2354,8 +2967,9 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
         type: cb.dataset.type
     }));
 
-    showConfirmation(
+    showNotification(
         `Are you sure you want to restore ${records.length} record(s)?`,
+        'warning',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/restore-multiple', {
@@ -2371,22 +2985,18 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${records.length} record(s) restored successfully.`, function() {
-                        // Remove the restored rows from archive table
-                        records.forEach(record => {
-                            const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // Reload the page to show restored records in main table
-                        location.reload();
+                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
                     });
+                    location.reload();
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error restoring records.');
+                showNotification('Error restoring records.', 'error');
             }
         }
     );
@@ -2398,7 +3008,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one record to delete permanently.');
+        showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -2407,8 +3017,9 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
         type: cb.dataset.type
     }));
 
-    showConfirmation(
+    showNotification(
         'WARNING: This will permanently delete these records. This action cannot be undone!',
+        'error',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/destroy-multiple-archived', {
@@ -2424,25 +3035,22 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${records.length} record(s) deleted permanently.`, function() {
-                        // Remove the deleted rows from archive table
-                        records.forEach(record => {
-                            const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // If no more archived records in current table, show message
-                        const remainingRows = tableBody.querySelectorAll('tr');
-                        if (remainingRows.length === 0) {
-                            tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
-                        }
+                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
                     });
+
+                    const remainingRows = tableBody.querySelectorAll('tr');
+                    if (remainingRows.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    }
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error deleting records.');
+                showNotification('Error deleting records.', 'error');
             }
         }
     );
@@ -2453,7 +3061,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one record to delete permanently.');
+        showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -2462,8 +3070,9 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
         type: cb.dataset.type
     }));
 
-    showConfirmation(
+    showNotification(
         'WARNING: This will permanently delete these records. This action cannot be undone!',
+        'error',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/destroy-multiple-archived', {
@@ -2479,25 +3088,22 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${records.length} record(s) deleted permanently.`, function() {
-                        // Remove the deleted rows from archive table
-                        records.forEach(record => {
-                            const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // If no more archived records in current table, show message
-                        const remainingRows = tableBody.querySelectorAll('tr');
-                        if (remainingRows.length === 0) {
-                            tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
-                        }
+                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
                     });
+
+                    const remainingRows = tableBody.querySelectorAll('tr');
+                    if (remainingRows.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    }
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error deleting records.');
+                showNotification('Error deleting records.', 'error');
             }
         }
     );
@@ -2508,7 +3114,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('warning', 'Please select at least one record to delete permanently.');
+        showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -2517,8 +3123,9 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
         type: cb.dataset.type
     }));
 
-    showConfirmation(
+    showNotification(
         'WARNING: This will permanently delete these records. This action cannot be undone!',
+        'error',
         async function() {
             try {
                 const response = await fetch('/adviser/violations/destroy-multiple-archived', {
@@ -2534,25 +3141,22 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('success', `${records.length} record(s) deleted permanently.`, function() {
-                        // Remove the deleted rows from archive table
-                        records.forEach(record => {
-                            const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
-                            if (row) row.remove();
-                        });
-
-                        // If no more archived records in current table, show message
-                        const remainingRows = tableBody.querySelectorAll('tr');
-                        if (remainingRows.length === 0) {
-                            tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
-                        }
+                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    records.forEach(record => {
+                        const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
+                        if (row) row.remove();
                     });
+
+                    const remainingRows = tableBody.querySelectorAll('tr');
+                    if (remainingRows.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
+                    }
                 } else {
-                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('error', 'Error deleting records.');
+                showNotification('Error deleting records.', 'error');
             }
         }
     );
@@ -2571,127 +3175,15 @@ document.getElementById('closeViolationAnecdotalsArchive').addEventListener('cli
     document.getElementById('violationAnecdotalsArchiveModal').style.display = 'none';
 });
 
-// ==================== EDIT MODAL FUNCTIONALITY ====================
-document.addEventListener('DOMContentLoaded', () => {
-  // Edit Violation Modal
-  const editViolationModal = document.getElementById('editViolationModal');
-  const editViolationForm = document.getElementById('editViolationForm');
-  const closeViolationModal = document.getElementById('closeViolationEditModal');
-  const cancelViolationBtn = document.getElementById('cancelViolationEditBtn');
+// Show dropdown on hover
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdown = document.querySelector('.dropdown');
+    const dropdownContent = document.querySelector('.dropdown-content');
 
-  // Edit Anecdotal Modal
-  const editAnecdotalModal = document.getElementById('editAnecdotalModal');
-  const editAnecdotalForm = document.getElementById('editAnecdotalForm');
-  const closeAnecdotalModal = document.getElementById('closeAnecdotalEditModal');
-  const cancelAnecdotalBtn = document.getElementById('cancelAnecdotalEditBtn');
-
-  function openViolationModal(action, data) {
-    editViolationForm.action = action;
-    document.getElementById('edit_record_id').value = data.id || '';
-    document.getElementById('edit_details').value = data.details || '';
-    document.getElementById('edit_date').value = data.date || '';
-    document.getElementById('edit_time').value = convertTo24Hour(data.time || '');
-    editViolationModal.style.display = 'flex';
-  }
-
-  function openAnecdotalModal(action, data) {
-    editAnecdotalForm.action = action;
-    document.getElementById('edit_anecdotal_record_id').value = data.id || '';
-    document.getElementById('edit_solution').value = data.solution || '';
-    document.getElementById('edit_recommendation').value = data.recommendation || '';
-    document.getElementById('edit_anecdotal_date').value = data.date || '';
-    document.getElementById('edit_anecdotal_time').value = convertTo24Hour(data.time || '');
-    document.getElementById('edit_anecdotal_status').value = data.status || 'active';
-    editAnecdotalModal.style.display = 'flex';
-  }
-
-  function convertTo24Hour(timeStr) {
-    if (!timeStr.includes(' ')) return timeStr;
-    const [time, mod] = timeStr.split(' ');
-    let [h, m] = time.split(':');
-    h = parseInt(h);
-    if (mod === 'PM' && h !== 12) h += 12;
-    if (mod === 'AM' && h === 12) h = 0;
-    return `${h.toString().padStart(2, '0')}:${m}`;
-  }
-
-  // Edit Violation Button functionality
-  document.querySelectorAll('.editViolationBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const row = e.target.closest('tr');
-      openViolationModal(`/adviser/violations/update/${row.dataset.violationId}`, {
-        id: row.dataset.violationId,
-        details: row.dataset.incident,
-        date: row.dataset.date,
-        time: row.dataset.time
-      });
+    dropdown.addEventListener('mouseenter', function() {
+        dropdownContent.style.display = 'block';
     });
-  });
 
-  // Edit Appointment Button functionality
-  document.querySelectorAll('.editAppointmentBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const row = e.target.closest('tr');
-      openViolationModal(`/adviser/violation-appointments/update/${row.dataset.appId}`, {
-        id: row.dataset.appId,
-        details: row.dataset.status,
-        date: row.dataset.date,
-        time: row.dataset.time
-      });
-    });
-  });
-
-  // Edit Anecdotal Button functionality
-  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation(); // Prevent triggering the row click event
-      const row = e.target.closest('tr');
-      openAnecdotalModal(`/adviser/violation-anecdotals/update/${row.dataset.anecId}`, {
-        id: row.dataset.anecId,
-        solution: row.dataset.solution,
-        recommendation: row.dataset.recommendation,
-        date: row.dataset.date,
-        time: row.dataset.time,
-        status: row.dataset.status
-      });
-    });
-  });
-
-  // Close modal events
-  [closeViolationModal, cancelViolationBtn].forEach(btn => btn.addEventListener('click', () => editViolationModal.style.display = 'none'));
-  [closeAnecdotalModal, cancelAnecdotalBtn].forEach(btn => btn.addEventListener('click', () => editAnecdotalModal.style.display = 'none'));
-
-  // Table switching functionality
-  const sections = {
-    violationRecords: document.getElementById('violationRecordsTable'),
-    violationAppointments: document.getElementById('violationAppointmentsTable'),
-    violationAnecdotals: document.getElementById('violationAnecdotalsTable')
-  };
-
-  const actionButtons = {
-    violationRecords: document.getElementById('violationRecordsActions'),
-    violationAppointments: document.getElementById('violationAppointmentsActions'),
-    violationAnecdotals: document.getElementById('violationAnecdotalsActions')
-  };
-
-  Object.keys(sections).forEach(key => {
-    document.getElementById(key).addEventListener('click', e => {
-      e.preventDefault();
-      // Hide all tables and action buttons
-      Object.values(sections).forEach(sec => sec.style.display = 'none');
-      Object.values(actionButtons).forEach(btn => btn.style.display = 'none');
-
-      // Show selected table and action buttons
-      sections[key].style.display = 'block';
-      actionButtons[key].style.display = 'flex';
-
-      // Update current table type
-      currentTableType = key;
-
-      // Reset select all checkbox
-      document.getElementById('selectAll').checked = false;
-    });
-  });
 });
 </script>
 @endsection
