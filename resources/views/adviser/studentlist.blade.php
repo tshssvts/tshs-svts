@@ -4,6 +4,29 @@
 <div class="main-container">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
+  <!-- Notification Modal -->
+  <div class="notification-modal" id="notificationModal">
+    <div class="notification-content" id="notificationContent">
+      <div class="notification-icon" id="notificationIcon"></div>
+      <div class="notification-message" id="notificationMessage"></div>
+      <div class="notification-actions" id="notificationActions">
+        <button class="btn-confirm" id="notificationConfirm">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="notification-modal" id="confirmationModal">
+    <div class="notification-content">
+      <div class="notification-icon" id="confirmationIcon">⚠️</div>
+      <div class="notification-message" id="confirmationMessage"></div>
+      <div class="notification-actions">
+        <button class="btn-confirm" id="confirmAction">Confirm</button>
+        <button class="btn-cancel" id="cancelAction">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toolbar -->
   <div class="toolbar">
     <h2>Student Management</h2>
@@ -211,6 +234,124 @@
 </div>
 
 <script>
+// ==========================
+// Notification System
+// ==========================
+function showNotification(type, message, callback = null) {
+  const modal = document.getElementById('notificationModal');
+  const content = document.getElementById('notificationContent');
+  const icon = document.getElementById('notificationIcon');
+  const messageEl = document.getElementById('notificationMessage');
+  const actionsEl = document.getElementById('notificationActions');
+  const confirmBtn = document.getElementById('notificationConfirm');
+
+  // Set content based on type
+  messageEl.textContent = message;
+  
+  // Remove existing classes
+  content.className = 'notification-content';
+  
+  // Add appropriate class and icon
+  switch(type) {
+    case 'success':
+      content.classList.add('notification-success');
+      icon.textContent = '✅';
+      // Hide OK button for success messages
+      actionsEl.style.display = 'none';
+      
+      // Auto-close after 1 second
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        modal.style.display = 'none';
+        if (callback && typeof callback === 'function') {
+          callback();
+        }
+      }, 1000);
+      return; // Exit early for success type
+      
+    case 'error':
+      content.classList.add('notification-error');
+      icon.textContent = '❌';
+      break;
+    case 'warning':
+      content.classList.add('notification-warning');
+      icon.textContent = '⚠️';
+      break;
+    case 'info':
+      content.classList.add('notification-info');
+      icon.textContent = 'ℹ️';
+      break;
+    default:
+      content.classList.add('notification-info');
+      icon.textContent = 'ℹ️';
+  }
+
+  // Show OK button for non-success types
+  actionsEl.style.display = 'flex';
+
+  // Show modal
+  modal.style.display = 'flex';
+
+  // Handle confirm button click
+  confirmBtn.onclick = function() {
+    modal.style.display = 'none';
+    if (callback && typeof callback === 'function') {
+      callback();
+    }
+  };
+
+  // Close on background click
+  modal.onclick = function(e) {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+      if (callback && typeof callback === 'function') {
+        callback();
+      }
+    }
+  };
+}
+
+// ==========================
+// Confirmation Modal
+// ==========================
+function showConfirmation(message, confirmCallback, cancelCallback = null) {
+  const modal = document.getElementById('confirmationModal');
+  const messageEl = document.getElementById('confirmationMessage');
+  const confirmBtn = document.getElementById('confirmAction');
+  const cancelBtn = document.getElementById('cancelAction');
+
+  messageEl.textContent = message;
+
+  // Show modal
+  modal.style.display = 'flex';
+
+  // Handle confirm button
+  confirmBtn.onclick = function() {
+    modal.style.display = 'none';
+    if (confirmCallback && typeof confirmCallback === 'function') {
+      confirmCallback();
+    }
+  };
+
+  // Handle cancel button
+  cancelBtn.onclick = function() {
+    modal.style.display = 'none';
+    if (cancelCallback && typeof cancelCallback === 'function') {
+      cancelCallback();
+    }
+  };
+
+  // Close on background click
+  modal.onclick = function(e) {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+      if (cancelCallback && typeof cancelCallback === 'function') {
+        cancelCallback();
+      }
+    }
+  };
+}
+
 // Get CSRF Token
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -252,51 +393,53 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one student.');
+        showNotification('warning', 'Please select at least one student.');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to archive ${studentIds.length} student(s)?`)) {
-        return;
-    }
+    showConfirmation(
+        `Are you sure you want to archive ${studentIds.length} student(s)?`,
+        async function() {
+            try {
+                const response = await fetch('{{ route("adviser.students.archive") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
 
-    try {
-        const response = await fetch('{{ route("adviser.students.archive") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ student_ids: studentIds })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification('success', `${studentIds.length} student(s) moved to archive.`, function() {
+                        // Remove the archived rows from the main table
+                        studentIds.forEach(id => {
+                            const row = document.querySelector(`tr[data-student-id="${id}"]`);
+                            if (row) row.remove();
+                        });
 
-        if (result.success) {
-            alert(`${studentIds.length} student(s) moved to archive.`);
-            // Remove the archived rows from the main table
-            studentIds.forEach(id => {
-                const row = document.querySelector(`tr[data-student-id="${id}"]`);
-                if (row) row.remove();
-            });
+                        // Update UI
+                        document.getElementById('selectAll').checked = false;
 
-            // Update UI
-            document.getElementById('selectAll').checked = false;
-
-            // Reload to update counts
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                        // Reload to update counts
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    });
+                } else {
+                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('error', 'Error moving students to archive.');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error moving students to archive.');
-    }
+    );
 });
 
 // 🗃️ Archive Modal - Load archived students
@@ -334,7 +477,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
         document.getElementById('archiveModal').style.display = 'flex';
     } catch (error) {
         console.error('Error loading archived students:', error);
-        alert('Error loading archived students.');
+        showNotification('error', 'Error loading archived students.');
     }
 });
 
@@ -343,46 +486,48 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one student to restore.');
+        showNotification('warning', 'Please select at least one student to restore.');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    if (!confirm(`Are you sure you want to restore ${studentIds.length} student(s)?`)) {
-        return;
-    }
+    showConfirmation(
+        `Are you sure you want to restore ${studentIds.length} student(s)?`,
+        async function() {
+            try {
+                const response = await fetch('{{ route("adviser.students.restore") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
 
-    try {
-        const response = await fetch('{{ route("adviser.students.restore") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ student_ids: studentIds })
-        });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    showNotification('success', `${studentIds.length} student(s) restored successfully.`, function() {
+                        // Remove the restored rows from archive table
+                        studentIds.forEach(id => {
+                            const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
+                            if (row) row.remove();
+                        });
 
-        if (result.success) {
-            alert(`${studentIds.length} student(s) restored successfully.`);
-            // Remove the restored rows from archive table
-            studentIds.forEach(id => {
-                const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
-                if (row) row.remove();
-            });
-
-            // Reload the page to show restored students in main table
-            location.reload();
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
+                        // Reload the page to show restored students in main table
+                        location.reload();
+                    });
+                } else {
+                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('error', 'Error restoring students.');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error restoring students.');
-    }
+    );
 });
 
 // 🗑️ Delete Archived Students Permanently
@@ -390,49 +535,51 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        alert('Please select at least one student to delete permanently.');
-        return;
-    }
-
-    if (!confirm('WARNING: This will permanently delete these students. This action cannot be undone!')) {
+        showNotification('warning', 'Please select at least one student to delete permanently.');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    try {
-        const response = await fetch('{{ route("adviser.students.destroyMultiple") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ student_ids: studentIds })
-        });
+    showConfirmation(
+        'WARNING: This will permanently delete these students. This action cannot be undone!',
+        async function() {
+            try {
+                const response = await fetch('{{ route("adviser.students.destroyMultiple") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
 
-        const result = await response.json();
+                const result = await response.json();
 
-        if (result.success) {
-            alert(`${studentIds.length} student(s) deleted permanently.`);
-            // Remove the deleted rows from archive table
-            studentIds.forEach(id => {
-                const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
-                if (row) row.remove();
-            });
+                if (result.success) {
+                    showNotification('success', `${studentIds.length} student(s) deleted permanently.`, function() {
+                        // Remove the deleted rows from archive table
+                        studentIds.forEach(id => {
+                            const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
+                            if (row) row.remove();
+                        });
 
-            // If no more archived students, show message
-            const remainingRows = document.querySelectorAll('#archiveTableBody tr');
-            if (remainingRows.length === 0) {
-                document.getElementById('archiveTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
+                        // If no more archived students, show message
+                        const remainingRows = document.querySelectorAll('#archiveTableBody tr');
+                        if (remainingRows.length === 0) {
+                            document.getElementById('archiveTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
+                        }
+                    });
+                } else {
+                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('error', 'Error deleting students.');
             }
-        } else {
-            alert('Error: ' + (result.message || 'Unknown error'));
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting students.');
-    }
+    );
 });
 
 // Close Archive Modal

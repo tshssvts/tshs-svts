@@ -3,6 +3,29 @@
 <div class="main-container">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
+  <!-- Notification Modal -->
+  <div class="notification-modal" id="notificationModal">
+    <div class="notification-content" id="notificationContent">
+      <div class="notification-icon" id="notificationIcon"></div>
+      <div class="notification-message" id="notificationMessage"></div>
+      <div class="notification-actions" id="notificationActions">
+        <button class="btn-confirm" id="notificationConfirm">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="notification-modal" id="confirmationModal">
+    <div class="notification-content">
+      <div class="notification-icon" id="confirmationIcon">⚠️</div>
+      <div class="notification-message" id="confirmationMessage"></div>
+      <div class="notification-actions">
+        <button class="btn-confirm" id="confirmAction">Confirm</button>
+        <button class="btn-cancel" id="cancelAction">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toolbar -->
   <div class="toolbar">
     <h2>Parent Management</h2>
@@ -232,6 +255,124 @@
 
 <script>
 // ==========================
+// Notification System
+// ==========================
+function showNotification(type, message, callback = null) {
+  const modal = document.getElementById('notificationModal');
+  const content = document.getElementById('notificationContent');
+  const icon = document.getElementById('notificationIcon');
+  const messageEl = document.getElementById('notificationMessage');
+  const actionsEl = document.getElementById('notificationActions');
+  const confirmBtn = document.getElementById('notificationConfirm');
+
+  // Set content based on type
+  messageEl.textContent = message;
+  
+  // Remove existing classes
+  content.className = 'notification-content';
+  
+  // Add appropriate class and icon
+  switch(type) {
+    case 'success':
+      content.classList.add('notification-success');
+      icon.textContent = '✅';
+      // Hide OK button for success messages
+      actionsEl.style.display = 'none';
+      
+      // Auto-close after 1 second
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        modal.style.display = 'none';
+        if (callback && typeof callback === 'function') {
+          callback();
+        }
+      }, 1000);
+      return; // Exit early for success type
+      
+    case 'error':
+      content.classList.add('notification-error');
+      icon.textContent = '❌';
+      break;
+    case 'warning':
+      content.classList.add('notification-warning');
+      icon.textContent = '⚠️';
+      break;
+    case 'info':
+      content.classList.add('notification-info');
+      icon.textContent = 'ℹ️';
+      break;
+    default:
+      content.classList.add('notification-info');
+      icon.textContent = 'ℹ️';
+  }
+
+  // Show OK button for non-success types
+  actionsEl.style.display = 'flex';
+
+  // Show modal
+  modal.style.display = 'flex';
+
+  // Handle confirm button click
+  confirmBtn.onclick = function() {
+    modal.style.display = 'none';
+    if (callback && typeof callback === 'function') {
+      callback();
+    }
+  };
+
+  // Close on background click
+  modal.onclick = function(e) {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+      if (callback && typeof callback === 'function') {
+        callback();
+      }
+    }
+  };
+}
+
+// ==========================
+// Confirmation Modal
+// ==========================
+function showConfirmation(message, confirmCallback, cancelCallback = null) {
+  const modal = document.getElementById('confirmationModal');
+  const messageEl = document.getElementById('confirmationMessage');
+  const confirmBtn = document.getElementById('confirmAction');
+  const cancelBtn = document.getElementById('cancelAction');
+
+  messageEl.textContent = message;
+
+  // Show modal
+  modal.style.display = 'flex';
+
+  // Handle confirm button
+  confirmBtn.onclick = function() {
+    modal.style.display = 'none';
+    if (confirmCallback && typeof confirmCallback === 'function') {
+      confirmCallback();
+    }
+  };
+
+  // Handle cancel button
+  cancelBtn.onclick = function() {
+    modal.style.display = 'none';
+    if (cancelCallback && typeof cancelCallback === 'function') {
+      cancelCallback();
+    }
+  };
+
+  // Close on background click
+  modal.onclick = function(e) {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+      if (cancelCallback && typeof cancelCallback === 'function') {
+        cancelCallback();
+      }
+    }
+  };
+}
+
+// ==========================
 // Search filter for main table
 // ==========================
 document.getElementById('searchInput').addEventListener('input', function() {
@@ -259,33 +400,37 @@ document.getElementById('moveToTrashBtn').addEventListener('click', function() {
     .map(cb => cb.value);
 
   if (!selected.length) {
-    alert('Please select at least one parent.');
+    showNotification('warning', 'Please select at least one parent.');
     return;
   }
 
-  if (confirm(`Are you sure you want to move ${selected.length} parent(s) to archive?`)) {
-    fetch('{{ route("adviser.parents.archive") }}', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ parent_ids: selected })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert(data.message);
-        location.reload(); // Reload to update the table and counts
-      } else {
-        alert('Error: ' + data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('An error occurred while archiving parents.');
-    });
-  }
+  showConfirmation(
+    `Are you sure you want to move ${selected.length} parent(s) to archive?`,
+    function() {
+      fetch('{{ route("adviser.parents.archive") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ parent_ids: selected })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('success', data.message, function() {
+            location.reload(); // Reload to update the table and counts
+          });
+        } else {
+          showNotification('error', 'Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'An error occurred while archiving parents.');
+      });
+    }
+  );
 });
 
 // ==========================
@@ -329,6 +474,7 @@ function loadArchivedParents() {
     })
     .catch(error => {
       console.error('Error loading archived parents:', error);
+      showNotification('error', 'Error loading archived parents.');
     });
 }
 
@@ -360,34 +506,38 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', function(
     .map(cb => cb.value);
 
   if (!selected.length) {
-    alert('Please select at least one parent to restore.');
+    showNotification('warning', 'Please select at least one parent to restore.');
     return;
   }
 
-  if (confirm(`Are you sure you want to restore ${selected.length} parent(s)?`)) {
-    fetch('{{ route("adviser.parents.restore") }}', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ parent_ids: selected })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert(data.message);
-        loadArchivedParents(); // Reload the archived list
-        location.reload(); // Reload main page to update counts
-      } else {
-        alert('Error: ' + data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('An error occurred while restoring parents.');
-    });
-  }
+  showConfirmation(
+    `Are you sure you want to restore ${selected.length} parent(s)?`,
+    function() {
+      fetch('{{ route("adviser.parents.restore") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ parent_ids: selected })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('success', data.message, function() {
+            loadArchivedParents(); // Reload the archived list
+            location.reload(); // Reload main page to update counts
+          });
+        } else {
+          showNotification('error', 'Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'An error occurred while restoring parents.');
+      });
+    }
+  );
 });
 
 // ==========================
@@ -398,39 +548,43 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', function()
     .map(cb => cb.value);
 
   if (!selected.length) {
-    alert('Please select at least one parent to delete permanently.');
+    showNotification('warning', 'Please select at least one parent to delete permanently.');
     return;
   }
 
-  if (confirm(`WARNING: This will permanently delete ${selected.length} parent(s). This action cannot be undone!`)) {
-    fetch('{{ route("adviser.parents.destroy.permanent") }}', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ parent_ids: selected })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert(data.message);
-        loadArchivedParents(); // Reload the archived list
-        // Update archived count
-        fetch('{{ route("adviser.parents.archived.count") }}')
-          .then(response => response.json())
-          .then(data => {
-            document.getElementById('archivedCount').innerText = data.count;
+  showConfirmation(
+    `WARNING: This will permanently delete ${selected.length} parent(s). This action cannot be undone!`,
+    function() {
+      fetch('{{ route("adviser.parents.destroy.permanent") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ parent_ids: selected })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('success', data.message, function() {
+            loadArchivedParents(); // Reload the archived list
+            // Update archived count
+            fetch('{{ route("adviser.parents.archived.count") }}')
+              .then(response => response.json())
+              .then(data => {
+                document.getElementById('archivedCount').innerText = data.count;
+              });
           });
-      } else {
-        alert('Error: ' + data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('An error occurred while deleting parents.');
-    });
-  }
+        } else {
+          showNotification('error', 'Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'An error occurred while deleting parents.');
+      });
+    }
+  );
 });
 
 // ==========================

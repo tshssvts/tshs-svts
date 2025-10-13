@@ -14,6 +14,7 @@
      <link rel="stylesheet" href="{{ asset('css/adviser(1)/createParent.css') }}">
   <link rel="stylesheet" href="{{ asset('css/adviser(1)/createStudent.css') }}">
   <link rel="stylesheet" href="{{ asset('css/adviser(1)/createComplaint.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/adviser(1)/notificationsmodal.css') }}">
 </head>
 <body>
 
