@@ -138,12 +138,39 @@ public function studentmanagement()
     }
 
     /**
+     * Mark students as cleared and move to archive
+     */
+    public function markAsCleared(Request $request)
+    {
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:tbl_student,student_id'
+        ]);
+
+        try {
+            Student::whereIn('student_id', $request->student_ids)
+                   ->update(['status' => 'cleared']);
+
+            return response()->json([
+                'success' => true,
+                'message' => count($request->student_ids) . ' student(s) marked as cleared and archived successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error marking students as cleared: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get archived students
      */
     public function getArchived()
     {
         try {
             $archivedStudents = Student::where('status', 'inactive')
+                                      ->orWhere('status', 'cleared')
                                       ->orderBy('updated_at', 'desc')
                                       ->get();
 
@@ -220,7 +247,10 @@ public function studentmanagement()
         $student = Student::findOrFail($id);
         $student->update($request->all());
 
-        return redirect()->back()->with('success', '✅ Student updated successfully!');
+        return response()->json([
+            'success' => true,
+            'message' => 'Student updated successfully!'
+        ]);
     }
 
     public function destroy($id)

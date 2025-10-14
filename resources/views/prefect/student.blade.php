@@ -188,7 +188,7 @@
         </div>
 
         <div class="actions">
-          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="submit" class="btn-primary" id="saveEditBtn">💾 Save Changes</button>
           <button type="button" class="btn-secondary" id="cancelEditBtn">❌ Cancel</button>
         </div>
       </form>
@@ -392,6 +392,59 @@ document.addEventListener('change', function(e) {
     }
 });
 
+// ✅ Mark as Cleared - Move to Archive with Cleared Status
+document.getElementById('markAsClearedBtn').addEventListener('click', async function() {
+    const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
+
+    if (!selectedCheckboxes.length) {
+        notifications.showNotification('Please select at least one student.', 'warning');
+        return;
+    }
+
+    const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+    notifications.showConfirmation(
+        `Are you sure you want to mark ${studentIds.length} student(s) as cleared and move to archive?`,
+        async function() {
+            try {
+                const response = await fetch('{{ route("students.markAsCleared") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    notifications.showNotification(`${studentIds.length} student(s) marked as cleared and moved to archive.`, 'success');
+                    // Remove the cleared rows from the main table
+                    studentIds.forEach(id => {
+                        const row = document.querySelector(`tr[data-student-id="${id}"]`);
+                        if (row) row.remove();
+                    });
+
+                    // Update UI
+                    document.getElementById('selectAll').checked = false;
+
+                    // Reload to update counts
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                notifications.showNotification('Error marking students as cleared.', 'error');
+            }
+        }
+    );
+});
+
 // 🗑️ Move to Trash (Archive)
 document.getElementById('moveToTrashBtn').addEventListener('click', async function() {
     const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
@@ -470,7 +523,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
                     <td>${student.student_fname}</td>
                     <td>${student.student_lname}</td>
                     <td>${student.student_sex}</td>
-                    <td><span class="status-badge status-inactive">${student.status}</span></td>
+                    <td><span class="status-badge ${student.status === 'cleared' ? 'status-cleared' : 'status-inactive'}">${student.status}</span></td>
                     <td>${new Date(student.updated_at).toLocaleDateString()}</td>
                 `;
                 archiveTableBody.appendChild(row);
@@ -618,6 +671,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeEditModal = document.getElementById('closeEditModal');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const editForm = document.getElementById('editStudentForm');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+
+    // Helper function to close edit modal
+    function closeEditModalFunc() {
+        editModal.style.display = 'none';
+    }
 
     // 🎯 When "Edit" Button Clicked
     editButtons.forEach(btn => {
@@ -654,6 +713,72 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Handle form submission with AJAX
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const studentId = document.getElementById('edit_student_id').value;
+
+        // Debug: Log what we're sending
+        console.log('Form action:', this.action);
+        console.log('Student ID:', studentId);
+        console.log('Form data:', Object.fromEntries(formData));
+
+        // Show loading state
+        saveEditBtn.innerHTML = '💾 Saving...';
+        saveEditBtn.disabled = true;
+
+        fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams(formData).toString()
+        })
+        .then(response => {
+            // First, try to parse as JSON
+            return response.text().then(text => {
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    // If it's not JSON, check if it's a redirect or HTML
+                    if (response.ok && text.includes('success') || response.redirected) {
+                        return { success: true, message: 'Student updated successfully!' };
+                    }
+                    throw new Error('Server returned non-JSON response: ' + text.substring(0, 100));
+                }
+            });
+        })
+        .then(data => {
+            if (data.success) {
+                // Show success notification modal
+                notifications.showNotification(data.message || 'Student updated successfully!', 'success');
+                
+                // Close the edit modal
+                closeEditModalFunc();
+                
+                // Reload the page after a short delay to show the success message
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                notifications.showNotification(data.message || 'Update failed.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Full error:', error);
+            notifications.showNotification('An error occurred while updating the student. Check console for details.', 'error');
+        })
+        .finally(() => {
+            saveEditBtn.innerHTML = '💾 Save Changes';
+            saveEditBtn.disabled = false;
+        });
+    });
+
     // ❌ Close / Cancel Modal
     [closeEditModal, cancelEditBtn].forEach(btn => {
         btn.addEventListener('click', () => {
@@ -669,5 +794,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
+<style>
+.status-cleared {
+    background-color: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+</style>
 
 @endsection

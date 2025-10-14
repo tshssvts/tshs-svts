@@ -13,14 +13,11 @@
     </div>
   </div>
 
-
-
   <!-- Offense & Sanction Table -->
   <div class="table-container">
-    <table>
+    <table id="offenseTable">
       <thead>
         <tr>
-
           <th>#</th>
           <th>Offense Type</th>
           <th>Offense Description</th>
@@ -158,6 +155,9 @@
     </div>
   </div>
 </div>
+
+<!-- Include html2pdf library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
 // 🔍 Search filter for main table
@@ -472,11 +472,9 @@ document.getElementById('notificationCloseBtn').addEventListener('click', () => 
   document.getElementById('notificationModal').style.display = 'none';
 });
 
-
-
 // ================= BEAUTIFUL PRINT & EXPORT =================
 
-// 🖨️ Print Table
+// 🖨️ Print Table as PDF (Automatically Download)
 document.getElementById('printBtn')?.addEventListener('click', () => {
   const table = document.querySelector('.table-container table');
   if (!table) return;
@@ -485,105 +483,173 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
     year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  const newWindow = window.open('', '', 'width=900,height=700');
-  newWindow.document.write(`
-    <html>
-      <head>
-        <title>Offense and Sanctions Report</title>
-        <style>
-          body {
-            font-family: "Segoe UI", Tahoma, sans-serif;
-            padding: 40px;
-            color: #333;
-            background: #fff;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-          }
-          .header img {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            margin-bottom: 10px;
-          }
-          .header h2 {
-            margin: 5px 0;
-            color: #1e3a8a;
-          }
-          .header h4 {
-            margin: 0;
-            color: #666;
-          }
-          .date {
-            text-align: right;
-            font-size: 14px;
-            margin-bottom: 15px;
-            color: #555;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-          }
-          th, td {
-            border: 1px solid #999;
-            padding: 10px;
-            text-align: left;
-            font-size: 14px;
-          }
-          th {
-            background: #1e3a8a;
-            color: white;
-          }
-          tr:nth-child(even) td {
-            background: #f8fafc;
-          }
-          tr:hover td {
-            background: #e0e7ff;
-          }
-          .footer {
-            margin-top: 50px;
-            text-align: left;
-            font-size: 14px;
-            color: #333;
-          }
-          .footer .line {
-            border-top: 1px solid #444;
-            width: 200px;
-            margin-top: 40px;
-          }
-          .footer span {
-            display: block;
-            margin-top: 5px;
-            color: #555;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <img src="/images/school-logo.png" alt="School Logo" />
-          <h2>Tagoloan Senior High School</h2>
-          <h4>Student Violation Tracking System</h4>
-        </div>
-        <div class="date">📅 Date Generated: <strong>${currentDate}</strong></div>
-        <h3 style="text-align:center; margin-bottom:10px;">Offense and Sanctions Report</h3>
-        ${table.outerHTML}
-        <div class="footer">
-          <div class="line"></div>
-          <span>Authorized Signature</span>
-        </div>
-      </body>
-    </html>
-  `);
+  const currentTime = new Date().toLocaleTimeString('en-PH', {
+    hour: '2-digit', minute: '2-digit'
+  });
 
-  newWindow.document.close();
-  newWindow.focus();
-  newWindow.print();
+  // Create a temporary element for PDF generation
+  const element = document.createElement('div');
+  element.innerHTML = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3748; background: #ffffff; padding: 25px;">
+      <!-- Professional Header -->
+      <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0; color: #1e3a8a; font-size: 24px; font-weight: 700;">TAGOLOAN SENIOR HIGH SCHOOL</h1>
+          <h2 style="margin: 5px 0 0 0; color: #4a5568; font-size: 16px; font-weight: 500;">Student Violation Tracking System</h2>
+          <p style="margin: 8px 0 0 0; color: #718096; font-size: 14px;">Official Offense and Sanctions Report</p>
+        </div>
+        <div style="text-align: right;">
+          <div style="background: #1e3a8a; color: white; padding: 8px 15px; border-radius: 6px; display: inline-block;">
+            <div style="font-size: 12px; font-weight: 600;">REPORT DATE</div>
+            <div style="font-size: 14px; font-weight: 500;">${currentDate}</div>
+            <div style="font-size: 12px; font-weight: 400;">${currentTime}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Summary -->
+      <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0; color: #2d3748; font-size: 18px; font-weight: 600;">Offense and Sanctions Report</h3>
+            <p style="margin: 5px 0 0 0; color: #718096; font-size: 14px;">
+              Total Records: <strong style="color: #2d3748;">${document.querySelectorAll('#tableBody tr').length}</strong>
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 12px; color: #718096;">Document ID</div>
+            <div style="font-size: 14px; font-weight: 600; color: #2d3748;">OSR-${Date.now().toString().slice(-6)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced Table -->
+      <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        ${table.outerHTML.replace('<table', '<table style="width: 100%; border-collapse: collapse; font-size: 12px;"')}
+      </div>
+
+      <!-- Footer Section -->
+      <div style="margin-top: 40px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="flex: 1;">
+            <div style="font-size: 12px; color: #718096; margin-bottom: 5px;">Prepared By:</div>
+            <div style="border-bottom: 1px solid #cbd5e0; width: 200px; padding: 25px 0 5px 0;"></div>
+            <div style="font-size: 12px; color: #4a5568; margin-top: 5px;">Prefect of Discipline</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 12px; color: #718096; margin-bottom: 5px;">Reviewed By:</div>
+            <div style="border-bottom: 1px solid #cbd5e0; width: 200px; padding: 25px 0 5px 0; margin: 0 auto;"></div>
+            <div style="font-size: 12px; color: #4a5568; margin-top: 5px;">School Principal</div>
+          </div>
+          <div style="flex: 1; text-align: right;">
+            <div style="font-size: 12px; color: #718096; margin-bottom: 5px;">Approved By:</div>
+            <div style="border-bottom: 1px solid #cbd5e0; width: 200px; padding: 25px 0 5px 0; margin-left: auto;"></div>
+            <div style="font-size: 12px; color: #4a5568; margin-top: 5px;">School Administrator</div>
+          </div>
+        </div>
+        
+        <!-- Confidential Notice -->
+        <div style="text-align: center; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;">
+          <div style="font-size: 11px; color: #c53030; font-weight: 600;">
+            🔒 CONFIDENTIAL DOCUMENT - For Authorized Personnel Only
+          </div>
+          <div style="font-size: 10px; color: #e53e3e; margin-top: 5px;">
+            This document contains sensitive student information. Unauthorized distribution is prohibited.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Enhanced table styling for PDF
+  const tables = element.getElementsByTagName('table');
+  for (let table of tables) {
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.fontSize = '12px';
+    
+    // Style table headers
+    const headers = table.getElementsByTagName('th');
+    for (let header of headers) {
+      header.style.backgroundColor = '#1e3a8a';
+      header.style.color = 'white';
+      header.style.padding = '12px 10px';
+      header.style.textAlign = 'left';
+      header.style.fontWeight = '600';
+      header.style.border = '1px solid #2d3748';
+      header.style.fontSize = '11px';
+      header.style.textTransform = 'uppercase';
+      header.style.letterSpacing = '0.5px';
+    }
+    
+    // Style table cells
+    const cells = table.getElementsByTagName('td');
+    for (let cell of cells) {
+      cell.style.padding = '10px 8px';
+      cell.style.border = '1px solid #e2e8f0';
+      cell.style.fontSize = '11px';
+      cell.style.color = '#4a5568';
+    }
+    
+    // Style table rows
+    const rows = table.getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+      if (i % 2 === 0) {
+        rows[i].style.backgroundColor = '#ffffff';
+      } else {
+        rows[i].style.backgroundColor = '#f7fafc';
+      }
+    }
+  }
+
+  // PDF options
+  const options = {
+    margin: [15, 15, 15, 15],
+    filename: `Offense_Sanctions_Report_${new Date().toISOString().slice(0,10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { 
+      scale: 2,
+      useCORS: true,
+      logging: false
+    },
+    jsPDF: { 
+      unit: 'mm', 
+      format: 'a4', 
+      orientation: 'portrait',
+      compress: true
+    }
+  };
+
+  // Show loading notification
+  showNotification('⏳ Generating PDF', 'Please wait while we prepare your professional report...', 'info', {
+    yesText: 'OK',
+    noText: null,
+    onYes: () => {
+      document.getElementById('notificationModal').style.display = 'none';
+    }
+  });
+
+  // Generate and download PDF
+  html2pdf().set(options).from(element).save().then(() => {
+    // Success feedback
+    showNotification('✅ Professional PDF Generated', 'Your offense and sanctions report has been downloaded as a professional PDF document.', 'success', {
+      yesText: 'OK',
+      noText: null,
+      onYes: () => {
+        document.getElementById('notificationModal').style.display = 'none';
+      }
+    });
+  }).catch(error => {
+    console.error('PDF generation error:', error);
+    showNotification('❌ PDF Generation Failed', 'There was an error generating the PDF. Please try again.', 'danger', {
+      yesText: 'OK',
+      noText: null,
+      onYes: () => {
+        document.getElementById('notificationModal').style.display = 'none';
+      }
+    });
+  });
 });
-
 
 // 📤 Export Table to Excel
 document.getElementById('exportBtn')?.addEventListener('click', () => {

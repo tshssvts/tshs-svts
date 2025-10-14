@@ -88,6 +88,7 @@ Route::prefix('prefect')->group(function () {
         Route::post('/students/search-advisers', [PStudentController::class, 'searchAdvisers'])->name('students.search-advisers');
         // Archive Routes
         Route::post('/students/archive', [PStudentController::class, 'archive'])->name('students.archive');
+        Route::post('/students/mark-as-cleared', [PStudentController::class, 'markAsCleared'])->name('students.markAsCleared');
         Route::get('/students/archived', [PStudentController::class, 'getArchived'])->name('students.getArchived');
         Route::post('/students/restore', [PStudentController::class, 'restore'])->name('students.restore');
         Route::post('/students/destroy-multiple', [PStudentController::class, 'destroyMultiple'])->name('students.destroyMultiple');
@@ -283,6 +284,7 @@ Route::prefix('adviser')->group(function () {
         Route::post('/students/search-advisers', [AStudentController::class, 'searchAdvisers'])->name('adviser.students.search-advisers');
         // Archive Routes
         Route::post('/students/archive', [AStudentController::class, 'archive'])->name('adviser.students.archive');
+        Route::post('/students/mark-as-cleared', [AStudentController::class, 'markAsCleared'])->name('adviser.students.markAsCleared');
         Route::get('/students/archived', [AStudentController::class, 'getArchived'])->name('adviser.students.getArchived');
         Route::post('/students/restore', [AStudentController::class, 'restore'])->name('adviser.students.restore');
         Route::post('/students/destroy-multiple', [AStudentController::class, 'destroyMultiple'])->name('adviser.students.destroyMultiple');
