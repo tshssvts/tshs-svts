@@ -74,7 +74,7 @@ class PDashboardController extends Controller
         // Upcoming Appointments (next 7 days)
         $violationAppointments = ViolationAppointment::with(['violation.student'])
             ->where('status', 'active')
-            ->where('violation_app_status', 'scheduled')
+            ->where('violation_app_status', 'Scheduled')
             ->where('violation_app_date', '>=', Carbon::today())
             ->where('violation_app_date', '<=', Carbon::today()->addDays(7))
             ->orderBy('violation_app_date')
@@ -98,7 +98,7 @@ class PDashboardController extends Controller
         // For complaint appointments
         $complaintAppointments = ComplaintsAppointment::with(['complaint.complainant'])
             ->where('status', 'active')
-            ->where('comp_app_status', 'scheduled')
+            ->where('comp_app_status', 'Scheduled')
             ->where('comp_app_date', '>=', Carbon::today())
             ->where('comp_app_date', '<=', Carbon::today()->addDays(7))
             ->orderBy('comp_app_date')
