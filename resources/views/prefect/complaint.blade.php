@@ -878,16 +878,7 @@
             <label>Appointment Time</label>
             <input type="time" name="comp_app_time" id="appointment_time" required>
           </div>
-          <div class="form-group full-width">
-            <label>Status</label>
-            <select name="comp_app_status" id="appointment_status" required>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="rescheduled">Rescheduled</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
+<input type="hidden" name="comp_app_status" value="scheduled">
         </div>
 
         <div class="actions">

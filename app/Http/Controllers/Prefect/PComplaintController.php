@@ -22,8 +22,15 @@ class PComplaintController extends Controller
     public function index()
     {
         // ✅ Load Anecdotal + Appointment models with relationships
-        $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])->get();
-        $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])->get();
+        $cappointments = ComplaintsAppointment::with(['complaint.complainant', 'complaint.respondent'])
+            ->orderBy('created_at', 'desc')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])
+            ->orderBy('created_at', 'desc')
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
         // ✅ Get Actual Complaint Date Range
         $mostRecentComplaintDate = DB::table('tbl_complaints')->max('complaints_date');
@@ -51,7 +58,7 @@ class PComplaintController extends Controller
             ->whereBetween('complaints_date', [$startOfMonth, $endOfMonth])
             ->count();
 
-        // ✅ Fetch Complaint Records
+        // ✅ Fetch Complaint Records - UPDATED ORDERING
         $complaints = DB::table('tbl_complaints as c')
             ->join('tbl_student as comp', 'comp.student_id', '=', 'c.complainant_id')
             ->join('tbl_student as resp', 'resp.student_id', '=', 'c.respondent_id')
@@ -62,6 +69,8 @@ class PComplaintController extends Controller
                 'c.complaints_date',
                 'c.complaints_time',
                 'c.status',
+                'c.created_at', // Make sure to select these columns
+                'c.updated_at', // Make sure to select these columns
                 'comp.student_fname as complainant_fname',
                 'comp.student_lname as complainant_lname',
                 'resp.student_fname as respondent_fname',
@@ -69,7 +78,9 @@ class PComplaintController extends Controller
                 'o.offense_type',
                 'o.sanction_consequences'
             )
-            ->orderBy('c.complaints_date', 'desc')
+            ->orderBy('c.updated_at', 'desc') // Most recently updated first
+            ->orderBy('c.created_at', 'desc') // Then by creation date
+            ->orderBy('c.complaints_date', 'desc') // Finally by complaint date
             ->paginate(10);
 
         return view('prefect.complaint', compact(
@@ -282,7 +293,7 @@ class PComplaintController extends Controller
         }
     }
 
-    
+
 
         public function create()
     {

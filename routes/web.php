@@ -67,7 +67,6 @@ Route::prefix('prefect')->group(function () {
         Route::get('/studentmanagement', [PStudentController::class, 'studentmanagement'])->name('student.management');
         Route::get('/violation', [PViolationController::class, 'index'])->name('prefect.violation');
         Route::get('/parentlists', [PParentController::class, 'parentlists'])->name('parent.lists');
-        Route::get('/adviser', [PAdviserController::class, 'index'])->name('prefect.adviser');
         Route::get('/offensesandsanctions', [POffenseSanctionController::class, 'index'])->name('offenses.sanctions');
 
 
@@ -97,9 +96,16 @@ Route::prefix('prefect')->group(function () {
         Route::post('/students/destroy-multiple', [PStudentController::class, 'destroyMultiple'])->name('students.destroyMultiple');
 
         // Adviser Routes
+        Route::get('/adviser', [PAdviserController::class, 'index'])->name('prefect.adviser');
         Route::get('/create/adviser', [PAdviserController::class, 'createAdviser'])->name('create.adviser');
         Route::post('/advisers/store', [PAdviserController::class, 'store'])->name('advisers.store');
         Route::put('/advisers/update', [PAdviserController::class, 'update'])->name('advisers.update');
+
+// AJAX routes for archive functionality
+Route::post('/advisers/move-to-trash', [PAdviserController::class, 'moveToTrash'])->name('advisers.move-to-trash');
+Route::get('/advisers/get-archived', [PAdviserController::class, 'getArchived'])->name('advisers.getArchived');
+Route::post('/advisers/restore', [PAdviserController::class, 'restore'])->name('advisers.restore');
+Route::post('/advisers/destroy-multiple', [PAdviserController::class, 'destroyMultiple'])->name('advisers.destroyMultiple');
 
         // Parent Routes
         Route::get('/parentlists', [PParentController::class, 'parentlists'])->name('parent.lists');

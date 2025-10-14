@@ -24,9 +24,15 @@ class PViolationController extends Controller
 
     public function index()
 {
+    $vappointments = ViolationAppointment::with(['violation.student'])
+        ->orderBy('updated_at', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-$vappointments = ViolationAppointment::with(['violation.student'])->get();
-$vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
+    $vanecdotals = ViolationAnecdotal::with(['violation.student'])
+        ->orderBy('updated_at', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->get();
 
     // Get the actual dates from your violation records
     $mostRecentViolationDate = DB::table('tbl_violation_record')->max('violation_date');
@@ -55,29 +61,35 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
         ->whereBetween('violation_date', [$startOfMonth, $endOfMonth])
         ->count();
 
-    // ✅ Fetch Main Violation Records
+    // ✅ Fetch Main Violation Records - UPDATED ORDERING
     $violations = ViolationRecord::with(['student', 'offense'])
-        ->orderBy('violation_date', 'desc')
+        ->orderBy('updated_at', 'desc') // Most recently updated first
+        ->orderBy('created_at', 'desc') // Then by creation date
+        ->orderBy('violation_date', 'desc') // Finally by violation date
         ->paginate(30);
 
-    // ✅ Fetch Violation Appointments
+    // ✅ Fetch Violation Appointments - UPDATED ORDERING
     $appointments = DB::table('tbl_violation_appointment')
         ->join('tbl_violation_record', 'tbl_violation_appointment.violation_id', '=', 'tbl_violation_record.violation_id')
         ->select(
             'tbl_violation_appointment.*',
             'tbl_violation_record.violation_incident'
         )
-        ->orderBy('tbl_violation_appointment.violation_app_date', 'desc')
+        ->orderBy('tbl_violation_appointment.updated_at', 'desc') // Most recently updated first
+        ->orderBy('tbl_violation_appointment.created_at', 'desc') // Then by creation date
+        ->orderBy('tbl_violation_appointment.violation_app_date', 'desc') // Finally by appointment date
         ->paginate(30);
 
-    // ✅ Fetch Violation Anecdotals
+    // ✅ Fetch Violation Anecdotals - UPDATED ORDERING
     $anecdotals = DB::table('tbl_violation_anecdotal')
         ->join('tbl_violation_record', 'tbl_violation_anecdotal.violation_id', '=', 'tbl_violation_record.violation_id')
         ->select(
             'tbl_violation_anecdotal.*',
             'tbl_violation_record.violation_incident'
         )
-        ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc')
+        ->orderBy('tbl_violation_anecdotal.updated_at', 'desc') // Most recently updated first
+        ->orderBy('tbl_violation_anecdotal.created_at', 'desc') // Then by creation date
+        ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc') // Finally by anecdotal date
         ->paginate(30);
 
     // ✅ Fetch Offenses (if needed for dropdowns)
@@ -88,8 +100,8 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
         'violations',
         'appointments',
         'anecdotals',
-                'vanecdotals',
-                        'vappointments',
+        'vanecdotals',
+        'vappointments',
         'offenses',
         'mostRecentViolationDate',
         'earliestViolationDate',
@@ -104,7 +116,6 @@ $vanecdotals = ViolationAnecdotal::with(['violation.student'])->get();
         'monthlyViolations'
     ));
 }
-
 
 
 
@@ -218,7 +229,7 @@ public function storeMultipleAppointments(Request $request)
                 'violation_id' => $violationId,
                 'violation_app_date' => $request->schedule_date,
                 'violation_app_time' => $request->schedule_time,
-                'violation_app_status' => 'Pending',
+                'violation_app_status' => 'Scheduled',
                 'status' => 'active', // Add this field as per your schema
                 'created_at' => now(),
                 'updated_at' => now()

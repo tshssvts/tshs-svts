@@ -13,33 +13,37 @@ use Illuminate\Support\Facades\DB;
 
 class PAdviserController extends Controller
 {
+    public function index(Request $request)
+    {
+        $totalAdvisers = DB::table('tbl_adviser')
+            ->where('status', 'active')
+            ->count();
 
-    // AdviserController.php (index)
-public function index(Request $request)
-{
-
-    $totalAdvisers = DB::table('tbl_adviser')->count();
-
-        // Count advisers per grade level
         $grade11Advisers = DB::table('tbl_adviser')
             ->where('adviser_gradelevel', '11')
+            ->where('status', 'active')
             ->count();
 
         $grade12Advisers = DB::table('tbl_adviser')
             ->where('adviser_gradelevel', '12')
+            ->where('status', 'active')
             ->count();
-    $advisers = Adviser::orderBy('updated_at')
-                ->paginate(15)           // <-- paginate instead of get()/all()
-                ->appends($request->query()); // keep query string (useful if you later add server search)
 
-    return view('prefect.adviser', compact('advisers', 'totalAdvisers', 'grade11Advisers', 'grade12Advisers'));
+        $advisers = Adviser::where('status', 'active')
+            ->orderBy('updated_at', 'desc')
+            ->paginate(15)
+            ->appends($request->query());
 
-}
+        // Get archived advisers for the archive modal
+        $archivedAdvisers = Adviser::where('status', 'inactive')
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
+        return view('prefect.adviser', compact('advisers', 'totalAdvisers', 'grade11Advisers', 'grade12Advisers', 'archivedAdvisers'));
+    }
 
- public function store(Request $request)
+    public function store(Request $request)
     {
-        // ✅ Validate the outer array
         $request->validate([
             'advisers' => 'required|array|min:1',
             'advisers.*.adviser_fname' => 'required|string|max:255',
@@ -74,31 +78,121 @@ public function index(Request $request)
             }
         }
 
-        return redirect()->back()->with('messages', $messages);
+        return redirect()->route('prefect.adviser')->with('messages', $messages);
     }
 
-
-    
- public function createAdviser()
-    {
-        return view('prefect.create-adviser'); // Blade file
+    public function createAdviser()
+    {   
+        return view('prefect.create-adviser');
     }
 
     public function update(Request $request)
+    {
+        $adviser = Adviser::findOrFail($request->adviser_id);
+
+        $adviser->update([
+            'adviser_fname' => $request->adviser_fname,
+            'adviser_lname' => $request->adviser_lname,
+            'adviser_section' => $request->adviser_section,
+            'adviser_gradelevel' => $request->adviser_gradelevel,
+            'adviser_email' => $request->adviser_email,
+            'adviser_contactinfo' => $request->adviser_contactinfo,
+        ]);
+
+        return redirect()->back()->with('success', 'Adviser updated successfully!');
+    }
+
+   // Get archived advisers via AJAX
+public function getArchived()
 {
-    $adviser = Adviser::findOrFail($request->adviser_id);
+    try {
+        $archivedAdvisers = Adviser::where('status', 'inactive')
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
-    $adviser->update([
-        'adviser_fname' => $request->adviser_fname,
-        'adviser_lname' => $request->adviser_lname,
-        'adviser_section' => $request->adviser_section,
-        'adviser_gradelevel' => $request->adviser_gradelevel,
-        'adviser_email' => $request->adviser_email,
-        'adviser_contactinfo' => $request->adviser_contactinfo,
-    ]);
-
-    return redirect()->back()->with('success', 'Adviser updated successfully!');
+        return response()->json($archivedAdvisers);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to load archived advisers'], 500);
+    }
 }
 
+// Move to trash with AJAX response
+public function moveToTrash(Request $request)
+{
+    try {
+        $request->validate([
+            'adviser_ids' => 'required|array'
+        ]);
 
+        $adviserIds = $request->adviser_ids;
+
+        Adviser::whereIn('adviser_id', $adviserIds)
+            ->update([
+                'status' => 'inactive',
+                'updated_at' => now()
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Advisers moved to archive successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to move advisers to archive: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// Restore advisers with AJAX response
+public function restore(Request $request)
+{
+    try {
+        $request->validate([
+            'adviser_ids' => 'required|array'
+        ]);
+
+        $adviserIds = $request->adviser_ids;
+
+        Adviser::whereIn('adviser_id', $adviserIds)
+            ->update([
+                'status' => 'active',
+                'updated_at' => now()
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Advisers restored successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to restore advisers: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// Permanently delete advisers
+public function destroyMultiple(Request $request)
+{
+    try {
+        $request->validate([
+            'adviser_ids' => 'required|array'
+        ]);
+
+        $adviserIds = $request->adviser_ids;
+
+        Adviser::whereIn('adviser_id', $adviserIds)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Advisers deleted permanently'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to delete advisers: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

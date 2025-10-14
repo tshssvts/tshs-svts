@@ -787,16 +787,7 @@
         <input type="hidden" name="record_id" id="edit_appointment_id">
 
         <div class="form-grid">
-          <div class="form-group">
-            <label>Status</label>
-            <select id="edit_app_status" name="comp_app_status" required>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="rescheduled">Rescheduled</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
+        <input type="hidden" name="comp_app_status" value="Scheduled">
           <div class="form-group">
             <label>Date</label>
             <input type="date" id="edit_app_date" name="comp_app_date" required>

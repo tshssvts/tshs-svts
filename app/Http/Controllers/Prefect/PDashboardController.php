@@ -20,13 +20,13 @@ class PDashboardController extends Controller
     {
         // Total Students
         $totalStudents = Student::where('status', 'active')->count();
-        
+
         // Total Violations
         $totalViolations = ViolationRecord::where('status', 'active')->count();
-        
+
         // Total Complaints
         $totalComplaints = Complaints::where('status', 'active')->count();
-        
+
         // Violation Types with counts - Only show offenses with violations
         $violationTypes = OffensesWithSanction::select(
                 'offense_type',
@@ -45,26 +45,26 @@ class PDashboardController extends Controller
         $recentDates = [];
         $violationCounts = [];
         $complaintCounts = [];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $dateFormatted = $date->format('M j');
             $recentDates[] = $dateFormatted;
-            
+
             $dateStart = $date->copy()->startOfDay();
             $dateEnd = $date->copy()->endOfDay();
-            
+
             // Count violations for this specific day
             $violationCounts[] = ViolationRecord::where('status', 'active')
                 ->whereBetween('violation_date', [$dateStart, $dateEnd])
                 ->count();
-                
+
             // Count complaints for this specific day
             $complaintCounts[] = Complaints::where('status', 'active')
                 ->whereBetween('complaints_date', [$dateStart, $dateEnd])
                 ->count();
         }
-        
+
         $recentActivity = [
             'dates' => $recentDates,
             'violations' => $violationCounts,
@@ -74,6 +74,7 @@ class PDashboardController extends Controller
         // Upcoming Appointments (next 7 days)
         $violationAppointments = ViolationAppointment::with(['violation.student'])
             ->where('status', 'active')
+            ->where('violation_app_status', 'scheduled')
             ->where('violation_app_date', '>=', Carbon::today())
             ->where('violation_app_date', '<=', Carbon::today()->addDays(7))
             ->orderBy('violation_app_date')
@@ -93,10 +94,11 @@ class PDashboardController extends Controller
                     'color' => '#FF6B6B'
                 ];
             });
-            
+
         // For complaint appointments
         $complaintAppointments = ComplaintsAppointment::with(['complaint.complainant'])
             ->where('status', 'active')
+            ->where('comp_app_status', 'scheduled')
             ->where('comp_app_date', '>=', Carbon::today())
             ->where('comp_app_date', '<=', Carbon::today()->addDays(7))
             ->orderBy('comp_app_date')
@@ -116,7 +118,7 @@ class PDashboardController extends Controller
                     'color' => '#4ECDC4'
                 ];
             });
-        
+
         // Combine and sort appointments
         $upcomingAppointments = $violationAppointments->merge($complaintAppointments)
             ->sortBy(function($appointment) {
@@ -127,7 +129,7 @@ class PDashboardController extends Controller
             })
             ->take(4)
             ->values();
-            
+
         // If no real appointments, show sample data
         if ($upcomingAppointments->isEmpty() || ($upcomingAppointments->count() === 1 && $upcomingAppointments->first()['student_name'] === 'No upcoming appointments')) {
             $upcomingAppointments = collect([
