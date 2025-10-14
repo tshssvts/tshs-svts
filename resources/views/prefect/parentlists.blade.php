@@ -4,7 +4,6 @@
 <div class="main-container">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-
   <!-- Toolbar -->
   <div class="toolbar">
     <h2>Parent Management</h2>
@@ -116,7 +115,7 @@
         <button class="close-btn" id="closeEditModal">✖</button>
         <h2>Edit Parent</h2>
 
-        <!-- Success/Error Messages -->
+        <!-- Success/Error Messages (Hidden by default) -->
         <div id="editModalMessages" style="display: none;"></div>
 
         <form id="editParentForm" method="POST">
@@ -259,7 +258,7 @@
       <div class="notification-icon" id="notificationIcon"></div>
       <div class="notification-message" id="notificationMessage"></div>
       <div class="notification-actions" id="notificationActions">
-        <button class="btn-confirm" id="notificationConfirm">OK</button>
+        <!-- OK button removed for success messages -->
       </div>
     </div>
   </div>
@@ -289,19 +288,15 @@ class NotificationManager {
         this.notificationMessage = document.getElementById('notificationMessage');
         this.confirmationMessage = document.getElementById('confirmationMessage');
         this.notificationIcon = document.getElementById('notificationIcon');
-        this.notificationConfirm = document.getElementById('notificationConfirm');
+        this.notificationActions = document.getElementById('notificationActions');
         this.confirmAction = document.getElementById('confirmAction');
         this.cancelAction = document.getElementById('cancelAction');
         
+        this.autoCloseTimeout = null;
         this.setupEventListeners();
     }
 
     setupEventListeners() {
-        // Notification modal
-        this.notificationConfirm.addEventListener('click', () => {
-            this.hideNotification();
-        });
-
         // Confirmation modal
         this.confirmAction.addEventListener('click', () => {
             if (this.confirmCallback) {
@@ -342,11 +337,43 @@ class NotificationManager {
         this.notificationIcon.textContent = icons[type] || icons.info;
         this.notificationMessage.textContent = message;
         this.notificationModal.className = `notification-modal notification-${type}`;
-        this.notificationModal.style.display = 'flex';
+        
+        // Clear any existing timeout
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
+        }
+        
+        // For success messages, hide OK button and auto-close after 1 second
+        if (type === 'success') {
+            this.notificationActions.innerHTML = ''; // Remove OK button
+            this.notificationModal.style.display = 'flex';
+            
+            // Auto-close after 1 second
+            this.autoCloseTimeout = setTimeout(() => {
+                this.hideNotification();
+            }, 1000);
+        } else {
+            // For other message types, show OK button
+            this.notificationActions.innerHTML = '<button class="btn-confirm" id="notificationConfirm">OK</button>';
+            
+            // Add event listener for the newly created button
+            const okButton = document.getElementById('notificationConfirm');
+            if (okButton) {
+                okButton.addEventListener('click', () => {
+                    this.hideNotification();
+                });
+            }
+            
+            this.notificationModal.style.display = 'flex';
+        }
     }
 
     hideNotification() {
         this.notificationModal.style.display = 'none';
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
+            this.autoCloseTimeout = null;
+        }
     }
 
     showConfirmation(message, confirmCallback, cancelCallback = null) {
@@ -623,21 +650,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function showEditMessage(message, type) {
-        const messageDiv = document.getElementById('editModalMessages');
-        messageDiv.textContent = message;
-        messageDiv.className = `alert alert-${type}`;
-        messageDiv.style.display = 'block';
-    }
-
-    function hideEditMessage() {
-        document.getElementById('editModalMessages').style.display = 'none';
-    }
-
     function closeEditModalFunc() {
         editModal.style.display = 'none';
         clearEditErrors();
-        hideEditMessage();
     }
 
     // Open edit modal
@@ -666,7 +681,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Clear previous errors
             clearEditErrors();
-            hideEditMessage();
 
             // Fill form with current data
             document.getElementById('edit_parent_id').value = parentId;
@@ -718,7 +732,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }))
         .then(data => {
             if (data.success) {
-                showEditMessage(data.message, 'success');
+                // Use the success modal notification instead of inline message
+                notifications.showNotification(data.message, 'success');
+                
+                // Close the edit modal
+                closeEditModalFunc();
+                
+                // Reload the page after a short delay to show the success message
                 setTimeout(() => {
                     location.reload();
                 }, 1500);
@@ -728,7 +748,8 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Full error:', error);
-            showEditMessage('Error: ' + error.message, 'error');
+            // Use error modal notification for errors
+            notifications.showNotification('Error: ' + error.message, 'error');
         })
         .finally(() => {
             saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';

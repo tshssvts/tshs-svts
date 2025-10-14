@@ -272,14 +272,30 @@
       </div>
     </div>
   </div>
-<!-- Notification Modal -->
-<div class="notification-modal" id="notificationModal">
-    <div class="notification-content">
-        <div class="notification-icon" id="notificationIcon"></div>
-        <div class="notification-message" id="notificationMessage"></div>
-        <div class="notification-actions" id="notificationActions"></div>
+
+  <!-- Notification Modal -->
+  <div class="notification-modal" id="notificationModal">
+    <div class="notification-content" id="notificationContent">
+      <div class="notification-icon" id="notificationIcon"></div>
+      <div class="notification-message" id="notificationMessage"></div>
+      <div class="notification-actions" id="notificationActions">
+        <!-- OK button removed for success messages -->
+      </div>
     </div>
-</div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="notification-modal" id="confirmationModal">
+    <div class="notification-content">
+      <div class="notification-icon">⚠️</div>
+      <div class="notification-message" id="confirmationMessage"></div>
+      <div class="notification-actions">
+        <button class="btn-confirm" id="confirmAction">Confirm</button>
+        <button class="btn-cancel" id="cancelAction">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 👁️ Violation Details Modal -->
   <div class="modal" id="violationDetailsModal">
     <div class="modal-content">
@@ -1388,74 +1404,127 @@ tbody tr:hover {
 </style>
 
 <script>
+// ==========================
+// Notification System
+// ==========================
+class NotificationManager {
+    constructor() {
+        this.notificationModal = document.getElementById('notificationModal');
+        this.confirmationModal = document.getElementById('confirmationModal');
+        this.notificationMessage = document.getElementById('notificationMessage');
+        this.confirmationMessage = document.getElementById('confirmationMessage');
+        this.notificationIcon = document.getElementById('notificationIcon');
+        this.notificationActions = document.getElementById('notificationActions');
+        this.confirmAction = document.getElementById('confirmAction');
+        this.cancelAction = document.getElementById('cancelAction');
+        
+        this.autoCloseTimeout = null;
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Confirmation modal
+        this.confirmAction.addEventListener('click', () => {
+            if (this.confirmCallback) {
+                this.confirmCallback();
+            }
+            this.hideConfirmation();
+        });
+
+        this.cancelAction.addEventListener('click', () => {
+            if (this.cancelCallback) {
+                this.cancelCallback();
+            }
+            this.hideConfirmation();
+        });
+
+        // Close modals when clicking outside
+        this.notificationModal.addEventListener('click', (e) => {
+            if (e.target === this.notificationModal) {
+                this.hideNotification();
+            }
+        });
+
+        this.confirmationModal.addEventListener('click', (e) => {
+            if (e.target === this.confirmationModal) {
+                this.hideConfirmation();
+            }
+        });
+    }
+
+    showNotification(message, type = 'info') {
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        this.notificationIcon.textContent = icons[type] || icons.info;
+        this.notificationMessage.textContent = message;
+        this.notificationModal.className = `notification-modal notification-${type}`;
+        
+        // Clear any existing timeout
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
+        }
+        
+        // For success messages, hide OK button and auto-close after 1 second
+        if (type === 'success') {
+            this.notificationActions.innerHTML = ''; // Remove OK button
+            this.notificationModal.style.display = 'flex';
+            
+            // Auto-close after 1 second
+            this.autoCloseTimeout = setTimeout(() => {
+                this.hideNotification();
+            }, 1000);
+        } else {
+            // For other message types, show OK button
+            this.notificationActions.innerHTML = '<button class="btn-confirm" id="notificationConfirm">OK</button>';
+            
+            // Add event listener for the newly created button
+            const okButton = document.getElementById('notificationConfirm');
+            if (okButton) {
+                okButton.addEventListener('click', () => {
+                    this.hideNotification();
+                });
+            }
+            
+            this.notificationModal.style.display = 'flex';
+        }
+    }
+
+    hideNotification() {
+        this.notificationModal.style.display = 'none';
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
+            this.autoCloseTimeout = null;
+        }
+    }
+
+    showConfirmation(message, confirmCallback, cancelCallback = null) {
+        this.confirmationMessage.textContent = message;
+        this.confirmCallback = confirmCallback;
+        this.cancelCallback = cancelCallback;
+        this.confirmationModal.style.display = 'flex';
+    }
+
+    hideConfirmation() {
+        this.confirmationModal.style.display = 'none';
+        this.confirmCallback = null;
+        this.cancelCallback = null;
+    }
+}
+
+// Initialize notification manager
+const notifications = new NotificationManager();
+
 // Get CSRF Token
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 }
 
 const csrfToken = getCsrfToken();
-
-// Notification Modal Functions
-function showNotification(message, type = 'info', confirmCallback = null, cancelCallback = null) {
-    const modal = document.getElementById('notificationModal');
-    const messageEl = document.getElementById('notificationMessage');
-    const iconEl = document.getElementById('notificationIcon');
-    const actionsEl = document.getElementById('notificationActions');
-
-    // Set message
-    messageEl.textContent = message;
-
-    // Set icon and styling based on type
-    modal.className = 'notification-modal notification-' + type;
-    if (type === 'success') {
-        iconEl.textContent = '✅';
-    } else if (type === 'error') {
-        iconEl.textContent = '❌';
-    } else if (type === 'warning') {
-        iconEl.textContent = '⚠️';
-    } else {
-        iconEl.textContent = 'ℹ️';
-    }
-
-    // Set up actions
-    actionsEl.innerHTML = '';
-
-    if (confirmCallback) {
-        // This is a confirmation dialog (with OK/Cancel)
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'btn-confirm';
-        confirmBtn.textContent = 'OK';
-        confirmBtn.onclick = function() {
-            hideNotification();
-            confirmCallback();
-        };
-        actionsEl.appendChild(confirmBtn);
-
-        // Always add cancel button for confirmation dialogs
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'btn-cancel';
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.onclick = function() {
-            hideNotification();
-            if (cancelCallback) cancelCallback();
-        };
-        actionsEl.appendChild(cancelBtn);
-    } else {
-        // This is just an alert (only OK button)
-        const okBtn = document.createElement('button');
-        okBtn.className = 'btn-confirm';
-        okBtn.textContent = 'OK';
-        okBtn.onclick = hideNotification;
-        actionsEl.appendChild(okBtn);
-    }
-
-    // Show modal
-    modal.style.display = 'flex';
-}
-
-function hideNotification() {
-    document.getElementById('notificationModal').style.display = 'none';
-}
 
 // Current active table type
 let currentTableType = 'violationRecords';
@@ -1630,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success) {
-                showNotification(`${type} updated successfully!`, 'success');
+                notifications.showNotification(`${type} updated successfully!`, 'success');
                 // Close the appropriate modal
                 if (type === 'Violation') editViolationModal.style.display = 'none';
                 if (type === 'Appointment') editAppointmentModal.style.display = 'none';
@@ -1641,14 +1710,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (result.errors) {
                     let messages = Object.values(result.errors).flat().join('\n');
-                    showNotification('Validation failed:\n' + messages, 'error');
+                    notifications.showNotification('Validation failed:\n' + messages, 'error');
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             }
         } catch (error) {
             console.error('Error:', error);
-            showNotification(`Error updating ${type.toLowerCase()}.`, 'error');
+            notifications.showNotification(`Error updating ${type.toLowerCase()}.`, 'error');
         } finally {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
@@ -1736,7 +1805,8 @@ document.addEventListener('click', function(event) {
         'setScheduleModal',
         'createAnecdotalModal',
         'anecdotalSuccessModal',
-        'notificationModal'
+        'notificationModal',
+        'confirmationModal'
     ];
 
     modals.forEach(modalId => {
@@ -1776,7 +1846,7 @@ document.getElementById('setScheduleBtn').addEventListener('click', function() {
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one violation to schedule.', 'warning');
+        notifications.showNotification('Please select at least one violation to schedule.', 'warning');
         return;
     }
 
@@ -1838,15 +1908,15 @@ document.getElementById('setScheduleForm').addEventListener('submit', async func
         const result = await response.json();
 
         if (result.success) {
-            showNotification('Appointments scheduled successfully!', 'success');
+            notifications.showNotification('Appointments scheduled successfully!', 'success');
             document.getElementById('setScheduleModal').style.display = 'none';
             location.reload();
         } else {
-            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+            notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showNotification('Error scheduling appointments.', 'error');
+        notifications.showNotification('Error scheduling appointments.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
@@ -1858,7 +1928,7 @@ document.getElementById('createAnecdotalBtn').addEventListener('click', function
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one violation to create anecdotal record.', 'warning');
+        notifications.showNotification('Please select at least one violation to create anecdotal record.', 'warning');
         return;
     }
 
@@ -1931,14 +2001,14 @@ document.getElementById('createAnecdotalForm').addEventListener('submit', async 
         } else {
             if (result.errors) {
                 let messages = Object.values(result.errors).flat().join('\n');
-                showNotification('Validation failed:\n' + messages, 'error');
+                notifications.showNotification('Validation failed:\n' + messages, 'error');
             } else {
-                showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
             }
         }
     } catch (error) {
         console.error('Error:', error);
-        showNotification('Error creating anecdotal records.', 'error');
+        notifications.showNotification('Error creating anecdotal records.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
@@ -1948,7 +2018,7 @@ document.getElementById('createAnecdotalForm').addEventListener('submit', async 
 // Print Anecdotal Records
 document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
     if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
-        showNotification('No anecdotal records to print.', 'warning');
+        notifications.showNotification('No anecdotal records to print.', 'warning');
         return;
     }
 
@@ -2290,21 +2360,21 @@ closeAnecdotalDetailsModal.addEventListener('click', function() {
 sendSmsBtn.addEventListener('click', function() {
     const studentName = document.getElementById('detail-student-name').textContent;
     const violationId = document.getElementById('detail-violation-id').textContent;
-    showNotification(`SMS would be sent for violation ${violationId} - ${studentName}`, 'info');
+    notifications.showNotification(`SMS would be sent for violation ${violationId} - ${studentName}`, 'info');
 });
 
 // View Appointments button functionality
 viewAppointmentsBtn.addEventListener('click', function() {
     const violationId = document.getElementById('detail-violation-id').textContent;
     const studentName = document.getElementById('detail-student-name').textContent;
-    showNotification(`Viewing appointments for violation ${violationId} - ${studentName}`, 'info');
+    notifications.showNotification(`Viewing appointments for violation ${violationId} - ${studentName}`, 'info');
 });
 
 // View Related Violation button functionality
 viewRelatedViolationBtn.addEventListener('click', function() {
     const anecdotalId = document.getElementById('detail-anecdotal-id').textContent;
     const studentName = document.getElementById('detail-anecdotal-student-name').textContent;
-    showNotification(`Viewing related violation for anecdotal ${anecdotalId} - ${studentName}`, 'info');
+    notifications.showNotification(`Viewing related violation for anecdotal ${anecdotalId} - ${studentName}`, 'info');
 });
 
 // ==================== VIOLATION RECORDS FUNCTIONALITY ====================
@@ -2313,15 +2383,14 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one violation.', 'warning');
+        notifications.showNotification('Please select at least one violation.', 'warning');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to move ${violationIds.length} violation(s) to archive as Inactive?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/archive', {
@@ -2340,7 +2409,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${violationIds.length} violation(s) moved to archive as Inactive.`, 'success');
+                    notifications.showNotification(`${violationIds.length} violation(s) moved to archive as Inactive.`, 'success');
                     violationIds.forEach(id => {
                         const row = document.querySelector(`tr[data-violation-id="${id}"]`);
                         if (row) row.remove();
@@ -2351,11 +2420,11 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error moving violations to archive.', 'error');
+                notifications.showNotification('Error moving violations to archive.', 'error');
             }
         }
     );
@@ -2366,15 +2435,14 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
     const selectedCheckboxes = document.querySelectorAll('.violationCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one violation.', 'warning');
+        notifications.showNotification('Please select at least one violation.', 'warning');
         return;
     }
 
     const violationIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to mark ${violationIds.length} violation(s) as Cleared?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/archive', {
@@ -2393,7 +2461,7 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${violationIds.length} violation(s) marked as Cleared and moved to archive.`, 'success');
+                    notifications.showNotification(`${violationIds.length} violation(s) marked as Cleared and moved to archive.`, 'success');
                     violationIds.forEach(id => {
                         const row = document.querySelector(`tr[data-violation-id="${id}"]`);
                         if (row) row.remove();
@@ -2404,11 +2472,11 @@ document.getElementById('markAsClearedBtn').addEventListener('click', async func
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error marking violations as cleared.', 'error');
+                notifications.showNotification('Error marking violations as cleared.', 'error');
             }
         }
     );
@@ -2420,15 +2488,14 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one appointment.', 'warning');
+        notifications.showNotification('Please select at least one appointment.', 'warning');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to mark ${appointmentIds.length} appointment(s) as Completed?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violation-appointments/archive', {
@@ -2447,7 +2514,7 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${appointmentIds.length} appointment(s) marked as Completed and moved to archive.`, 'success');
+                    notifications.showNotification(`${appointmentIds.length} appointment(s) marked as Completed and moved to archive.`, 'success');
                     appointmentIds.forEach(id => {
                         const row = document.querySelector(`tr[data-app-id="${id}"]`);
                         if (row) row.remove();
@@ -2458,11 +2525,11 @@ document.getElementById('markAppointmentCompletedBtn').addEventListener('click',
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error marking appointments as completed.', 'error');
+                notifications.showNotification('Error marking appointments as completed.', 'error');
             }
         }
     );
@@ -2473,15 +2540,14 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
     const selectedCheckboxes = document.querySelectorAll('.appointmentCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one appointment.', 'warning');
+        notifications.showNotification('Please select at least one appointment.', 'warning');
         return;
     }
 
     const appointmentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to move ${appointmentIds.length} appointment(s) to archive as Cancelled?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violation-appointments/archive', {
@@ -2500,7 +2566,7 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${appointmentIds.length} appointment(s) moved to archive as Cancelled.`, 'success');
+                    notifications.showNotification(`${appointmentIds.length} appointment(s) moved to archive as Cancelled.`, 'success');
                     appointmentIds.forEach(id => {
                         const row = document.querySelector(`tr[data-app-id="${id}"]`);
                         if (row) row.remove();
@@ -2511,11 +2577,11 @@ document.getElementById('moveAppointmentToTrashBtn').addEventListener('click', a
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error moving appointments to archive.', 'error');
+                notifications.showNotification('Error moving appointments to archive.', 'error');
             }
         }
     );
@@ -2527,15 +2593,14 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one anecdotal record.', 'warning');
+        notifications.showNotification('Please select at least one anecdotal record.', 'warning');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to mark ${anecdotalIds.length} anecdotal record(s) as Completed?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violation-anecdotals/archive', {
@@ -2554,7 +2619,7 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`, 'success');
+                    notifications.showNotification(`${anecdotalIds.length} anecdotal record(s) marked as Completed and moved to archive.`, 'success');
                     anecdotalIds.forEach(id => {
                         const row = document.querySelector(`tr[data-anec-id="${id}"]`);
                         if (row) row.remove();
@@ -2565,11 +2630,11 @@ document.getElementById('markAnecdotalCompletedBtn').addEventListener('click', a
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error marking anecdotal records as completed.', 'error');
+                notifications.showNotification('Error marking anecdotal records as completed.', 'error');
             }
         }
     );
@@ -2580,15 +2645,14 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
     const selectedCheckboxes = document.querySelectorAll('.anecdotalCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one anecdotal record.', 'warning');
+        notifications.showNotification('Please select at least one anecdotal record.', 'warning');
         return;
     }
 
     const anecdotalIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to move ${anecdotalIds.length} anecdotal record(s) to archive as Closed?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violation-anecdotals/archive', {
@@ -2607,7 +2671,7 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`, 'success');
+                    notifications.showNotification(`${anecdotalIds.length} anecdotal record(s) moved to archive as Closed.`, 'success');
                     anecdotalIds.forEach(id => {
                         const row = document.querySelector(`tr[data-anec-id="${id}"]`);
                         if (row) row.remove();
@@ -2618,11 +2682,11 @@ document.getElementById('moveAnecdotalToTrashBtn').addEventListener('click', asy
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error moving anecdotal records to archive.', 'error');
+                notifications.showNotification('Error moving anecdotal records to archive.', 'error');
             }
         }
     );
@@ -2663,7 +2727,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
         }
     } catch (error) {
         console.error('Error loading archived data:', error);
-        showNotification('Error loading archived data. Check console for details.', 'error');
+        notifications.showNotification('Error loading archived data. Check console for details.', 'error');
     }
 });
 
@@ -2831,7 +2895,7 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one record to restore.', 'warning');
+        notifications.showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2840,9 +2904,8 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
         type: cb.dataset.type
     }));
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to restore ${records.length} record(s)?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/restore-multiple', {
@@ -2858,18 +2921,18 @@ document.getElementById('restoreViolationRecordsBtn').addEventListener('click', 
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    notifications.showNotification(`${records.length} record(s) restored successfully.`, 'success');
                     records.forEach(record => {
                         const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                         if (row) row.remove();
                     });
                     location.reload();
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error restoring records.', 'error');
+                notifications.showNotification('Error restoring records.', 'error');
             }
         }
     );
@@ -2880,7 +2943,7 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one record to restore.', 'warning');
+        notifications.showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2889,9 +2952,8 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
         type: cb.dataset.type
     }));
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to restore ${records.length} record(s)?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/restore-multiple', {
@@ -2907,18 +2969,18 @@ document.getElementById('restoreViolationAppointmentsBtn').addEventListener('cli
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    notifications.showNotification(`${records.length} record(s) restored successfully.`, 'success');
                     records.forEach(record => {
                         const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                         if (row) row.remove();
                     });
                     location.reload();
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error restoring records.', 'error');
+                notifications.showNotification('Error restoring records.', 'error');
             }
         }
     );
@@ -2929,7 +2991,7 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one record to restore.', 'warning');
+        notifications.showNotification('Please select at least one record to restore.', 'warning');
         return;
     }
 
@@ -2938,9 +3000,8 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
         type: cb.dataset.type
     }));
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to restore ${records.length} record(s)?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/restore-multiple', {
@@ -2956,18 +3017,18 @@ document.getElementById('restoreViolationAnecdotalsBtn').addEventListener('click
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${records.length} record(s) restored successfully.`, 'success');
+                    notifications.showNotification(`${records.length} record(s) restored successfully.`, 'success');
                     records.forEach(record => {
                         const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                         if (row) row.remove();
                     });
                     location.reload();
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error restoring records.', 'error');
+                notifications.showNotification('Error restoring records.', 'error');
             }
         }
     );
@@ -2979,7 +3040,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one record to delete permanently.', 'warning');
+        notifications.showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -2988,9 +3049,8 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
         type: cb.dataset.type
     }));
 
-    showNotification(
+    notifications.showConfirmation(
         'WARNING: This will permanently delete these records. This action cannot be undone!',
-        'error',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/destroy-multiple-archived', {
@@ -3006,7 +3066,7 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    notifications.showNotification(`${records.length} record(s) deleted permanently.`, 'success');
                     records.forEach(record => {
                         const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                         if (row) row.remove();
@@ -3017,11 +3077,11 @@ document.getElementById('deleteViolationRecordsBtn').addEventListener('click', a
                         tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
                     }
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error deleting records.', 'error');
+                notifications.showNotification('Error deleting records.', 'error');
             }
         }
     );
@@ -3032,7 +3092,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one record to delete permanently.', 'warning');
+        notifications.showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -3041,9 +3101,8 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
         type: cb.dataset.type
     }));
 
-    showNotification(
+    notifications.showConfirmation(
         'WARNING: This will permanently delete these records. This action cannot be undone!',
-        'error',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/destroy-multiple-archived', {
@@ -3059,7 +3118,7 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    notifications.showNotification(`${records.length} record(s) deleted permanently.`, 'success');
                     records.forEach(record => {
                         const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                         if (row) row.remove();
@@ -3070,11 +3129,11 @@ document.getElementById('deleteViolationAppointmentsBtn').addEventListener('clic
                         tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
                     }
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error deleting records.', 'error');
+                notifications.showNotification('Error deleting records.', 'error');
             }
         }
     );
@@ -3085,7 +3144,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
     const selectedCheckboxes = tableBody.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one record to delete permanently.', 'warning');
+        notifications.showNotification('Please select at least one record to delete permanently.', 'warning');
         return;
     }
 
@@ -3094,9 +3153,8 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
         type: cb.dataset.type
     }));
 
-    showNotification(
+    notifications.showConfirmation(
         'WARNING: This will permanently delete these records. This action cannot be undone!',
-        'error',
         async function() {
             try {
                 const response = await fetch('/prefect/violations/destroy-multiple-archived', {
@@ -3112,7 +3170,7 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${records.length} record(s) deleted permanently.`, 'success');
+                    notifications.showNotification(`${records.length} record(s) deleted permanently.`, 'success');
                     records.forEach(record => {
                         const row = document.querySelector(`tr[data-record-id="${record.id}"][data-record-type="${record.type}"]`);
                         if (row) row.remove();
@@ -3123,11 +3181,11 @@ document.getElementById('deleteViolationAnecdotalsBtn').addEventListener('click'
                         tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">⚠️ No archived records found</td></tr>';
                     }
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error deleting records.', 'error');
+                notifications.showNotification('Error deleting records.', 'error');
             }
         }
     );

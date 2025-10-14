@@ -112,14 +112,30 @@
       {{ $students->links() }}
     </div>
   </div>
-<!-- Notification Modal -->
-<div class="notification-modal" id="notificationModal">
-    <div class="notification-content">
-        <div class="notification-icon" id="notificationIcon"></div>
-        <div class="notification-message" id="notificationMessage"></div>
-        <div class="notification-actions" id="notificationActions"></div>
+
+  <!-- Notification Modal -->
+  <div class="notification-modal" id="notificationModal">
+    <div class="notification-content" id="notificationContent">
+      <div class="notification-icon" id="notificationIcon"></div>
+      <div class="notification-message" id="notificationMessage"></div>
+      <div class="notification-actions" id="notificationActions">
+        <!-- OK button removed for success messages -->
+      </div>
     </div>
-</div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="notification-modal" id="confirmationModal">
+    <div class="notification-content">
+      <div class="notification-icon">⚠️</div>
+      <div class="notification-message" id="confirmationMessage"></div>
+      <div class="notification-actions">
+        <button class="btn-confirm" id="confirmAction">Confirm</button>
+        <button class="btn-cancel" id="cancelAction">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ✏️ Edit Student Modal -->
   <div class="modal" id="editModal">
     <div class="modal-content">
@@ -225,74 +241,127 @@
 </div>
 
 <script>
+// ==========================
+// Notification System
+// ==========================
+class NotificationManager {
+    constructor() {
+        this.notificationModal = document.getElementById('notificationModal');
+        this.confirmationModal = document.getElementById('confirmationModal');
+        this.notificationMessage = document.getElementById('notificationMessage');
+        this.confirmationMessage = document.getElementById('confirmationMessage');
+        this.notificationIcon = document.getElementById('notificationIcon');
+        this.notificationActions = document.getElementById('notificationActions');
+        this.confirmAction = document.getElementById('confirmAction');
+        this.cancelAction = document.getElementById('cancelAction');
+        
+        this.autoCloseTimeout = null;
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Confirmation modal
+        this.confirmAction.addEventListener('click', () => {
+            if (this.confirmCallback) {
+                this.confirmCallback();
+            }
+            this.hideConfirmation();
+        });
+
+        this.cancelAction.addEventListener('click', () => {
+            if (this.cancelCallback) {
+                this.cancelCallback();
+            }
+            this.hideConfirmation();
+        });
+
+        // Close modals when clicking outside
+        this.notificationModal.addEventListener('click', (e) => {
+            if (e.target === this.notificationModal) {
+                this.hideNotification();
+            }
+        });
+
+        this.confirmationModal.addEventListener('click', (e) => {
+            if (e.target === this.confirmationModal) {
+                this.hideConfirmation();
+            }
+        });
+    }
+
+    showNotification(message, type = 'info') {
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        this.notificationIcon.textContent = icons[type] || icons.info;
+        this.notificationMessage.textContent = message;
+        this.notificationModal.className = `notification-modal notification-${type}`;
+        
+        // Clear any existing timeout
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
+        }
+        
+        // For success messages, hide OK button and auto-close after 1 second
+        if (type === 'success') {
+            this.notificationActions.innerHTML = ''; // Remove OK button
+            this.notificationModal.style.display = 'flex';
+            
+            // Auto-close after 1 second
+            this.autoCloseTimeout = setTimeout(() => {
+                this.hideNotification();
+            }, 1000);
+        } else {
+            // For other message types, show OK button
+            this.notificationActions.innerHTML = '<button class="btn-confirm" id="notificationConfirm">OK</button>';
+            
+            // Add event listener for the newly created button
+            const okButton = document.getElementById('notificationConfirm');
+            if (okButton) {
+                okButton.addEventListener('click', () => {
+                    this.hideNotification();
+                });
+            }
+            
+            this.notificationModal.style.display = 'flex';
+        }
+    }
+
+    hideNotification() {
+        this.notificationModal.style.display = 'none';
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
+            this.autoCloseTimeout = null;
+        }
+    }
+
+    showConfirmation(message, confirmCallback, cancelCallback = null) {
+        this.confirmationMessage.textContent = message;
+        this.confirmCallback = confirmCallback;
+        this.cancelCallback = cancelCallback;
+        this.confirmationModal.style.display = 'flex';
+    }
+
+    hideConfirmation() {
+        this.confirmationModal.style.display = 'none';
+        this.confirmCallback = null;
+        this.cancelCallback = null;
+    }
+}
+
+// Initialize notification manager
+const notifications = new NotificationManager();
+
 // Get CSRF Token
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 }
 
 const csrfToken = getCsrfToken();
-
-// Notification Modal Functions
-function showNotification(message, type = 'info', confirmCallback = null, cancelCallback = null) {
-    const modal = document.getElementById('notificationModal');
-    const messageEl = document.getElementById('notificationMessage');
-    const iconEl = document.getElementById('notificationIcon');
-    const actionsEl = document.getElementById('notificationActions');
-
-    // Set message
-    messageEl.textContent = message;
-
-    // Set icon and styling based on type
-    modal.className = 'notification-modal notification-' + type;
-    if (type === 'success') {
-        iconEl.textContent = '✅';
-    } else if (type === 'error') {
-        iconEl.textContent = '❌';
-    } else if (type === 'warning') {
-        iconEl.textContent = '⚠️';
-    } else {
-        iconEl.textContent = 'ℹ️';
-    }
-
-    // Set up actions
-    actionsEl.innerHTML = '';
-
-    if (confirmCallback) {
-        // This is a confirmation dialog (with OK/Cancel)
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'btn-confirm';
-        confirmBtn.textContent = 'OK';
-        confirmBtn.onclick = function() {
-            hideNotification();
-            confirmCallback();
-        };
-        actionsEl.appendChild(confirmBtn);
-
-        // Always add cancel button for confirmation dialogs
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'btn-cancel';
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.onclick = function() {
-            hideNotification();
-            if (cancelCallback) cancelCallback();
-        };
-        actionsEl.appendChild(cancelBtn);
-    } else {
-        // This is just an alert (only OK button)
-        const okBtn = document.createElement('button');
-        okBtn.className = 'btn-confirm';
-        okBtn.textContent = 'OK';
-        okBtn.onclick = hideNotification;
-        actionsEl.appendChild(okBtn);
-    }
-
-    // Show modal
-    modal.style.display = 'flex';
-}
-
-function hideNotification() {
-    document.getElementById('notificationModal').style.display = 'none';
-}
 
 // 🔍 Search Functionality
 document.getElementById('searchInput').addEventListener('input', function() {
@@ -328,15 +397,14 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
     const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one student.', 'warning');
+        notifications.showNotification('Please select at least one student.', 'warning');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to archive ${studentIds.length} student(s)?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('{{ route("students.archive") }}', {
@@ -352,7 +420,7 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${studentIds.length} student(s) moved to archive.`, 'success');
+                    notifications.showNotification(`${studentIds.length} student(s) moved to archive.`, 'success');
                     // Remove the archived rows from the main table
                     studentIds.forEach(id => {
                         const row = document.querySelector(`tr[data-student-id="${id}"]`);
@@ -367,11 +435,11 @@ document.getElementById('moveToTrashBtn').addEventListener('click', async functi
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error moving students to archive.', 'error');
+                notifications.showNotification('Error moving students to archive.', 'error');
             }
         }
     );
@@ -412,7 +480,7 @@ document.getElementById('archiveBtn').addEventListener('click', async function()
         document.getElementById('archiveModal').style.display = 'flex';
     } catch (error) {
         console.error('Error loading archived students:', error);
-        showNotification('Error loading archived students.', 'error');
+        notifications.showNotification('Error loading archived students.', 'error');
     }
 });
 
@@ -421,15 +489,14 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one student to restore.', 'warning');
+        notifications.showNotification('Please select at least one student to restore.', 'warning');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         `Are you sure you want to restore ${studentIds.length} student(s)?`,
-        'warning',
         async function() {
             try {
                 const response = await fetch('{{ route("students.restore") }}', {
@@ -445,7 +512,7 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${studentIds.length} student(s) restored successfully.`, 'success');
+                    notifications.showNotification(`${studentIds.length} student(s) restored successfully.`, 'success');
                     // Remove the restored rows from archive table
                     studentIds.forEach(id => {
                         const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
@@ -455,11 +522,11 @@ document.getElementById('restoreArchiveBtn').addEventListener('click', async fun
                     // Reload the page to show restored students in main table
                     location.reload();
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error restoring students.', 'error');
+                notifications.showNotification('Error restoring students.', 'error');
             }
         }
     );
@@ -470,15 +537,14 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
     const selectedCheckboxes = document.querySelectorAll('.archiveCheckbox:checked');
 
     if (!selectedCheckboxes.length) {
-        showNotification('Please select at least one student to delete permanently.', 'warning');
+        notifications.showNotification('Please select at least one student to delete permanently.', 'warning');
         return;
     }
 
     const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-    showNotification(
+    notifications.showConfirmation(
         'WARNING: This will permanently delete these students. This action cannot be undone!',
-        'error',
         async function() {
             try {
                 const response = await fetch('{{ route("students.destroyMultiple") }}', {
@@ -494,7 +560,7 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification(`${studentIds.length} student(s) deleted permanently.`, 'success');
+                    notifications.showNotification(`${studentIds.length} student(s) deleted permanently.`, 'success');
                     // Remove the deleted rows from archive table
                     studentIds.forEach(id => {
                         const row = document.querySelector(`#archiveTableBody tr[data-student-id="${id}"]`);
@@ -507,11 +573,11 @@ document.getElementById('deleteArchiveBtn').addEventListener('click', async func
                         document.getElementById('archiveTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ No archived students found</td></tr>';
                     }
                 } else {
-                    showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+                    notifications.showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error deleting students.', 'error');
+                notifications.showNotification('Error deleting students.', 'error');
             }
         }
     );
@@ -541,7 +607,7 @@ document.addEventListener('click', function(event) {
 
     const notificationModal = document.getElementById('notificationModal');
     if (event.target === notificationModal) {
-        hideNotification();
+        notifications.hideNotification();
     }
 });
 
