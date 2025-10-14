@@ -17,25 +17,33 @@ class PParentController extends Controller
      * Display parent list
      */
     public function parentlists()
-    {
+{
+    $totalParents = DB::table('tbl_parent')->count();
 
-        $totalParents = DB::table('tbl_parent')->count();
+    // Get active parents
+    $activeParents = DB::table('tbl_parent')
+        ->where('status', 'active')
+        ->count();
 
-        // Get active parents
-        $activeParents = DB::table('tbl_parent')
-            ->where('status', 'active')
-            ->count();
+    // Get archived parents
+    $archivedParents = DB::table('tbl_parent')
+        ->where('status', 'archived')
+        ->count();
 
-        // Get archived parents
-        $archivedParents = DB::table('tbl_parent')
-            ->where('status', 'archived')
-            ->count();
-        $parents = ParentModel::where('status', 'active')->paginate(10);
-        $archivedParents = ParentModel::where('status', 'inactive')->get();
+    // Get active parents sorted by latest created/updated first
+    $parents = ParentModel::where('status', 'active')
+        ->orderBy('created_at', 'desc')
+        ->orderBy('updated_at', 'desc')
+        ->paginate(10);
 
-        return view('prefect.parentlists', compact('parents', 'archivedParents','totalParents','activeParents','archivedParents'));
-    }
+    // Get archived parents sorted by latest created/updated first
+    $archivedParents = ParentModel::where('status', 'inactive')
+        ->orderBy('created_at', 'desc')
+        ->orderBy('updated_at', 'desc')
+        ->get();
 
+    return view('prefect.parentlists', compact('parents', 'archivedParents','totalParents','activeParents','archivedParents'));
+}
 
 
     /**
