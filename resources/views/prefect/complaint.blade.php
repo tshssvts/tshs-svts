@@ -1,6 +1,7 @@
 @extends('prefect.layout')
 
 @section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <style>
   /* Archive Modal Styles */
 .archive-tabs {
@@ -463,6 +464,118 @@
   cursor: pointer;
   accent-color: #007bff;
 }
+
+/* Edit Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.form-group textarea,
+.form-group input,
+.form-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #545b62;
+}
 </style>
 <div class="main-container">
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -637,14 +750,16 @@
       </table>
     </div>
   </div>
-<!-- Notification Modal -->
-<div class="notification-modal" id="notificationModal">
+
+  <!-- Notification Modal -->
+  <div class="notification-modal" id="notificationModal">
     <div class="notification-content">
         <div class="notification-icon" id="notificationIcon"></div>
         <div class="notification-message" id="notificationMessage"></div>
         <div class="notification-actions" id="notificationActions"></div>
     </div>
-</div>
+  </div>
+
   <!-- 🗃️ Archive Modal -->
   <div class="modal" id="archiveModal">
     <div class="modal-content" style="max-width: 95%; width: 95%;">
@@ -1199,14 +1314,204 @@ document.addEventListener('DOMContentLoaded', () => {
     complaintAnecdotals: document.getElementById('complaintAnecdotalsTable')
   };
 
-  Object.keys(sections).forEach(key => {
-    document.getElementById(key).addEventListener('click', e => {
-      e.preventDefault();
-      Object.values(sections).forEach(s => s.style.display = 'none');
-      sections[key].style.display = 'block';
-      currentActiveTable = key;
-    });
+  // Set up table navigation
+  document.getElementById('complaintRecords').addEventListener('click', e => {
+    e.preventDefault();
+    switchTableView('complaintRecords');
   });
+
+  document.getElementById('complaintAppointments').addEventListener('click', e => {
+    e.preventDefault();
+    switchTableView('complaintAppointments');
+  });
+
+  document.getElementById('complaintAnecdotals').addEventListener('click', e => {
+    e.preventDefault();
+    switchTableView('complaintAnecdotals');
+  });
+
+  function switchTableView(tableType) {
+    // Hide all tables
+    Object.values(sections).forEach(s => s.style.display = 'none');
+
+    // Show selected table
+    if (sections[tableType]) {
+      sections[tableType].style.display = 'block';
+    }
+
+    currentActiveTable = tableType;
+
+    // Reset select all checkbox
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+      selectAll.checked = false;
+    }
+  }
+
+  // ==================== EDIT MODAL FUNCTIONALITY ====================
+  const editComplaintModal = document.getElementById('editComplaintModal');
+  const editAppointmentModal = document.getElementById('editAppointmentModal');
+  const editAnecdotalModal = document.getElementById('editAnecdotalModal');
+
+  // Edit Complaint Button
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('editComplaintBtn')) {
+      e.stopPropagation();
+      const row = e.target.closest('tr');
+      if (row) {
+        openComplaintModal(`/prefect/complaints/${row.dataset.complaintId}`, {
+          id: row.dataset.complaintId,
+          incident: row.dataset.incident,
+          date: row.dataset.date,
+          time: row.dataset.time,
+          offenseType: row.dataset.offenseType,
+          sanction: row.dataset.sanction
+        });
+      }
+    }
+
+    // Edit Appointment Button
+    else if (e.target.classList.contains('editAppointmentBtn')) {
+      e.stopPropagation();
+      const row = e.target.closest('tr');
+      if (row) {
+        openAppointmentModal(`/prefect/complaint-appointments/update/${row.dataset.appId}`, {
+          id: row.dataset.appId,
+          date: row.dataset.date,
+          time: row.dataset.time,
+          status: row.dataset.status
+        });
+      }
+    }
+
+    // Edit Anecdotal Button
+    else if (e.target.classList.contains('editAnecdotalBtn')) {
+      e.stopPropagation();
+      const row = e.target.closest('tr');
+      if (row) {
+        openAnecdotalModal(`/prefect/complaint-anecdotals/update/${row.dataset.anecId}`, {
+          id: row.dataset.anecId,
+          solution: row.dataset.solution,
+          recommendation: row.dataset.recommendation,
+          date: row.dataset.date,
+          time: row.dataset.time
+        });
+      }
+    }
+  });
+
+  function openComplaintModal(action, data) {
+    document.getElementById('editComplaintForm').action = action;
+    document.getElementById('edit_complaint_id').value = data.id || '';
+    document.getElementById('edit_incident').value = data.incident || '';
+    document.getElementById('edit_offense_type').value = data.offenseType || '';
+    document.getElementById('edit_sanction').value = data.sanction || '';
+    document.getElementById('edit_complaint_date').value = data.date || '';
+    document.getElementById('edit_complaint_time').value = convertTo24Hour(data.time || '');
+    editComplaintModal.style.display = 'flex';
+  }
+
+  function openAppointmentModal(action, data) {
+    document.getElementById('editAppointmentForm').action = action;
+    document.getElementById('edit_appointment_id').value = data.id || '';
+    document.getElementById('edit_app_date').value = data.date || '';
+    document.getElementById('edit_app_time').value = convertTo24Hour(data.time || '');
+    document.getElementById('edit_app_status').value = data.status || 'scheduled';
+    editAppointmentModal.style.display = 'flex';
+  }
+
+  function openAnecdotalModal(action, data) {
+    document.getElementById('editAnecdotalForm').action = action;
+    document.getElementById('edit_anecdotal_id').value = data.id || '';
+    document.getElementById('edit_solution').value = data.solution || '';
+    document.getElementById('edit_recommendation').value = data.recommendation || '';
+    document.getElementById('edit_anec_date').value = data.date || '';
+    document.getElementById('edit_anec_time').value = convertTo24Hour(data.time || '');
+    editAnecdotalModal.style.display = 'flex';
+  }
+
+  function convertTo24Hour(timeStr) {
+    if (!timeStr || !timeStr.includes(' ')) return timeStr;
+
+    const [time, mod] = timeStr.split(' ');
+    let [h, m] = time.split(':');
+    h = parseInt(h);
+    if (mod === 'PM' && h !== 12) h += 12;
+    if (mod === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m}`;
+  }
+
+  // Close modal events
+  document.getElementById('closeComplaintEditModal').addEventListener('click', () => editComplaintModal.style.display = 'none');
+  document.getElementById('cancelComplaintEditBtn').addEventListener('click', () => editComplaintModal.style.display = 'none');
+
+  document.getElementById('closeAppointmentEditModal').addEventListener('click', () => editAppointmentModal.style.display = 'none');
+  document.getElementById('cancelAppointmentEditBtn').addEventListener('click', () => editAppointmentModal.style.display = 'none');
+
+  document.getElementById('closeAnecdotalEditModal').addEventListener('click', () => editAnecdotalModal.style.display = 'none');
+  document.getElementById('cancelAnecdotalEditBtn').addEventListener('click', () => editAnecdotalModal.style.display = 'none');
+
+  // Handle form submissions
+  document.getElementById('editComplaintForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await handleFormSubmission(this, 'Complaint');
+  });
+
+  document.getElementById('editAppointmentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await handleFormSubmission(this, 'Appointment');
+  });
+
+  document.getElementById('editAnecdotalForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await handleFormSubmission(this, 'Anecdotal');
+  });
+
+  async function handleFormSubmission(form, type) {
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      submitBtn.disabled = true;
+
+      const response = await fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showNotification(`${type} updated successfully!`, 'success');
+        // Close the appropriate modal
+        if (type === 'Complaint') editComplaintModal.style.display = 'none';
+        if (type === 'Appointment') editAppointmentModal.style.display = 'none';
+        if (type === 'Anecdotal') editAnecdotalModal.style.display = 'none';
+
+        // Reload to show updated data
+        location.reload();
+      } else {
+        if (result.errors) {
+          let messages = Object.values(result.errors).flat().join('\n');
+          showNotification('Validation failed:\n' + messages, 'error');
+        } else {
+          showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showNotification(`Error updating ${type.toLowerCase()}.`, 'error');
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  }
 
   // ==================== SELECT ALL FUNCTIONALITY ====================
   document.getElementById('selectAll').addEventListener('change', function() {
@@ -1832,96 +2137,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('createAnecdotalModal').style.display = 'flex';
   });
 
-  // ==================== EDIT MODAL FUNCTIONALITY ====================
-
-  // Separate modals for each table
-  const complaintModal = document.getElementById('editComplaintModal');
-  const appointmentModal = document.getElementById('editAppointmentModal');
-  const anecdotalModal = document.getElementById('editAnecdotalModal');
-
-  // Edit Complaint Records
-  document.querySelectorAll('.editComplaintBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const row = e.target.closest('tr');
-      const complaintId = row.dataset.complaintId;
-
-      // Populate form with current data
-      document.getElementById('edit_complaint_id').value = complaintId;
-      document.getElementById('edit_incident').value = row.dataset.incident;
-      document.getElementById('edit_offense_type').value = row.dataset.offenseType;
-      document.getElementById('edit_sanction').value = row.dataset.sanction;
-      document.getElementById('edit_complaint_date').value = row.dataset.date;
-      document.getElementById('edit_complaint_time').value = convertTo24Hour(row.dataset.time);
-
-      // Set form action
-      document.getElementById('editComplaintForm').action = `/prefect/complaints/update/${complaintId}`;
-
-      // Show modal
-      complaintModal.style.display = 'flex';
-    });
-  });
-
-  // Edit Appointment Records
-  document.querySelectorAll('.editAppointmentBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const row = e.target.closest('tr');
-      const appId = row.dataset.appId;
-
-      // Populate form with current data
-      document.getElementById('edit_appointment_id').value = appId;
-      document.getElementById('edit_app_status').value = row.dataset.status;
-      document.getElementById('edit_app_date').value = row.dataset.date;
-      document.getElementById('edit_app_time').value = convertTo24Hour(row.dataset.time);
-
-      // Set form action
-      document.getElementById('editAppointmentForm').action = `/prefect/complaint-appointments/update/${appId}`;
-
-      // Show modal
-      appointmentModal.style.display = 'flex';
-    });
-  });
-
-  // Edit Anecdotal Records
-  document.querySelectorAll('.editAnecdotalBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const row = e.target.closest('tr');
-      const anecId = row.dataset.anecId;
-
-      // Populate form with current data
-      document.getElementById('edit_anecdotal_id').value = anecId;
-      document.getElementById('edit_solution').value = row.dataset.solution;
-      document.getElementById('edit_recommendation').value = row.dataset.recommendation;
-      document.getElementById('edit_anec_date').value = row.dataset.date;
-      document.getElementById('edit_anec_time').value = convertTo24Hour(row.dataset.time);
-
-      // Set form action
-      document.getElementById('editAnecdotalForm').action = `/prefect/complaint-anecdotals/update/${anecId}`;
-
-      // Show modal
-      anecdotalModal.style.display = 'flex';
-    });
-  });
-
-  // Close modal functions
-  document.getElementById('closeComplaintEditModal').addEventListener('click', () => complaintModal.style.display = 'none');
-  document.getElementById('cancelComplaintEditBtn').addEventListener('click', () => complaintModal.style.display = 'none');
-
-  document.getElementById('closeAppointmentEditModal').addEventListener('click', () => appointmentModal.style.display = 'none');
-  document.getElementById('cancelAppointmentEditBtn').addEventListener('click', () => appointmentModal.style.display = 'none');
-
-  document.getElementById('closeAnecdotalEditModal').addEventListener('click', () => anecdotalModal.style.display = 'none');
-  document.getElementById('cancelAnecdotalEditBtn').addEventListener('click', () => anecdotalModal.style.display = 'none');
-
   // Close appointment and anecdotal modals
   document.getElementById('closeAppointmentModal').addEventListener('click', () => document.getElementById('appointmentModal').style.display = 'none');
   document.getElementById('closeAnecdotalModal').addEventListener('click', () => document.getElementById('createAnecdotalModal').style.display = 'none');
   document.getElementById('cancelAppointmentBtn').addEventListener('click', () => document.getElementById('appointmentModal').style.display = 'none');
   document.getElementById('cancelAnecdotalBtn').addEventListener('click', () => document.getElementById('createAnecdotalModal').style.display = 'none');
-
-  // Form submission handlers
-  document.getElementById('editComplaintForm').addEventListener('submit', handleFormSubmit);
-  document.getElementById('editAppointmentForm').addEventListener('submit', handleFormSubmit);
-  document.getElementById('editAnecdotalForm').addEventListener('submit', handleFormSubmit);
 
   // Handle anecdotal form submission
   document.getElementById('createAnecdotalForm').addEventListener('submit', async function(e) {
@@ -2063,67 +2283,6 @@ document.addEventListener('DOMContentLoaded', () => {
     location.reload(); // Reload to show the new anecdotal records
   });
 
-  // Utility Functions
-  function convertTo24Hour(t) {
-    if (!t.includes(' ')) return t;
-    const [time, mod] = t.split(' ');
-    let [h, m] = time.split(':'); h = +h;
-    if (mod === 'PM' && h !== 12) h += 12;
-    if (mod === 'AM' && h === 12) h = 0;
-    return `${h.toString().padStart(2,'0')}:${m}`;
-  }
-
-  async function handleFormSubmit(e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const formData = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-
-    try {
-      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-      submitBtn.disabled = true;
-
-      const response = await fetch(form.action, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Accept': 'application/json'
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        showNotification('Record updated successfully!', 'success');
-        // Close the appropriate modal based on form ID
-        if (form.id === 'editComplaintForm') {
-          complaintModal.style.display = 'none';
-        } else if (form.id === 'editAppointmentForm') {
-          appointmentModal.style.display = 'none';
-        } else if (form.id === 'editAnecdotalForm') {
-          anecdotalModal.style.display = 'none';
-        }
-        location.reload();
-      } else {
-        if (result.errors) {
-          let messages = Object.values(result.errors).flat().join('\n');
-          showNotification('Validation failed:\n' + messages, 'error');
-        } else {
-          showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
-        }
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showNotification('Error updating record.', 'error');
-    } finally {
-      submitBtn.innerHTML = originalText;
-      submitBtn.disabled = false;
-    }
-  }
-
   function generateAnecdotalPrintContent(anecdotals) {
     let content = `
       <div class="header">
@@ -2170,6 +2329,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return content;
   }
+
+  // Close modals when clicking outside
+  document.addEventListener('click', function(event) {
+    const modals = [
+      'editComplaintModal',
+      'editAppointmentModal',
+      'editAnecdotalModal',
+      'archiveModal',
+      'appointmentModal',
+      'createAnecdotalModal',
+      'anecdotalSuccessModal',
+      'notificationModal'
+    ];
+
+    modals.forEach(modalId => {
+      const modal = document.getElementById(modalId);
+      if (modal && event.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  });
 });
 </script>
 @endsection

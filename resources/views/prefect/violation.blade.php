@@ -1417,7 +1417,7 @@ class NotificationManager {
         this.notificationActions = document.getElementById('notificationActions');
         this.confirmAction = document.getElementById('confirmAction');
         this.cancelAction = document.getElementById('cancelAction');
-        
+
         this.autoCloseTimeout = null;
         this.setupEventListeners();
     }
@@ -1463,17 +1463,17 @@ class NotificationManager {
         this.notificationIcon.textContent = icons[type] || icons.info;
         this.notificationMessage.textContent = message;
         this.notificationModal.className = `notification-modal notification-${type}`;
-        
+
         // Clear any existing timeout
         if (this.autoCloseTimeout) {
             clearTimeout(this.autoCloseTimeout);
         }
-        
+
         // For success messages, hide OK button and auto-close after 1 second
         if (type === 'success') {
             this.notificationActions.innerHTML = ''; // Remove OK button
             this.notificationModal.style.display = 'flex';
-            
+
             // Auto-close after 1 second
             this.autoCloseTimeout = setTimeout(() => {
                 this.hideNotification();
@@ -1481,7 +1481,7 @@ class NotificationManager {
         } else {
             // For other message types, show OK button
             this.notificationActions.innerHTML = '<button class="btn-confirm" id="notificationConfirm">OK</button>';
-            
+
             // Add event listener for the newly created button
             const okButton = document.getElementById('notificationConfirm');
             if (okButton) {
@@ -1489,7 +1489,7 @@ class NotificationManager {
                     this.hideNotification();
                 });
             }
-            
+
             this.notificationModal.style.display = 'flex';
         }
     }
@@ -1591,8 +1591,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${h.toString().padStart(2, '0')}:${m}`;
     }
 
-    // Edit Violation Button functionality
+    // ✅ FIXED: Use event delegation for all edit buttons
     document.addEventListener('click', function(e) {
+        // Edit Violation Button
         if (e.target.classList.contains('editViolationBtn')) {
             e.stopPropagation();
             const row = e.target.closest('tr');
@@ -1607,11 +1608,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
-    });
 
-    // Edit Appointment Button functionality
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('editAppointmentBtn')) {
+        // Edit Appointment Button
+        else if (e.target.classList.contains('editAppointmentBtn')) {
             e.stopPropagation();
             const row = e.target.closest('tr');
             if (row) {
@@ -1623,11 +1622,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
-    });
 
-    // Edit Anecdotal Button functionality
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('editAnecdotalBtn')) {
+        // Edit Anecdotal Button
+        else if (e.target.classList.contains('editAnecdotalBtn')) {
             e.stopPropagation();
             const row = e.target.closest('tr');
             if (row) {
