@@ -8,16 +8,19 @@
     <h2>Offense and Sanctions</h2>
     <div class="actions">
       <input type="search" placeholder="🔍 Search by offense type or description..." id="searchInput">
-      <button class="btn-pdf" id="pdfBtn">📄 PDF</button>
+      <button class="btn-print" id="printBtn">🖨️ Print</button>
       <button class="btn-export" id="exportBtn">📤 Export</button>
     </div>
   </div>
+
+
 
   <!-- Offense & Sanction Table -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
+
           <th>#</th>
           <th>Offense Type</th>
           <th>Offense Description</th>
@@ -49,7 +52,7 @@
   <!-- 📝 Details Modal -->
   <div class="modal" id="detailsModal">
     <div class="modal-content">
-      <div class="modal-header">📄 Offense and Sanction Details</div>
+      <div class="modal-header">📄 Offense & Sanction Details</div>
       <div class="modal-body" id="detailsBody">
         <!-- Content will be filled dynamically via JS -->
       </div>
@@ -469,10 +472,12 @@ document.getElementById('notificationCloseBtn').addEventListener('click', () => 
   document.getElementById('notificationModal').style.display = 'none';
 });
 
-// ================= PDF EXPORT FUNCTIONALITY =================
 
-// 📄 PDF Export Button
-document.getElementById('pdfBtn')?.addEventListener('click', () => {
+
+// ================= BEAUTIFUL PRINT & EXPORT =================
+
+// 🖨️ Print Table
+document.getElementById('printBtn')?.addEventListener('click', () => {
   const table = document.querySelector('.table-container table');
   if (!table) return;
 
@@ -480,11 +485,8 @@ document.getElementById('pdfBtn')?.addEventListener('click', () => {
     year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  // Create a new window for PDF preview
-  const pdfWindow = window.open('', '_blank', 'width=900,height=700');
-
-  pdfWindow.document.write(`
-    <!DOCTYPE html>
+  const newWindow = window.open('', '', 'width=900,height=700');
+  newWindow.document.write(`
     <html>
       <head>
         <title>Offense and Sanctions Report</title>
@@ -494,7 +496,6 @@ document.getElementById('pdfBtn')?.addEventListener('click', () => {
             padding: 40px;
             color: #333;
             background: #fff;
-            margin: 0;
           }
           .header {
             text-align: center;
@@ -502,15 +503,19 @@ document.getElementById('pdfBtn')?.addEventListener('click', () => {
             padding-bottom: 15px;
             margin-bottom: 25px;
           }
+          .header img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 10px;
+          }
           .header h2 {
             margin: 5px 0;
             color: #1e3a8a;
-            font-size: 24px;
           }
           .header h4 {
             margin: 0;
             color: #666;
-            font-size: 16px;
           }
           .date {
             text-align: right;
@@ -522,20 +527,22 @@ document.getElementById('pdfBtn')?.addEventListener('click', () => {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
-            font-size: 12px;
           }
           th, td {
             border: 1px solid #999;
-            padding: 8px;
+            padding: 10px;
             text-align: left;
+            font-size: 14px;
           }
           th {
             background: #1e3a8a;
             color: white;
-            font-weight: bold;
           }
           tr:nth-child(even) td {
             background: #f8fafc;
+          }
+          tr:hover td {
+            background: #e0e7ff;
           }
           .footer {
             margin-top: 50px;
@@ -553,61 +560,32 @@ document.getElementById('pdfBtn')?.addEventListener('click', () => {
             margin-top: 5px;
             color: #555;
           }
-          .no-data {
-            text-align: center;
-            padding: 15px;
-            color: #666;
-            font-style: italic;
-          }
-          @media print {
-            body { padding: 20px; }
-            .header { margin-bottom: 15px; }
-          }
         </style>
       </head>
       <body>
         <div class="header">
+          <img src="/images/school-logo.png" alt="School Logo" />
           <h2>Tagoloan Senior High School</h2>
           <h4>Student Violation Tracking System</h4>
         </div>
         <div class="date">📅 Date Generated: <strong>${currentDate}</strong></div>
-        <h3 style="text-align:center; margin-bottom:10px; color:#1e3a8a;">Offense and Sanctions Report</h3>
+        <h3 style="text-align:center; margin-bottom:10px;">Offense and Sanctions Report</h3>
         ${table.outerHTML}
         <div class="footer">
           <div class="line"></div>
           <span>Authorized Signature</span>
         </div>
-
-        <script>
-          // Auto-print when PDF window opens
-          window.onload = function() {
-            setTimeout(() => {
-              window.print();
-            }, 500);
-          };
-
-          // After printing, show download option
-          window.onafterprint = function() {
-            document.body.innerHTML += '<div style="text-align:center; margin-top:20px; padding:20px; background:#f0f8ff; border-radius:5px;"><p>✅ PDF ready. You can save this page as PDF using browser print (Ctrl+P) → Save as PDF</p></div>';
-          };
-        <\/script>
       </body>
     </html>
   `);
 
-  pdfWindow.document.close();
-
-  // Show success notification
-  showNotification('📄 PDF Generated', 'PDF report opened in new tab. Use browser print (Ctrl+P) to save as PDF.', 'success', {
-    yesText: 'OK',
-    noText: null,
-    onYes: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
-  });
+  newWindow.document.close();
+  newWindow.focus();
+  newWindow.print();
 });
 
-// 📤 Export Table to Excel (kept as backup)
+
+// 📤 Export Table to Excel
 document.getElementById('exportBtn')?.addEventListener('click', () => {
   const table = document.querySelector('.table-container table');
   if (!table) return;
@@ -657,23 +635,5 @@ document.getElementById('exportBtn')?.addEventListener('click', () => {
 });
 
 </script>
-
-<style>
-/* Optional: Add specific styling for PDF button */
-.btn-pdf {
-  background: #dc2626;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.3s;
-}
-
-.btn-pdf:hover {
-  background: #b91c1c;
-}
-</style>
 
 @endsection
