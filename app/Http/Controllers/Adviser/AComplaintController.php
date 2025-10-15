@@ -386,9 +386,6 @@ public function searchStudents(Request $request)
         return $sanction ?: 'No sanction found';
     }
 
-    /**
-     * Update complaint record
-     */
     public function updateComplaint(Request $request, $id)
     {
         $validator = \Validator::make($request->all(), [
@@ -526,7 +523,6 @@ public function searchStudents(Request $request)
             ], 500);
         }
     }
-
 
 
     /**

@@ -192,195 +192,189 @@ public function store(Request $request)
 
 
 public function storeMultipleAppointments(Request $request)
-{
-    // Validate the request
-    $validator = Validator::make($request->all(), [
-        'violation_ids' => 'required|array',
-        'violation_ids.*' => 'exists:tbl_violation_record,violation_id',
-        'schedule_date' => 'required|date|after_or_equal:today',
-        'schedule_time' => 'required|date_format:H:i',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validation failed',
-            'errors' => $validator->errors()
-        ], 422);
-    }
-
-    try {
-        DB::beginTransaction();
-
-        $createdAppointments = [];
-        $violationIds = $request->violation_ids;
-
-        foreach ($violationIds as $violationId) {
-            // Check if violation exists and is active
-            $violation = ViolationRecord::where('violation_id', $violationId)
-                ->where('status', 'active')
-                ->first();
-
-            if (!$violation) {
-                continue; // Skip if violation doesn't exist or is not active
-            }
-
-            // Check if appointment already exists for this violation
-            $existingAppointment = ViolationAppointment::where('violation_id', $violationId)
-                ->whereIn('violation_app_status', ['Pending', 'Scheduled'])
-                ->first();
-
-            if ($existingAppointment) {
-                continue; // Skip if active appointment already exists
-            }
-
-            // Create new appointment - MATCHING YOUR DATABASE SCHEMA
-            $appointment = ViolationAppointment::create([
-                'violation_id' => $violationId,
-                'violation_app_date' => $request->schedule_date,
-                'violation_app_time' => $request->schedule_time,
-                'violation_app_status' => 'Pending',
-                'status' => 'active', // Add this field as per your schema
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
-            $createdAppointments[] = $appointment;
-        }
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => count($createdAppointments) . ' appointment(s) created successfully',
-            'data' => $createdAppointments
+    {
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'violation_ids' => 'required|array',
+            'violation_ids.*' => 'exists:tbl_violation_record,violation_id',
+            'schedule_date' => 'required|date|after_or_equal:today',
+            'schedule_time' => 'required|date_format:H:i',
         ]);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Error creating appointments: ' . $e->getMessage()
-        ], 500);
-    }
-}
-/**
- * Store multiple violation anecdotal records - UPDATED TO MATCH DATABASE
- */
-public function storeMultipleAnecdotals(Request $request)
-{
-    // Validate the request
-    $validator = Validator::make($request->all(), [
-        'violation_ids' => 'required|array',
-        'violation_ids.*' => 'exists:tbl_violation_record,violation_id',
-        'anecdotal_date' => 'required|date',
-        'anecdotal_time' => 'required|date_format:H:i',
-        'violation_anec_solution' => 'required|string|min:10|max:1000',
-        'violation_anec_recommendation' => 'required|string|min:10|max:1000'
-    ]);
-
-    if ($validator->fails()) {
-        // 🔍 Log validation errors to laravel.log
-        Log::error('Anecdotal validation errors:', $validator->errors()->toArray());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Validation failed',
-            'errors' => $validator->errors()
-        ], 422);
-    }
-
-    try {
-        DB::beginTransaction();
-
-        $createdAnecdotals = [];
-        $violationIds = $request->violation_ids;
-
-        foreach ($violationIds as $violationId) {
-            // Check if violation exists and is active - LOAD ALL NECESSARY RELATIONSHIPS
-            $violation = ViolationRecord::with([
-                'student.parent', // For student and parent information
-                'student.adviser', // For teacher information
-                'offense',
-                'prefect' // For prefect of discipline information
-            ])
-            ->where('violation_id', $violationId)
-            ->where('status', 'active')
-            ->first();
-
-            if (!$violation) {
-                Log::warning("Violation not found or not active: $violationId");
-                continue;
-            }
-
-            // Check if anecdotal already exists for this violation
-            $existingAnecdotal = ViolationAnecdotal::where('violation_id', $violationId)
-                ->where('status', 'active')
-                ->first();
-
-            if ($existingAnecdotal) {
-                Log::warning("Active anecdotal already exists for violation: $violationId");
-                continue;
-            }
-
-            // Create new anecdotal record - MATCHING YOUR DATABASE SCHEMA
-            $anecdotal = ViolationAnecdotal::create([
-                'violation_id' => $violationId,
-                'violation_anec_date' => $request->anecdotal_date,
-                'violation_anec_time' => $request->anecdotal_time,
-                'violation_anec_solution' => $request->violation_anec_solution,
-                'violation_anec_recommendation' => $request->violation_anec_recommendation,
-                'status' => 'active',
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
-            // Load all relationships for the response - INCLUDING NESTED RELATIONSHIPS
-            $anecdotal->load([
-                'violation.student.parent',
-                'violation.student.adviser',
-                'violation.offense',
-                'violation.prefect'
-            ]);
-
-            $createdAnecdotals[] = $anecdotal;
-
-            Log::info("Created anecdotal record for violation $violationId", [
-                'anecdotal_id' => $anecdotal->violation_anec_id,
-                'violation_id' => $violationId,
-                'student_name' => $violation->student->student_fname . ' ' . $violation->student->student_lname,
-                'parent_name' => $violation->student->parent ? $violation->student->parent->parent_fname . ' ' . $violation->student->parent->parent_lname : 'N/A',
-                'teacher_name' => $violation->student->adviser ? $violation->student->adviser->adviser_fname . ' ' . $violation->student->adviser->adviser_lname : 'N/A'
-            ]);
-        }
-
-        DB::commit();
-
-        if (count($createdAnecdotals) === 0) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No anecdotal records were created. Please check if violations exist and are active.'
-            ], 400);
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => count($createdAnecdotals) . ' anecdotal record(s) created successfully',
-            'data' => $createdAnecdotals
+        try {
+            DB::beginTransaction();
+
+            $createdAppointments = [];
+            $violationIds = $request->violation_ids;
+
+            foreach ($violationIds as $violationId) {
+                // Check if violation exists and is active
+                $violation = ViolationRecord::where('violation_id', $violationId)
+                    ->where('status', 'active')
+                    ->first();
+
+                if (!$violation) {
+                    continue;
+                }
+
+                // Check if appointment already exists for this violation
+                $existingAppointment = ViolationAppointment::where('violation_id', $violationId)
+                    ->whereIn('violation_app_status', ['Pending', 'Scheduled'])
+                    ->first();
+
+                if ($existingAppointment) {
+                    continue;
+                }
+
+                // Create new appointment
+                $appointment = ViolationAppointment::create([
+                    'violation_id' => $violationId,
+                    'violation_app_date' => $request->schedule_date,
+                    'violation_app_time' => $request->schedule_time,
+                    'violation_app_status' => 'Scheduled',
+                    'status' => 'active',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                $createdAppointments[] = $appointment;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => count($createdAppointments) . ' appointment(s) created successfully',
+                'data' => $createdAppointments
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating appointments: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function storeMultipleAnecdotals(Request $request)
+    {
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'violation_ids' => 'required|array',
+            'violation_ids.*' => 'exists:tbl_violation_record,violation_id',
+            'anecdotal_date' => 'required|date',
+            'anecdotal_time' => 'required|date_format:H:i',
+            'violation_anec_solution' => 'required|string|min:10|max:1000',
+            'violation_anec_recommendation' => 'required|string|min:10|max:1000'
         ]);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error creating anecdotal records: ' . $e->getMessage());
-        Log::error('Stack trace: ' . $e->getTraceAsString());
+        if ($validator->fails()) {
+            Log::error('Anecdotal validation errors:', $validator->errors()->toArray());
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Server error: ' . $e->getMessage()
-        ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $createdAnecdotals = [];
+            $violationIds = $request->violation_ids;
+
+            foreach ($violationIds as $violationId) {
+                // Check if violation exists and is active
+                $violation = ViolationRecord::with([
+                    'student.parent',
+                    'student.adviser',
+                    'offense',
+                    'prefect'
+                ])
+                ->where('violation_id', $violationId)
+                ->where('status', 'active')
+                ->first();
+
+                if (!$violation) {
+                    Log::warning("Violation not found or not active: $violationId");
+                    continue;
+                }
+
+                // Check if anecdotal already exists for this violation
+                $existingAnecdotal = ViolationAnecdotal::where('violation_id', $violationId)
+                    ->where('status', 'active')
+                    ->first();
+
+                if ($existingAnecdotal) {
+                    Log::warning("Active anecdotal already exists for violation: $violationId");
+                    continue;
+                }
+
+                // Create new anecdotal record
+                $anecdotal = ViolationAnecdotal::create([
+                    'violation_id' => $violationId,
+                    'violation_anec_date' => $request->anecdotal_date,
+                    'violation_anec_time' => $request->anecdotal_time,
+                    'violation_anec_solution' => $request->violation_anec_solution,
+                    'violation_anec_recommendation' => $request->violation_anec_recommendation,
+                    'status' => 'active',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                $anecdotal->load([
+                    'violation.student.parent',
+                    'violation.student.adviser',
+                    'violation.offense',
+                    'violation.prefect'
+                ]);
+
+                $createdAnecdotals[] = $anecdotal;
+
+                Log::info("Created anecdotal record for violation $violationId", [
+                    'anecdotal_id' => $anecdotal->violation_anec_id,
+                    'violation_id' => $violationId,
+                    'student_name' => $violation->student->student_fname . ' ' . $violation->student->student_lname,
+                ]);
+            }
+
+            DB::commit();
+
+            if (count($createdAnecdotals) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No anecdotal records were created. Please check if violations exist and are active.'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => count($createdAnecdotals) . ' anecdotal record(s) created successfully',
+                'data' => $createdAnecdotals
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating anecdotal records: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
 
 
@@ -396,16 +390,17 @@ public function update(Request $request, $violationId)
     ]);
 
     if ($validator->fails()) {
-        return redirect()->back()
-                         ->withErrors($validator)
-                         ->withInput()
-                         ->with('error', '❌ Please correct the errors and try again.');
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
     }
 
     try {
         $violation = ViolationRecord::findOrFail($violationId);
 
-        $violation->violator_id        = $request->input('violator_id'); // <--- corrected
+        $violation->violator_id        = $request->input('violator_id');
         $violation->offense_sanc_id    = $request->input('offense_sanc_id');
         $violation->violation_incident = $request->input('violation_incident');
         $violation->violation_date     = $request->input('violation_date');
@@ -413,15 +408,104 @@ public function update(Request $request, $violationId)
 
         $violation->save();
 
-        return redirect()->route('violations.index')
-                         ->with('success', '✅ Violation updated successfully!');
+        return response()->json([
+            'success' => true,
+            'message' => '✅ Violation updated successfully!'
+        ]);
+
     } catch (\Exception $e) {
-        return redirect()->back()
-                         ->with('error', '❌ Error updating violation: ' . $e->getMessage())
-                         ->withInput();
+        return response()->json([
+            'success' => false,
+            'message' => '❌ Error updating violation: ' . $e->getMessage()
+        ], 500);
     }
 }
 
+/**
+     * Update violation appointment
+     */
+    public function updateAppointment(Request $request, $appointmentId)
+    {
+        $validator = Validator::make($request->all(), [
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required|date_format:H:i',
+            'appointment_status' => 'required|in:Pending,Scheduled,Completed,Cancelled'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $appointment = ViolationAppointment::findOrFail($appointmentId);
+
+            $appointment->update([
+                'violation_app_date' => $request->appointment_date,
+                'violation_app_time' => $request->appointment_time,
+                'violation_app_status' => $request->appointment_status
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Appointment updated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating appointment: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update violation anecdotal
+     */
+    public function updateAnecdotal(Request $request, $anecdotalId)
+    {
+        $validator = Validator::make($request->all(), [
+            'solution' => 'required|string|min:10|max:1000',
+            'recommendation' => 'required|string|min:10|max:1000',
+            'date' => 'required|date',
+            'time' => 'required|date_format:H:i',
+            'status' => 'required|in:active,in_progress,completed'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $anecdotal = ViolationAnecdotal::findOrFail($anecdotalId);
+
+            $anecdotal->update([
+                'violation_anec_solution' => $request->solution,
+                'violation_anec_recommendation' => $request->recommendation,
+                'violation_anec_date' => $request->date,
+                'violation_anec_time' => $request->time,
+                'status' => $request->status
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Anecdotal record updated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating anecdotal record: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function archive(Request $request)
     {

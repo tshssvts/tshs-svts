@@ -407,8 +407,8 @@
     </div>
   </div>
 
-  <!-- ✏️ Edit Violation Modal -->
-  <div class="modal" id="editViolationModal">
+ <!-- ✏️ Edit Violation Modal -->
+<div class="modal" id="editViolationModal">
     <div class="modal-content">
       <button class="close-btn" id="closeViolationEditModal">✖</button>
       <h2>Edit Violation Record</h2>
@@ -416,6 +416,10 @@
         @csrf
         @method('PUT')
         <input type="hidden" name="record_id" id="edit_violation_record_id">
+        <!-- Add these hidden fields that your controller requires -->
+        <input type="hidden" name="violator_id" id="edit_violator_id">
+        <input type="hidden" name="offense_sanc_id" id="edit_offense_sanc_id">
+
         <div class="form-grid">
           <div class="form-group full-width">
             <label>Incident Details</label>
@@ -434,9 +438,15 @@
             <select id="edit_offense_type" name="offense_type" required>
               <option value="">Select Offense Type</option>
               @foreach($offenses as $offense)
-                <option value="{{ $offense->offense_sanc_id }}">{{ $offense->offense_type }}</option>
+                <option value="{{ $offense->offense_sanc_id }}" data-sanction="{{ $offense->sanction_consequences }}">
+                  {{ $offense->offense_type }}
+                </option>
               @endforeach
             </select>
+          </div>
+          <div class="form-group">
+            <label>Sanction (Auto-filled)</label>
+            <input type="text" id="edit_sanction" readonly style="background-color: #f8f9fa;">
           </div>
           <div class="form-group">
             <label>Status</label>
@@ -1549,14 +1559,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeAnecdotalModal = document.getElementById('closeAnecdotalEditModal');
     const cancelAnecdotalBtn = document.getElementById('cancelAnecdotalEditBtn');
 
+    // ✅ FIXED: Updated openViolationModal function
     function openViolationModal(action, data) {
         editViolationForm.action = action;
         document.getElementById('edit_violation_record_id').value = data.id || '';
+
+        // Set the required fields for your controller
+        document.getElementById('edit_violator_id').value = data.studentId || '';
+        document.getElementById('edit_offense_sanc_id').value = data.offenseId || '';
+
+        // Set the form fields
         document.getElementById('edit_violation_incident').value = data.incident || '';
         document.getElementById('edit_violation_date').value = data.date || '';
         document.getElementById('edit_violation_time').value = convertTo24Hour(data.time || '');
         document.getElementById('edit_offense_type').value = data.offenseId || '';
         document.getElementById('edit_violation_status').value = data.status || 'active';
+
+        // Auto-populate sanction based on selected offense
+        const selectedOption = document.querySelector(`#edit_offense_type option[value="${data.offenseId}"]`);
+        if (selectedOption) {
+            document.getElementById('edit_sanction').value = selectedOption.dataset.sanction || '';
+        }
+
         editViolationModal.style.display = 'flex';
     }
 
@@ -1600,6 +1624,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (row) {
                 openViolationModal(`/prefect/violations/update/${row.dataset.violationId}`, {
                     id: row.dataset.violationId,
+                    studentId: row.dataset.studentId, // Add this for violator_id
                     incident: row.dataset.incident,
                     date: row.dataset.date,
                     time: row.dataset.time,
@@ -1639,6 +1664,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // ✅ FIXED: Add event listener for offense type change to auto-update sanction and offense_sanc_id
+    const offenseTypeSelect = document.getElementById('edit_offense_type');
+    if (offenseTypeSelect) {
+        offenseTypeSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            document.getElementById('edit_sanction').value = selectedOption.dataset.sanction || '';
+            document.getElementById('edit_offense_sanc_id').value = this.value;
+        });
+    }
 
     // Close modal events
     [closeViolationModal, cancelViolationBtn].forEach(btn => {
