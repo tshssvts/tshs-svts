@@ -54,7 +54,6 @@
     </div>
 </div>
 
-
   <!-- Bulk Action / Select Options -->
   <div class="select-options">
     <div class="left-controls">
@@ -98,16 +97,11 @@
           <td>{{ $parent->parent_id }}</td>
           <td>{{ $parent->parent_fname }}</td>
           <td>{{ $parent->parent_lname }}</td>
-          <td>{{ ucfirst($parent->parent_sex) }}</td>
+          <td>{{ $parent->parent_sex }}</td>
           <td>{{ $parent->parent_birthdate ? \Carbon\Carbon::parse($parent->parent_birthdate)->format('F j, Y') : 'N/A' }}</td>
           <td>{{ $parent->parent_email ?? 'N/A' }}</td>
           <td>{{ $parent->parent_contactinfo }}</td>
           <td>{{ $parent->parent_relationship ?? 'N/A' }}</td>
-          {{-- <td>
-            <span class="status-badge {{ $parent->status === 'active' ? 'status-active' : 'status-inactive' }}">
-              {{ ucfirst($parent->status) }}
-            </span>
-          </td> --}}
           <td>
             <button class="btn-primary edit-btn">✏️ Edit</button>
           </td>
@@ -134,69 +128,73 @@
   <!-- ✏️ Edit Parent Modal -->
 <div class="modal" id="editModal">
     <div class="modal-content">
-      <button class="close-btn" id="closeEditModal">✖</button>
-      <h2>Edit Parent</h2>
-      <form id="editParentForm" method="POST" action="">
-        @csrf
-        @method('PUT')
-        <input type="hidden" name="parent_id" id="edit_parent_id">
+        <button class="close-btn" id="closeEditModal">✖</button>
+        <h2>Edit Parent</h2>
+        <form id="editParentForm" method="POST">
+            @csrf
+            <input type="hidden" name="_method" value="PUT">
+            <input type="hidden" name="parent_id" id="edit_parent_id">
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" name="parent_fname" id="edit_parent_fname" required>
-          </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" name="parent_fname" id="edit_parent_fname" required>
+                </div>
 
-          <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" name="parent_lname" id="edit_parent_lname" required>
-          </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="parent_lname" id="edit_parent_lname" required>
+                </div>
 
-          <div class="form-group">
-            <label>Sex</label>
-            <select name="parent_sex" id="edit_parent_sex" required>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-          </div>
+                <div class="form-group">
+                    <label>Sex</label>
+                    <select name="parent_sex" id="edit_parent_sex" required>
+                        <option value="">Select Sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
 
-          <div class="form-group">
-            <label>Birthdate</label>
-            <input type="date" name="parent_birthdate" id="edit_parent_birthdate" required>
-          </div>
+                <div class="form-group">
+                    <label>Birthdate</label>
+                    <input type="date" name="parent_birthdate" id="edit_parent_birthdate">
+                </div>
 
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="parent_email" id="edit_parent_email">
-          </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="parent_email" id="edit_parent_email">
+                </div>
 
-          <div class="form-group">
-            <label>Contact Info</label>
-            <input type="text" name="parent_contactinfo" id="edit_parent_contactinfo" required>
-          </div>
+                <div class="form-group">
+                    <label>Contact Info</label>
+                    <input type="text" name="parent_contactinfo" id="edit_parent_contactinfo" required>
+                </div>
 
-          <div class="form-group">
-            <label>Relationship</label>
-            <input type="text" name="parent_relationship" id="edit_parent_relationship" required>
-          </div>
+                <div class="form-group">
+                    <label>Relationship</label>
+                    <input type="text" name="parent_relationship" id="edit_parent_relationship" required>
+                </div>
 
-          <div class="form-group">
-            <label>Status</label>
-            <select name="status" id="edit_parent_status" required>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-        </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" id="edit_parent_status" required>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
 
-        <div class="actions">
-          <button type="submit" class="btn-primary">💾 Save Changes</button>
-          <button type="button" class="btn-secondary" id="cancelEditBtn">❌ Cancel</button>
-        </div>
-      </form>
+            <div class="actions">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="btn-secondary" id="cancelEditBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </form>
     </div>
-  </div>
-
+</div>
 
   <!-- 🗃️ Archive Modal -->
   <div class="modal" id="archiveModal">
@@ -615,115 +613,150 @@ document.getElementById('archiveSearch').addEventListener('input', function() {
 });
 
 // ==========================
-// Edit Modal Functionality - FIXED
+// Edit Modal Functionality - FIXED VERSION
 // ==========================
 document.addEventListener('DOMContentLoaded', function() {
-  const editModal = document.getElementById('editModal');
-  const closeEditModal = document.getElementById('closeEditModal');
-  const cancelEditBtn = document.getElementById('cancelEditBtn');
-  const editForm = document.getElementById('editParentForm');
+    const editModal = document.getElementById('editModal');
+    const closeEditModal = document.getElementById('closeEditModal');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const editForm = document.getElementById('editParentForm');
 
-  // Use event delegation for edit buttons
-  document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('edit-btn')) {
-      e.stopPropagation();
-      const row = e.target.closest('tr');
-      const parentId = row.getAttribute('data-parent-id');
-      const cells = row.cells;
+    // Use event delegation for edit buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('edit-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const row = e.target.closest('tr');
+            const parentId = row.getAttribute('data-parent-id');
+            const cells = row.cells;
 
-      // Extract data from table cells
-      const fname = cells[2].innerText.trim();
-      const lname = cells[3].innerText.trim();
-      const sex = cells[4].innerText.trim();
-      const birthdate = cells[5].innerText.trim();
-      const email = cells[6].innerText.trim();
-      const contact = cells[7].innerText.trim();
-      const relationship = cells[8].innerText.trim();
+            // Extract data from table cells
+            const fname = cells[2].innerText.trim();
+            const lname = cells[3].innerText.trim();
+            const sex = cells[4].innerText.trim(); // This will be "Male" or "Female"
+            const birthdate = cells[5].innerText.trim();
+            const email = cells[6].innerText.trim();
+            const contact = cells[7].innerText.trim();
+            const relationship = cells[8].innerText.trim();
 
-      // Convert birthdate to YYYY-MM-DD format if not N/A
-      let birthdateInput = '';
-      if (birthdate !== 'N/A') {
-        const date = new Date(birthdate);
-        birthdateInput = date.toISOString().split('T')[0];
-      }
+            console.log('Editing parent:', { parentId, fname, lname, sex, birthdate, email, contact, relationship });
 
-      // Fill form
-      document.getElementById('edit_parent_id').value = parentId;
-      document.getElementById('edit_parent_fname').value = fname;
-      document.getElementById('edit_parent_lname').value = lname;
-      document.getElementById('edit_parent_sex').value = sex.toLowerCase();
-      document.getElementById('edit_parent_birthdate').value = birthdateInput;
-      document.getElementById('edit_parent_email').value = email === 'N/A' ? '' : email;
-      document.getElementById('edit_parent_contactinfo').value = contact;
-      document.getElementById('edit_parent_relationship').value = relationship === 'N/A' ? '' : relationship;
+            // Fill form fields
+            document.getElementById('edit_parent_id').value = parentId;
+            document.getElementById('edit_parent_fname').value = fname;
+            document.getElementById('edit_parent_lname').value = lname;
+            
+            // FIXED: Set sex value exactly as displayed in table (Male/Female)
+            const sexSelect = document.getElementById('edit_parent_sex');
+            sexSelect.value = sex; // This matches the validation: 'Male' or 'Female'
+            
+            console.log('Sex value set to:', sexSelect.value);
 
-      // Set form action
-      editForm.action = `/adviser/parents/update/${parentId}`;
+            document.getElementById('edit_parent_email').value = email === 'N/A' ? '' : email;
+            document.getElementById('edit_parent_contactinfo').value = contact;
+            document.getElementById('edit_parent_relationship').value = relationship === 'N/A' ? '' : relationship;
 
-      // Show modal
-      editModal.style.display = 'flex';
-    }
-  });
+            // Handle birthdate conversion
+            let birthdateInput = '';
+            if (birthdate !== 'N/A') {
+                try {
+                    // Parse the displayed date (e.g., "January 1, 2023")
+                    const date = new Date(birthdate);
+                    if (!isNaN(date.getTime())) {
+                        birthdateInput = date.toISOString().split('T')[0];
+                    }
+                } catch (error) {
+                    console.error('Error parsing birthdate:', error);
+                }
+            }
+            document.getElementById('edit_parent_birthdate').value = birthdateInput;
 
-  // Handle form submission
-  editForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
+            // Set form action URL - FIXED: Use correct route name
+            const baseUrl = '{{ url("/") }}';
+            editForm.action = `${baseUrl}/adviser/parents/update/${parentId}`;
 
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
+            console.log('Form action set to:', editForm.action);
 
-    try {
-      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-      submitBtn.disabled = true;
-
-      const formData = new FormData(this);
-
-      const response = await fetch(this.action, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': '{{ csrf_token() }}',
-          'Accept': 'application/json'
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        showNotification('success', result.message, function() {
-          editModal.style.display = 'none';
-          location.reload(); // Reload to show updated data
-        });
-      } else {
-        if (result.errors) {
-          let messages = Object.values(result.errors).flat().join('\n');
-          showNotification('error', 'Validation failed:\n' + messages);
-        } else {
-          showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+            // Show modal
+            editModal.style.display = 'flex';
         }
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showNotification('error', 'Error updating parent.');
-    } finally {
-      submitBtn.innerHTML = originalText;
-      submitBtn.disabled = false;
-    }
-  });
-
-  // Close modal
-  [closeEditModal, cancelEditBtn].forEach(btn => {
-    btn.addEventListener('click', function() {
-      editModal.style.display = 'none';
     });
-  });
 
-  // Close modal when clicking outside
-  editModal.addEventListener('click', function(e) {
-    if (e.target === editModal) {
-      editModal.style.display = 'none';
-    }
-  });
+    // Handle form submission
+    editForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        const formData = new FormData(this);
+
+        // Log form data for debugging
+        console.log('Form data before submission:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+
+        try {
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+
+            console.log('Submitting form to:', this.action);
+
+            const response = await fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+
+            if (result.success) {
+                showNotification('success', result.message || 'Parent updated successfully!', function() {
+                    editModal.style.display = 'none';
+                    location.reload();
+                });
+            } else {
+                let errorMessage = 'Error updating parent';
+                
+                if (result.message) {
+                    errorMessage = result.message;
+                } else if (result.errors) {
+                    const errorMessages = Object.values(result.errors).flat();
+                    errorMessage = 'Validation errors: ' + errorMessages.join(', ');
+                }
+                
+                showNotification('error', errorMessage);
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            showNotification('error', 'Network error: Unable to update parent. Please check your connection.');
+        } finally {
+            // Restore button state
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Close modal handlers
+    [closeEditModal, cancelEditBtn].forEach(btn => {
+        btn.addEventListener('click', function() {
+            editModal.style.display = 'none';
+        });
+    });
+
+    // Close modal when clicking outside
+    editModal.addEventListener('click', function(e) {
+        if (e.target === editModal) {
+            editModal.style.display = 'none';
+        }
+    });
 });
 
 // ==========================
@@ -740,4 +773,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+
 @endsection

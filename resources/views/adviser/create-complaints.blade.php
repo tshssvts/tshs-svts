@@ -2,100 +2,153 @@
 
 @section('content')
 <div class="main-container">
+    <style>
+        /* Success Modal Styles */
+        .success-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
 
-  {{-- ✅ Flash Messages --}}
-  @if(session('success'))
-      <div class="alert alert-success">
-          {!! session('success') !!}
-      </div>
-  @endif
+        .success-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
 
-  @if(session('error'))
-      <div class="alert alert-danger">
-          {!! session('error') !!}
-      </div>
-  @endif
+        .success-icon {
+            font-size: 48px;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
 
-  <div class="toolbar">
-    <h2>Create Complaint Record</h2>
-    <div class="actions">
-      <form id="complaintForm" method="POST" action="{{ route('adviser.complaints.store') }}">
-        @csrf
-        <div class="buttons-row">
-          <button type="button" class="btn-Add-Complaint" id="btnAddComplaint" disabled>
-            <i class="fas fa-plus-circle"></i> Add Another Complaint
-          </button>
-          <button type="submit" class="btn-save">
-            <i class="fas fa-save"></i> Save All Records
-          </button>
+        .success-modal h3 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        .success-modal p {
+            margin-bottom: 20px;
+            color: #666;
+        }
+    </style>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="success-modal">
+        <div class="success-modal-content">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Success!</h3>
+            <p>All complaint records have been saved successfully.</p>
+            <p><small>Redirecting to complaints list...</small></p>
+        </div>
+    </div>
+
+    {{-- ✅ Flash Messages --}}
+    @if(session('success'))
+        <div class="alert alert-success">
+            {!! session('success') !!}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger">
+            {!! session('error') !!}
+        </div>
+    @endif
+
+    <div class="toolbar">
+        <h2>Create Complaint Record</h2>
+        <div class="actions">
+            <form id="complaintForm" method="POST" action="{{ route('adviser.complaints.store') }}">
+                @csrf
+                <div class="buttons-row">
+                    <button type="button" class="btn-Add-Complaint" id="btnAddComplaint" disabled>
+                        <i class="fas fa-plus-circle"></i> Add Another Complaint
+                    </button>
+                    <button type="button" class="btn-save" id="btnSave">
+                        <i class="fas fa-save"></i> Save All Records
+                    </button>
+                </div>
+
+                <!-- ✅ Hidden fields container for form submission -->
+                <div id="hiddenFieldsContainer"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======= CONTENT WRAPPER (FORM + SUMMARY) ======= -->
+    <div class="content-wrapper">
+        <!-- Left: Multiple Forms -->
+        <div class="forms-container">
+            <div class="form-box shadow-card complaint-form">
+                <div class="form-header">
+                    <h3 class="section-title"><i class="fas fa-user"></i> Complaint Details</h3>
+                    <button type="button" class="btn-remove-form">&times;</button>
+                </div>
+
+                <label>Complainant(s) <span class="note">(single or comma-separated for multiple)</span></label>
+                <input type="text" class="complainant-input" placeholder="e.g. Kent Zyrone, Shawn Laurence" data-ids="">
+                <div class="results complainant-results"></div>
+
+                <label>Respondent(s) <span class="note">(comma-separated for multiple)</span></label>
+                <input type="text" class="respondent-input" placeholder="e.g. Jonathan, Junald, Jayvee Charles" data-ids="">
+                <div class="results respondent-results"></div>
+
+                <h3 class="section-title"><i class="fas fa-info-circle"></i> Complaint Information</h3>
+                <div class="row-fields">
+                    <div class="field">
+                        <label>Offense</label>
+                        <input type="text" class="offense-input" placeholder="Type offense (e.g., Tardiness, Bullying, Cheating)...">
+                        <input type="hidden" class="offense-id">
+                        <div class="results offense-results"></div>
+                    </div>
+
+                    <div class="field small">
+                        <label>Date</label>
+                        <input type="date" class="date-input" value="{{ date('Y-m-d') }}">
+                    </div>
+
+                    <div class="field small">
+                        <label>Time</label>
+                        <input type="time" class="time-input" value="{{ date('H:i') }}">
+                    </div>
+
+                    <div class="field large">
+                        <label>Incident Details</label>
+                        <textarea rows="3" class="incident-input" placeholder="Briefly describe the incident..."></textarea>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-show-all">
+                    <i class="fas fa-eye"></i> Show All
+                </button>
+            </div>
         </div>
 
-        <!-- ✅ Hidden fields container for form submission -->
-        <div id="hiddenFieldsContainer"></div>
-      </form>
+        <!-- Right: Complaints Summary -->
+        <section class="complaints-section">
+            <div class="summary-header">
+                <h3 class="section-title"><i class="fas fa-list"></i> Complaints Summary</h3>
+                <input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
+            </div>
+
+            <!-- Summary container (all groups appended here) -->
+            <div id="allComplaintGroups" class="complaintsWrapper"></div>
+        </section>
     </div>
-  </div>
-
-  <!-- ======= CONTENT WRAPPER (FORM + SUMMARY) ======= -->
-  <div class="content-wrapper">
-      <!-- Left: Multiple Forms -->
-      <div class="forms-container">
-          <div class="form-box shadow-card complaint-form">
-              <div class="form-header">
-                  <h3 class="section-title"><i class="fas fa-user"></i> Complaint Details</h3>
-                  <button type="button" class="btn-remove-form">&times;</button>
-              </div>
-
-              <label>Complainant(s) <span class="note">(single or comma-separated for multiple)</span></label>
-              <input type="text" class="complainant-input" placeholder="e.g. Kent Zyrone, Shawn Laurence" data-ids="">
-              <div class="results complainant-results"></div>
-
-              <label>Respondent(s) <span class="note">(comma-separated for multiple)</span></label>
-              <input type="text" class="respondent-input" placeholder="e.g. Jonathan, Junald, Jayvee Charles" data-ids="">
-              <div class="results respondent-results"></div>
-
-              <h3 class="section-title"><i class="fas fa-info-circle"></i> Complaint Information</h3>
-              <div class="row-fields">
-                  <div class="field">
-                      <label>Offense</label>
-                      <input type="text" class="offense-input" placeholder="Type offense (e.g., Tardiness, Bullying, Cheating)...">
-                      <input type="hidden" class="offense-id">
-                      <div class="results offense-results"></div>
-                  </div>
-
-                  <div class="field small">
-                      <label>Date</label>
-                      <input type="date" class="date-input" value="{{ date('Y-m-d') }}">
-                  </div>
-
-                  <div class="field small">
-                      <label>Time</label>
-                      <input type="time" class="time-input" value="{{ date('H:i') }}">
-                  </div>
-
-                  <div class="field large">
-                      <label>Incident Details</label>
-                      <textarea rows="3" class="incident-input" placeholder="Briefly describe the incident..."></textarea>
-                  </div>
-              </div>
-
-              <button type="button" class="btn-show-all">
-                  <i class="fas fa-eye"></i> Show All
-              </button>
-          </div>
-      </div>
-
-      <!-- Right: Complaints Summary -->
-      <section class="complaints-section">
-          <div class="summary-header">
-              <h3 class="section-title"><i class="fas fa-list"></i> Complaints Summary</h3>
-              <input type="search" placeholder="🔍 Search by student name or ID..." id="searchInput">
-          </div>
-
-          <!-- Summary container (all groups appended here) -->
-          <div id="allComplaintGroups" class="complaintsWrapper"></div>
-      </section>
-  </div>
 
 </div>
 
@@ -105,10 +158,46 @@
 <script>
 const studentSearchUrl = "{{ route('adviser.complaints.search-students') }}";
 const offenseSearchUrl = "{{ route('adviser.complaints.search-offenses') }}";
+const complaintsListUrl = "{{ route('complaints.all') }}"; // Adjust this route to match your complaints list route
 
 let complaintCount = 1;
 let allComplaintsData = {};
 let complaintCounter = 1;
+
+// Function to show success modal and redirect
+function showSuccessModalAndRedirect() {
+    const modal = document.getElementById('successModal');
+    modal.style.display = 'flex';
+    
+    // Redirect after 2 seconds to allow user to see the success message
+    setTimeout(function() {
+        window.location.href = complaintsListUrl;
+    }, 2000);
+}
+
+// Check if we're coming from a successful submission
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for success flash message (if using Laravel session)
+    @if(session('success'))
+        showSuccessModalAndRedirect();
+    @endif
+});
+
+// Helper: get current date and time in proper formats
+function getCurrentDateTime() {
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const date = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    return { date, time };
+}
+
+// Set date & time inputs for a form
+function setDateTimeInputs(form) {
+    const { date, time } = getCurrentDateTime();
+    form.querySelector(".date-input").value = date;
+    form.querySelector(".time-input").value = time;
+}
 
 function attachListeners(box, id) {
   const complainantInput = box.querySelector(".complainant-input");
@@ -557,8 +646,8 @@ document.getElementById("btnAddComplaint").onclick = () => {
   clone.querySelectorAll(".complainant-input, .respondent-input").forEach(input => input.dataset.ids = "");
   clone.querySelectorAll(".results").forEach(div => div.innerHTML = "");
 
-  clone.querySelector(".date-input").value = "{{ date('Y-m-d') }}";
-  clone.querySelector(".time-input").value = "{{ date('H:i') }}";
+  // Set real-time date & time for the cloned form
+  setDateTimeInputs(clone);
 
   clone.querySelector(".section-title").innerHTML = `<i class="fas fa-user"></i> Complaint Details (Form #${complaintCount})`;
   document.querySelector(".forms-container").appendChild(clone);
@@ -567,45 +656,77 @@ document.getElementById("btnAddComplaint").onclick = () => {
   document.getElementById("btnAddComplaint").disabled = true;
 };
 
-// Form submission handler - ENHANCED DEBUGGING
-document.getElementById('complaintForm').addEventListener('submit', function(e) {
-  const totalComplaints = getTotalComplaints();
-
-  if (totalComplaints === 0) {
-    e.preventDefault();
-    Swal.fire("No Complaints!", "Please add at least one complaint to the summary before saving.", "warning");
-    return;
-  }
-
-  console.log('=== FORM SUBMISSION DEBUG ===');
-  console.log('Total complaints to save:', totalComplaints);
-
-  // Log all hidden fields
-  const hiddenFields = document.getElementById('hiddenFieldsContainer').querySelectorAll('input');
-  console.log('Hidden fields count:', hiddenFields.length);
-
-  hiddenFields.forEach((field, index) => {
-    console.log(`Field ${index}:`, field.name, '=', field.value);
-  });
-
-  // Create a FormData object to see what will be sent
-  const formData = new FormData(this);
-  console.log('FormData entries:');
-  for (let [key, value] of formData.entries()) {
-    console.log(key, ':', value);
-  }
-
-  // Show loading state
-  const submitBtn = this.querySelector('button[type="submit"]');
-  submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving ${totalComplaints} Complaint(s)...`;
-  submitBtn.disabled = true;
-
-  // Allow form to submit normally
+// Show confirmation modal before saving
+document.getElementById('btnSave').addEventListener('click', function() {
+    const total = getTotalComplaints();
+    
+    if (total === 0) {
+        Swal.fire("No Complaints!", "Add at least one complaint before saving.", "warning");
+        return;
+    }
+    
+    // Show confirmation modal
+    Swal.fire({
+        title: 'Save Complaint Records?',
+        html: `You are about to save <b>${total} complaint(s)</b>.<br><br>This action cannot be undone.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Save All Records',
+        cancelButtonText: 'Cancel',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            return new Promise((resolve, reject) => {
+                // Submit the form via AJAX to handle the response
+                const formData = new FormData(document.getElementById('complaintForm'));
+                
+                fetch("{{ route('adviser.complaints.store') }}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    // Check if response contains success indicators
+                    if (data.includes('success') || data.includes('complaint(s) stored successfully')) {
+                        // Show success modal and redirect
+                        showSuccessModalAndRedirect();
+                        resolve();
+                    } else {
+                        // If there's an error, show the form again with errors
+                        document.open();
+                        document.write(data);
+                        document.close();
+                        reject(new Error('Save failed - server returned error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error!', 'An error occurred while saving. Please try again.', 'error');
+                    reject(error);
+                });
+            });
+        }
+    });
 });
 
 // Initialize first form
 document.addEventListener('DOMContentLoaded', function() {
-  attachListeners(document.querySelector(".complaint-form"), complaintCount);
+  const firstForm = document.querySelector(".complaint-form");
+  attachListeners(firstForm, complaintCount);
+  setDateTimeInputs(firstForm);
+
+  // Update time every second for the first form
+  setInterval(() => setDateTimeInputs(firstForm), 1000);
 });
 </script>
 

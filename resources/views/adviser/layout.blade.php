@@ -505,10 +505,10 @@
         </div>
         <div class="header-right">
             <!-- Yellow Notification Bell -->
-            <div class="notification-bell" onclick="toggleNotifications(event)">
+            {{-- <div class="notification-bell" onclick="toggleNotifications(event)">
                 <i class="fas fa-bell"></i>
                 <div class="notification-badge">3</div>
-            </div>
+            </div> --}}
             
             <!-- Notification Dropdown -->
             <div class="notification-dropdown" id="notificationDropdown">

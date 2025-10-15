@@ -41,14 +41,14 @@
         <span>Select All</span>
       </label>
 
-      <div class="dropdown">
+      {{-- <div class="dropdown">
         <button class="btn-info dropdown-btn">⬇️ Select Section</button>
         <div class="dropdown-content">
           <a href="#" id="violationRecords">Violation Records</a>
           <a href="#" id="violationAppointments">Violation Appointments</a>
           <a href="#" id="violationAnecdotals">Violation Anecdotals</a>
         </div>
-      </div>
+      </div> --}}
     </div>
 
     <div class="right-controls">
