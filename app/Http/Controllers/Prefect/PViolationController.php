@@ -113,64 +113,98 @@ class PViolationController extends Controller
     }
 
     public function store(Request $request)
-    {
-        Log::info('Store method called with data:', $request->all());
+{
+    try {
+        DB::beginTransaction();
 
-        try {
-            // Validate the request
-            $validator = Validator::make($request->all(), [
-                'violations' => 'required|array',
-                'violations.*.violator_id' => 'required|exists:tbl_student,student_id',
-                'violations.*.offense_sanc_id' => 'required|exists:tbl_offenses_with_sanction,offense_sanc_id',
-                'violations.*.violation_incident' => 'required|string|max:255',
-                'violations.*.violation_date' => 'required|date',
-                'violations.*.violation_time' => 'required|date_format:H:i',
-            ]);
+        $messages = [];
+        $prefect_id = Auth::id() ?? 1;
+        $savedCount = 0;
 
-            if ($validator->fails()) {
-                Log::error('Validation failed:', $validator->errors()->toArray());
-                return redirect()->back()
-                    ->withErrors($validator)
-                    ->withInput()
-                    ->with('error', '❌ Please correct the validation errors.');
+        // Get all complaints data
+        $complaintsData = $request->input('complaints', []);
+
+        // Check if we have any data
+        if (empty($complaintsData)) {
+            DB::rollBack();
+            return back()->with('error', 'No complaint data found. Please make sure you added complaints to the summary.');
+        }
+
+        // Loop through each complaint
+        foreach ($complaintsData as $complaintIndex => $complaint) {
+            $complainant_id = $complaint['complainant_id'] ?? null;
+            $respondent_id = $complaint['respondent_id'] ?? null;
+            $offense_sanc_id = $complaint['offense_sanc_id'] ?? null;
+            $date = $complaint['date'] ?? null;
+            $time = $complaint['time'] ?? null;
+            $incident = $complaint['incident'] ?? null;
+
+            // Validate required fields
+            if (!$complainant_id || !$respondent_id || !$offense_sanc_id || !$date || !$time || !$incident) {
+                continue;
             }
 
-            $createdCount = 0;
-            $prefectId = auth()->user()->prefect_id ?? 1;
+            // Validate that students and offense exist
+            $complainantExists = DB::table('tbl_student')->where('student_id', $complainant_id)->exists();
+            $respondentExists = DB::table('tbl_student')->where('student_id', $respondent_id)->exists();
+            $offenseExists = DB::table('tbl_offenses_with_sanction')->where('offense_sanc_id', $offense_sanc_id)->exists();
 
-            Log::info("Using prefect_id: " . $prefectId);
-            Log::info("Number of violations to create: " . count($request->violations));
+            if (!$complainantExists || !$respondentExists || !$offenseExists) {
+                continue;
+            }
 
-            foreach ($request->violations as $index => $v) {
-                Log::info("Creating violation {$index}:", $v);
+            // Get student names for success message
+            $complainant = DB::table('tbl_student')->where('student_id', $complainant_id)->first();
+            $respondent = DB::table('tbl_student')->where('student_id', $respondent_id)->first();
 
-                ViolationRecord::create([
-                    'violator_id' => $v['violator_id'],
-                    'prefect_id' => $prefectId,
-                    'offense_sanc_id' => $v['offense_sanc_id'],
-                    'violation_incident' => $v['violation_incident'],
-                    'violation_date' => $v['violation_date'],
-                    'violation_time' => $v['violation_time'],
+            $complainantName = $complainant ? $complainant->student_fname . ' ' . $complainant->student_lname : 'Unknown';
+            $respondentName = $respondent ? $respondent->student_fname . ' ' . $respondent->student_lname : 'Unknown';
+
+            // Create the complaint record
+            try {
+                $newComplaint = Complaints::create([
+                    'complainant_id' => $complainant_id,
+                    'respondent_id' => $respondent_id,
+                    'prefect_id' => $prefect_id,
+                    'offense_sanc_id' => $offense_sanc_id,
+                    'complaints_incident' => $incident,
+                    'complaints_date' => $date,
+                    'complaints_time' => $time,
                     'status' => 'active'
                 ]);
 
-                $createdCount++;
+                $savedCount++;
+                $messages[] = "✅ {$complainantName} vs {$respondentName}";
+
+            } catch (\Exception $e) {
+                continue;
             }
-
-            Log::info("Successfully created {$createdCount} violations");
-
-            return redirect()->route('violations.index')
-                ->with('success', "✅ {$createdCount} violation(s) stored successfully!");
-
-        } catch (\Exception $e) {
-            Log::error('Error saving violations: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', '❌ Error saving violations: ' . $e->getMessage());
         }
+
+        DB::commit();
+
+        if ($savedCount === 0) {
+            return back()->with('error',
+                'No complaints were saved. Please check that:<br>'
+                . '1. All students exist in the database<br>'
+                . '2. The offense exists in the database<br>'
+                . '3. All fields are properly filled'
+            );
+        }
+
+        $successMessage = "Successfully saved $savedCount complaint record(s)!<br><br>" . implode('<br>', array_slice($messages, 0, 10));
+        if (count($messages) > 10) {
+            $successMessage .= "<br>... and " . (count($messages) - 10) . " more";
+        }
+
+        // Only redirect to prefect complaints route on SUCCESS
+        return redirect()->route('prefect.complaints')->with('success', $successMessage);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Error saving complaints: ' . $e->getMessage());
     }
+}
 
     public function storeMultipleAppointments(Request $request)
     {
