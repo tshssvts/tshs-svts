@@ -7,19 +7,16 @@
     <h2>Offense and Sanctions</h2>
     <div class="actions">
       <input type="search" placeholder="🔍 Search by offense type or description..." id="searchInput">
-      <button class="btn-print" id="printBtn">🖨️ Print</button>
-      <button class="btn-export" id="exportBtn">📤 Export</button>
+      <button class="btn-print" id="printBtn">🖨️ Print to PDF</button>
+      <button class="btn-export" id="exportBtn">📤 Export to Excel</button>
     </div>
   </div>
-
-
 
   <!-- Offense & Sanction Table -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
-
           <th>#</th>
           <th>Offense Type</th>
           <th>Offense Description</th>
@@ -135,30 +132,75 @@
     </div>
   </div>
 
-  <!-- 🔔 Notification Modal -->
-  <div class="modal" id="notificationModal">
-    <div class="modal-content notification-modal-content">
-      <div class="modal-header notification-modal-header">
-        <div class="notification-header-content">
-          <span id="notificationIcon">🔔</span>
-          <span id="notificationTitle">Notification</span>
-        </div>
+  <!-- 🔔 Success Notification Modal -->
+  <div class="modal" id="successModal">
+    <div class="modal-content success-modal-content">
+      <div class="modal-header success-modal-header">
+        <span class="success-icon">✅</span>
+        <span class="success-title">Success</span>
       </div>
-      <div class="modal-body notification-modal-body" id="notificationBody">
-        <!-- Content filled dynamically via JS -->
+      <div class="modal-body success-modal-body" id="successMessage">
+        PDF downloaded successfully!
       </div>
-      <div class="modal-footer notification-modal-footer">
-        <div class="notification-buttons-container">
-          <button class="btn-primary" id="notificationYesBtn">Yes</button>
-          <button class="btn-secondary" id="notificationNoBtn">No</button>
-          <button class="btn-close" id="notificationCloseBtn">Close</button>
-        </div>
+    </div>
+  </div>
+
+  <!-- 🔔 Error Notification Modal -->
+  <div class="modal" id="errorModal">
+    <div class="modal-content error-modal-content">
+      <div class="modal-header error-modal-header">
+        <span class="error-icon">❌</span>
+        <span class="error-title">Error</span>
+      </div>
+      <div class="modal-body error-modal-body" id="errorMessage">
+        PDF generation failed. Please try again.
       </div>
     </div>
   </div>
 </div>
 
+<!-- Include html2pdf library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <script>
+// Modal notification functions
+function showSuccessModal(message = 'PDF downloaded successfully!') {
+  const modal = document.getElementById('successModal');
+  document.getElementById('successMessage').textContent = message;
+  modal.style.display = 'flex';
+  
+  // Auto close after 1 second
+  setTimeout(() => {
+    modal.style.display = 'none';
+  }, 1000);
+}
+
+function showErrorModal(message = 'PDF generation failed. Please try again.') {
+  const modal = document.getElementById('errorModal');
+  document.getElementById('errorMessage').textContent = message;
+  modal.style.display = 'flex';
+  
+  // Auto close after 1 second
+  setTimeout(() => {
+    modal.style.display = 'none';
+  }, 1000);
+}
+
+// Close modal functions
+function setupModalClose() {
+  // Close modals when clicking outside
+  window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+      });
+    }
+  });
+}
+
+// Initialize modal close functionality
+document.addEventListener('DOMContentLoaded', setupModalClose);
+
 // 🔍 Search filter for main table
 document.getElementById('searchInput')?.addEventListener('input', function() {
   const filter = this.value.toLowerCase();
@@ -172,42 +214,6 @@ document.getElementById('searchInput')?.addEventListener('input', function() {
 // ✅ Select All Main Table
 document.getElementById('selectAll')?.addEventListener('change', function() {
   document.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = this.checked);
-});
-
-// ✅ Move to Trash - Now shows confirmation modal
-document.getElementById('moveToTrashBtn')?.addEventListener('click', () => {
-  const selected = [...document.querySelectorAll('.rowCheckbox:checked')];
-  if(!selected.length) {
-    showNotification('⚠️ No Selection', 'Please select at least one offense record to move to trash.', 'warning', {
-      yesText: 'OK',
-      noText: null,
-      onYes: () => {
-        document.getElementById('notificationModal').style.display = 'none';
-      }
-    });
-    return;
-  }
-
-  showNotification('🗑️ Move to Trash', `Are you sure you want to move ${selected.length} offense record(s) to trash?`, 'confirm', {
-    yesText: 'Yes, Move',
-    noText: 'Cancel',
-    onYes: () => {
-      // AJAX call to move to trash
-      setTimeout(() => {
-        showNotification('✅ Success', `${selected.length} offense record(s) moved to trash successfully.`, 'success', {
-          yesText: 'OK',
-          noText: null,
-          onYes: () => {
-            document.getElementById('notificationModal').style.display = 'none';
-            // Optionally refresh the page or update the table
-          }
-        });
-      }, 500);
-    },
-    onNo: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
-  });
 });
 
 // 🔹 Row click for Details Modal
@@ -235,67 +241,9 @@ document.querySelectorAll('#tableBody tr').forEach(row => {
 
 // 🔹 Close Modals
 document.querySelectorAll('.btn-close').forEach(btn => {
-  btn.addEventListener('click', () => btn.closest('.modal').style.display = 'none');
-});
-
-// 🔹 Set Schedule Button
-document.getElementById('setScheduleBtn')?.addEventListener('click', () => {
-  showNotification('📅 Set Schedule', 'Open schedule setup form or modal here.', 'info', {
-    yesText: 'OK',
-    noText: null,
-    onYes: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
-  });
-});
-
-// 🔹 Send SMS Button
-document.getElementById('sendSmsBtn')?.addEventListener('click', () => {
-  showNotification('📩 Send SMS', 'Are you sure you want to send an SMS about this offense?', 'confirm', {
-    yesText: 'Send SMS',
-    noText: 'Cancel',
-    onYes: () => {
-      // AJAX call to send SMS
-      setTimeout(() => {
-        showNotification('✅ Success', 'SMS sent successfully!', 'success', {
-          yesText: 'OK',
-          noText: null,
-          onYes: () => {
-            document.getElementById('notificationModal').style.display = 'none';
-          }
-        });
-      }, 500);
-    },
-    onNo: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
-  });
-});
-
-// 🔹 Edit Button
-document.querySelectorAll('.editBtn').forEach(btn => {
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const [offenseType, offenseDescription, sanctions] = btn.closest('tr').dataset.details.split('|');
-    showNotification('✏️ Edit Offense', `Edit offense: ${offenseType}\nDescription: ${offenseDescription}\nSanctions: ${sanctions}`, 'info', {
-      yesText: 'OK',
-      noText: null,
-      onYes: () => {
-        document.getElementById('notificationModal').style.display = 'none';
-        // TODO: Implement actual edit modal functionality
-      }
-    });
-  });
-});
-
-// 🔹 Add Violation Button
-document.getElementById('createBtn')?.addEventListener('click', () => {
-  showNotification('➕ Add Violation', 'Open violation creation form.', 'info', {
-    yesText: 'OK',
-    noText: null,
-    onYes: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
+  btn.addEventListener('click', () => {
+    const modal = btn.closest('.modal');
+    if (modal) modal.style.display = 'none';
   });
 });
 
@@ -345,137 +293,9 @@ document.getElementById('archiveSearch')?.addEventListener('input', function() {
   });
 });
 
-// 🔹 Restore Archived - Now shows confirmation modal
-document.getElementById('restoreArchivedBtn')?.addEventListener('click', () => {
-  const selected = [...document.querySelectorAll('.archivedCheckbox:checked')];
-  if(!selected.length) {
-    showNotification('⚠️ No Selection', 'Please select at least one record to restore.', 'warning', {
-      yesText: 'OK',
-      noText: null,
-      onYes: () => {
-        document.getElementById('notificationModal').style.display = 'none';
-      }
-    });
-    return;
-  }
-
-  showNotification('🔄 Restore Records', `Are you sure you want to restore ${selected.length} offense record(s)?`, 'confirm', {
-    yesText: 'Yes, Restore',
-    noText: 'Cancel',
-    onYes: () => {
-      // AJAX call to restore records
-      setTimeout(() => {
-        showNotification('✅ Success', `${selected.length} offense record(s) restored successfully.`, 'success', {
-          yesText: 'OK',
-          noText: null,
-          onYes: () => {
-            document.getElementById('notificationModal').style.display = 'none';
-            // Optionally refresh the page or update the table
-          }
-        });
-      }, 500);
-    },
-    onNo: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
-  });
-});
-
-// 🔹 Delete Archived - Now shows confirmation modal
-document.getElementById('deleteArchivedBtn')?.addEventListener('click', () => {
-  const selected = [...document.querySelectorAll('.archivedCheckbox:checked')];
-  if(!selected.length) {
-    showNotification('⚠️ No Selection', 'Please select at least one record to delete.', 'warning', {
-      yesText: 'OK',
-      noText: null,
-      onYes: () => {
-        document.getElementById('notificationModal').style.display = 'none';
-      }
-    });
-    return;
-  }
-
-  showNotification('🗑️ Delete Records', `This will permanently delete ${selected.length} offense record(s). This action cannot be undone. Are you sure?`, 'danger', {
-    yesText: 'Yes, Delete',
-    noText: 'Cancel',
-    onYes: () => {
-      // AJAX call to delete records
-      setTimeout(() => {
-        showNotification('✅ Success', `${selected.length} offense record(s) deleted permanently.`, 'success', {
-          yesText: 'OK',
-          noText: null,
-          onYes: () => {
-            document.getElementById('notificationModal').style.display = 'none';
-            // Optionally refresh the page or update the table
-          }
-        });
-      }, 500);
-    },
-    onNo: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
-  });
-});
-
-// 🔹 Close modals when clicking outside
-window.addEventListener('click', (e) => {
-  if (e.target.classList.contains('modal')) {
-    e.target.style.display = 'none';
-  }
-});
-
-// ================= NOTIFICATION MODAL FUNCTIONALITY =================
-
-// Notification modal function
-function showNotification(title, message, type = 'info', options = {}) {
-  const modal = document.getElementById('notificationModal');
-  const notificationTitle = document.getElementById('notificationTitle');
-  const notificationBody = document.getElementById('notificationBody');
-  const notificationIcon = document.getElementById('notificationIcon');
-  const yesBtn = document.getElementById('notificationYesBtn');
-  const noBtn = document.getElementById('notificationNoBtn');
-  const closeBtn = document.getElementById('notificationCloseBtn');
-
-  // Set title and message
-  notificationTitle.textContent = title;
-  notificationBody.textContent = message;
-
-  // Set icon based on type
-  let icon = '🔔';
-  if (type === 'success') icon = '✅';
-  else if (type === 'warning') icon = '⚠️';
-  else if (type === 'danger') icon = '❌';
-  else if (type === 'confirm') icon = '❓';
-  notificationIcon.textContent = icon;
-
-  // Configure buttons
-  yesBtn.textContent = options.yesText || 'Yes';
-  yesBtn.onclick = options.onYes || (() => modal.style.display = 'none');
-
-  if (options.noText) {
-    noBtn.textContent = options.noText;
-    noBtn.style.display = 'inline-block';
-    noBtn.onclick = options.onNo || (() => modal.style.display = 'none');
-  } else {
-    noBtn.style.display = 'none';
-  }
-
-  closeBtn.onclick = () => modal.style.display = 'none';
-
-  // Show the modal
-  modal.style.display = 'flex';
-}
-
-// Close notification modal with close button
-document.getElementById('notificationCloseBtn').addEventListener('click', () => {
-  document.getElementById('notificationModal').style.display = 'none';
-});
-
-
-
 // ================= BEAUTIFUL PRINT & EXPORT =================
 
-// 🖨️ Print Table
+// 🖨️ Print Table as PDF (Automatically Download)
 document.getElementById('printBtn')?.addEventListener('click', () => {
   const table = document.querySelector('.table-container table');
   if (!table) return;
@@ -484,105 +304,145 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
     year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  const newWindow = window.open('', '', 'width=900,height=700');
-  newWindow.document.write(`
-    <html>
-      <head>
-        <title>Offense and Sanctions Report</title>
-        <style>
-          body {
-            font-family: "Segoe UI", Tahoma, sans-serif;
-            padding: 40px;
-            color: #333;
-            background: #fff;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-          }
-          .header img {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            margin-bottom: 10px;
-          }
-          .header h2 {
-            margin: 5px 0;
-            color: #1e3a8a;
-          }
-          .header h4 {
-            margin: 0;
-            color: #666;
-          }
-          .date {
-            text-align: right;
-            font-size: 14px;
-            margin-bottom: 15px;
-            color: #555;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-          }
-          th, td {
-            border: 1px solid #999;
-            padding: 10px;
-            text-align: left;
-            font-size: 14px;
-          }
-          th {
-            background: #1e3a8a;
-            color: white;
-          }
-          tr:nth-child(even) td {
-            background: #f8fafc;
-          }
-          tr:hover td {
-            background: #e0e7ff;
-          }
-          .footer {
-            margin-top: 50px;
-            text-align: left;
-            font-size: 14px;
-            color: #333;
-          }
-          .footer .line {
-            border-top: 1px solid #444;
-            width: 200px;
-            margin-top: 40px;
-          }
-          .footer span {
-            display: block;
-            margin-top: 5px;
-            color: #555;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <img src="/images/school-logo.png" alt="School Logo" />
-          <h2>Tagoloan Senior High School</h2>
-          <h4>Student Violation Tracking System</h4>
-        </div>
-        <div class="date">📅 Date Generated: <strong>${currentDate}</strong></div>
-        <h3 style="text-align:center; margin-bottom:10px;">Offense and Sanctions Report</h3>
-        ${table.outerHTML}
-        <div class="footer">
-          <div class="line"></div>
-          <span>Authorized Signature</span>
-        </div>
-      </body>
-    </html>
-  `);
+  const currentTime = new Date().toLocaleTimeString('en-PH', {
+    hour: '2-digit', minute: '2-digit'
+  });
 
-  newWindow.document.close();
-  newWindow.focus();
-  newWindow.print();
+  // Create a temporary element for PDF generation
+  const element = document.createElement('div');
+  element.innerHTML = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3748; background: #ffffff; padding: 25px;">
+      <!-- Professional Header with Logo -->
+      <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0; color: #000000; font-size: 24px; font-weight: 700;">TAGOLOAN SENIOR HIGH SCHOOL</h1>
+          <h2 style="margin: 5px 0 0 0; color: #000000; font-size: 16px; font-weight: 500;">Student Violation Tracking System</h2>
+          <p style="margin: 8px 0 0 0; color: #000000; font-size: 14px;">Official Offense and Sanctions Report</p>
+        </div>
+        <div style="text-align: right;">
+          <img src="/images/logo.png" alt="School Logo" style="width: 80px; height: 80px; object-fit: contain;" onerror="this.style.display='none'"/>
+        </div>
+      </div>
+
+      <!-- Report Summary -->
+      <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0; color: #000000; font-size: 18px; font-weight: 600;">Offense and Sanctions Report</h3>
+            <p style="margin: 5px 0 0 0; color: #000000; font-size: 14px;">
+              Total Records: <strong style="color: #000000;">${document.querySelectorAll('#tableBody tr').length}</strong>
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 12px; color: #000000;">Document ID</div>
+            <div style="font-size: 14px; font-weight: 600; color: #000000;">OSR-${Date.now().toString().slice(-6)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced Table -->
+      <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        ${table.outerHTML.replace('<table', '<table style="width: 100%; border-collapse: collapse; font-size: 12px;"')}
+      </div>
+
+      <!-- Date Below Table -->
+      <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+        <div style="font-size: 14px; color: #000000; font-weight: 500;">
+          📅 Report Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
+        </div>
+      </div>
+
+      <!-- Footer Section -->
+      <div style="margin-top: 40px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
+        <div style="display: flex; justify-content: center; align-items: flex-start;">
+          <div style="text-align: center;">
+            <div style="font-size: 12px; color: #000000; margin-bottom: 5px;">Prepared By:</div>
+            <div style="border-bottom: 1px solid #cbd5e0; width: 200px; padding: 25px 0 5px 0; margin: 0 auto;"></div>
+            <div style="font-size: 12px; color: #000000; margin-top: 5px;">Class Adviser</div>
+          </div>
+        </div>
+        
+        <!-- Confidential Notice -->
+        <div style="text-align: center; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;">
+          <div style="font-size: 11px; color: #c53030; font-weight: 600;">
+            🔒 CONFIDENTIAL DOCUMENT - For Authorized Personnel Only
+          </div>
+          <div style="font-size: 10px; color: #e53e3e; margin-top: 5px;">
+            This document contains sensitive student information. Unauthorized distribution is prohibited.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Enhanced table styling for PDF
+  const tables = element.getElementsByTagName('table');
+  for (let table of tables) {
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.fontSize = '12px';
+    
+    // Style table headers
+    const headers = table.getElementsByTagName('th');
+    for (let header of headers) {
+      header.style.backgroundColor = '#1e3a8a';
+      header.style.color = 'white';
+      header.style.padding = '12px 10px';
+      header.style.textAlign = 'left';
+      header.style.fontWeight = '600';
+      header.style.border = '1px solid #2d3748';
+      header.style.fontSize = '11px';
+      header.style.textTransform = 'uppercase';
+      header.style.letterSpacing = '0.5px';
+    }
+    
+    // Style table cells
+    const cells = table.getElementsByTagName('td');
+    for (let cell of cells) {
+      cell.style.padding = '10px 8px';
+      cell.style.border = '1px solid #e2e8f0';
+      cell.style.fontSize = '11px';
+      cell.style.color = '#000000';
+    }
+    
+    // Style table rows
+    const rows = table.getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+      if (i % 2 === 0) {
+        rows[i].style.backgroundColor = '#ffffff';
+      } else {
+        rows[i].style.backgroundColor = '#f7fafc';
+      }
+    }
+  }
+
+  // PDF options
+  const options = {
+    margin: [15, 15, 15, 15],
+    filename: `Offense_Sanctions_Report_${new Date().toISOString().slice(0,10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { 
+      scale: 2,
+      useCORS: true,
+      logging: false
+    },
+    jsPDF: { 
+      unit: 'mm', 
+      format: 'a4', 
+      orientation: 'portrait',
+      compress: true
+    }
+  };
+
+  // Generate and download PDF
+  html2pdf().set(options).from(element).save().then(() => {
+    // Show success modal notification
+    showSuccessModal('PDF downloaded successfully!');
+  }).catch(error => {
+    console.error('PDF generation error:', error);
+    showErrorModal('PDF generation failed. Please try again.');
+  });
 });
-
 
 // 📤 Export Table to Excel
 document.getElementById('exportBtn')?.addEventListener('click', () => {
@@ -597,9 +457,8 @@ document.getElementById('exportBtn')?.addEventListener('click', () => {
     <table style="width:100%; border-collapse:collapse; text-align:center; margin-bottom:20px;">
       <tr>
         <td colspan="4">
-          <h2 style="margin:0; color:#1e3a8a;">Tagoloan Senior High School</h2>
-          <h4 style="margin:0; color:#666;">Student Violation Tracking System</h4>
-          <p style="margin:5px 0;">📅 Date Generated: ${currentDate}</p>
+          <h2 style="margin:0; color:#000000;">Tagoloan Senior High School</h2>
+          <h4 style="margin:0; color:#000000;">Student Violation Tracking System</h4>
         </td>
       </tr>
     </table>
@@ -609,6 +468,9 @@ document.getElementById('exportBtn')?.addEventListener('click', () => {
     <table style="margin-top:40px;">
       <tr>
         <td style="border-top:1px solid #444; width:200px; padding-top:10px;">Authorized Signature</td>
+      </tr>
+      <tr>
+        <td style="padding-top:20px; color:#000000;">📅 Date Generated: ${currentDate}</td>
       </tr>
     </table>
   `;
@@ -623,16 +485,128 @@ document.getElementById('exportBtn')?.addEventListener('click', () => {
   downloadLink.click();
   document.body.removeChild(downloadLink);
 
-  // Success feedback
-  showNotification('✅ Exported', 'Table exported beautifully to Excel.', 'success', {
-    yesText: 'OK',
-    noText: null,
-    onYes: () => {
-      document.getElementById('notificationModal').style.display = 'none';
-    }
-  });
+  // Show success modal
+  showSuccessModal('Excel file downloaded successfully!');
 });
 
 </script>
+
+<style>
+/* Success Modal Styles */
+.success-modal-content {
+  max-width: 400px;
+  text-align: center;
+}
+
+.success-modal-header {
+  background: #10b981;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 8px 8px 0 0;
+}
+
+.success-icon {
+  font-size: 24px;
+}
+
+.success-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.success-modal-body {
+  padding: 30px 20px;
+  font-size: 16px;
+  color: #374151;
+  background: white;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Error Modal Styles */
+.error-modal-content {
+  max-width: 400px;
+  text-align: center;
+}
+
+.error-modal-header {
+  background: #ef4444;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 8px 8px 0 0;
+}
+
+.error-icon {
+  font-size: 24px;
+}
+
+.error-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.error-modal-body {
+  padding: 30px 20px;
+  font-size: 16px;
+  color: #374151;
+  background: white;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Modal Centering */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: modalAppear 0.3s ease-out;
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Button Styles */
+.btn-primary {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.btn-primary:hover {
+  background: #1e40af;
+}
+</style>
 
 @endsection

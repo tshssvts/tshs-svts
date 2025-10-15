@@ -6,7 +6,8 @@
   <title>Adviser Dashboard - Reports</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="{{ asset('css/adviser/reports.css') }}">
+  <!-- Include html2pdf library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     /* ===========================
        🎨 Prefect Dashboard CSS
@@ -38,13 +39,13 @@
       position: fixed;
       top: 0;
       left: 0;
-background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
+      background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
       color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 25px 15px;
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
     }
 
     /* Optional: customize scrollbar (for WebKit browsers) */
@@ -53,12 +54,12 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
     }
 
     .sidebar::-webkit-scrollbar-thumb {
-  background-color: #012448;
+      background-color: #012448;
       border-radius: 4px;
     }
 
     .sidebar::-webkit-scrollbar-track {
-  background-color: #011427;
+      background-color: #011427;
     }
 
     /* Logo */
@@ -138,23 +139,22 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
 
     /* Hover Effects */
     .sidebar ul li a:hover {
-  color: #66ccff; /* Sky blue hover */
+      color: #66ccff; /* Sky blue hover */
     }
 
     /* Logout */
     .sidebar ul li:last-child {
       margin-top: auto;
-  background: rgba(0, 102, 204, 0.2); /* soft blue background */
-  border: 1px solid rgba(0, 102, 204, 0.3); /* light blue border */
+      background: rgba(0, 102, 204, 0.2); /* soft blue background */
+      border: 1px solid rgba(0, 102, 204, 0.3); /* light blue border */
       cursor: pointer;
       justify-content: block;
       display: flex; /* Align icon + text */
     }
 
     .sidebar ul li:last-child:hover {
-  background: rgba(0, 102, 204, 0.4); /* brighter blue on hover */
-    border: 1px solid rgba(0, 102, 204, 0.6);
-
+      background: rgba(0, 102, 204, 0.4); /* brighter blue on hover */
+      border: 1px solid rgba(0, 102, 204, 0.6);
     }
 
     /* ===========================
@@ -194,11 +194,11 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
       display: flex;
       justify-content: space-between;
       align-items: center;
-  background: #003366;
+      background: #003366;
       color: #fff;
       padding: 0 25px; /* removed top/bottom padding to control height */
-  border-bottom: 3px solid #001366;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      border-bottom: 3px solid #001366;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
       z-index: 100;
     }
 
@@ -453,19 +453,33 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
       background: #f2f2f2;
     }
 
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
     .toolbar input {
       padding: 6px 10px;
       border-radius: 5px;
       border: 1px solid #ccc;
       margin-right: 5px;
+      flex: 1;
+      min-width: 200px;
     }
 
     .toolbar button {
-      padding: 6px 10px;
+      padding: 8px 12px;
       border-radius: 5px;
       border: none;
       cursor: pointer;
-      margin-right: 5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.3s ease;
     }
 
     .toolbar button.btn-warning {
@@ -490,6 +504,10 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
       .reports-grid {
         grid-template-columns: 1fr;
         padding: 15px;
+      }
+
+      .toolbar {
+        flex-direction: column;
       }
 
       .toolbar input {
@@ -529,6 +547,37 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
       max-height: 400px;
       overflow-y: auto;
     }
+
+    /* Inside Modal Notification Styles */
+    .modal-notification {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 15px 25px;
+      border-radius: 8px;
+      color: white;
+      z-index: 1001;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      min-width: 300px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 500;
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-notification.success {
+      background: #27ae60;
+    }
+
+    .modal-notification.error {
+      background: #e74c3c;
+    }
+
+    .modal-notification.info {
+      background: #3498db;
+    }
   </style>
 </head>
 <body>
@@ -550,15 +599,9 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
         <li class="{{ request()->routeIs('violation.record') ? 'active' : '' }}">
             <a href="{{ route('violation.record') }}"><i class="fas fa-book"></i> Violations</a>
         </li>
-        {{-- <li class="{{ request()->routeIs('violation.anecdotal') ? 'active' : '' }}">
-            <a href="{{ route('violation.anecdotal') }}"><i class="fas fa-book"></i> Violations Anecdotal</a>
-        </li> --}}
         <li class="{{ request()->routeIs('complaints.all') ? 'active' : '' }}">
             <a href="{{ route('complaints.all') }}"><i class="fas fa-comments"></i> Complaints</a>
         </li>
-        {{-- <li class="{{ request()->routeIs('complaints.anecdotal') ? 'active' : '' }}">
-            <a href="{{ route('complaints.anecdotal') }}"><i class="fas fa-comments"></i> Complaints Anecdotal</a>
-        </li> --}}
         <li class="{{ request()->routeIs('offense.sanction') ? 'active' : '' }}">
             <a href="{{ route('offense.sanction') }}"><i class="fas fa-exclamation-triangle"></i> Offense & Sanctions</a>
         </li>
@@ -572,30 +615,6 @@ background: linear-gradient(135deg, #001a33, #003366, #1c1c2c);
         </li>
     </ul>
 </div>
-
-<script>
-function logout() {
-    const confirmLogout = confirm("Are you sure you want to logout?");
-    if (!confirmLogout) return;
-
-    fetch("{{ route('adviser.logout') }}", {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => {
-        if(response.ok) {
-            // Redirect to login after successful logout
-            window.location.href = "{{ route('login') }}";
-        } else {
-            console.error('Logout failed:', response.statusText);
-        }
-    })
-    .catch(error => console.error('Logout failed:', error));
-}
-</script>
 
 <!-- ✅ Main content area -->
 <main class="main-content">
@@ -645,6 +664,10 @@ function logout() {
 <div id="modal{{ $i }}" class="modal">
   <div class="modal-content">
     <span class="close">&times;</span>
+    
+    <!-- Inside Modal Notification -->
+    <div id="notification-modal{{ $i }}" class="modal-notification" style="display: none;"></div>
+    
     <div class="adviser-info" style="margin-bottom: 10px; font-weight: bold; text-align: left; font-size: 15px;">
       Adviser: <span id="adviser-name"></span> |
       Grade Level: <span id="adviser-gradelevel"></span> |
@@ -654,7 +677,7 @@ function logout() {
     <h2 class="modal-title"></h2>
     <div class="toolbar">
       <input type="text" placeholder="Search..." oninput="liveSearch('modal{{ $i }}', this.value)">
-      <button class="btn btn-warning" onclick="printModal('modal{{ $i }}')"><i class="fa fa-print"></i> Print</button>
+      <button class="btn btn-warning" onclick="printAsPDF('modal{{ $i }}')"><i class="fa fa-print"></i> Print to PDF</button>
       <button class="btn btn-danger" onclick="exportCSV('modal{{ $i }}')"><i class="fa fa-file-export"></i> Export CSV</button>
     </div>
 
@@ -803,6 +826,35 @@ function logout() {
 @endfor
 
 <script>
+  // Modal notification functions
+  function showNotification(modalId, message, type = 'info') {
+    const notification = document.getElementById(`notification-${modalId}`);
+    
+    notification.textContent = message;
+    notification.className = `modal-notification ${type}`;
+    notification.style.display = 'block';
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      notification.style.display = 'none';
+    }, 3000);
+  }
+
+  // Close modal functions
+  function setupModalClose() {
+    // Close modals when clicking outside
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        document.querySelectorAll('.modal').forEach(modal => {
+          modal.style.display = 'none';
+        });
+      }
+    });
+  }
+
+  // Initialize modal close functionality
+  document.addEventListener('DOMContentLoaded', setupModalClose);
+
   // Get adviser data from backend
   const loggedAdviser = {
     name: "{{ auth()->guard('adviser')->user()->adviser_fname }} {{ auth()->guard('adviser')->user()->adviser_lname }}",
@@ -980,7 +1032,7 @@ function logout() {
       })
       .catch(err => {
       console.error(err);
-      alert('Failed to load report data. Check console for details.');
+      showNotification('modal' + reportId, 'Failed to load report data. Please try again.', 'error');
       modal.style.display = 'block'; // still open so user sees something
     });
   }
@@ -1011,65 +1063,164 @@ function logout() {
     });
   }
 
-  // Print modal with bordered table
-  function printModal(modalId) {
+  // Print as PDF - Automatically download as PDF when clicking Print button
+  function printAsPDF(modalId) {
     const modal = document.getElementById(modalId);
-    const clone = modal.querySelector('.modal-content').cloneNode(true);
+    const reportId = modalId.replace('modal', '');
+    const table = document.querySelector(`#${modalId} table`);
+    
+    if (!table) {
+      showNotification(modalId, 'No data available to export', 'error');
+      return;
+    }
 
-    // Remove interactive elements before printing
-    clone.querySelectorAll('input, button, .close').forEach(el => el.remove());
+    const currentDate = new Date().toLocaleDateString('en-PH', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
 
-    // Open print window
-    const w = window.open('', '', 'width=900,height=700');
+    const currentTime = new Date().toLocaleTimeString('en-PH', {
+      hour: '2-digit', minute: '2-digit'
+    });
 
-    // Write content with print styles
-    w.document.write(`
-      <html>
-        <head>
-          <title>Print</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
-            }
-            h2.modal-title {
-              text-align: center;
-              margin-bottom: 15px;
-            }
-            .adviser-info {
-              font-weight: bold;
-              margin-bottom: 15px;
-              border: 1px solid #000;
-              padding: 8px;
-              border-radius: 5px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 10px;
-            }
-            table, th, td {
-              border: 1px solid #000;
-            }
-            th, td {
-              padding: 8px;
-              text-align: left;
-            }
-            th {
-              background-color: #f0f0f0;
-            }
-          </style>
-        </head>
-        <body>
-          ${clone.innerHTML}
-        </body>
-      </html>
-    `);
+    const reportTitle = modal.querySelector('.modal-title').textContent;
+    const rowCount = table.querySelectorAll('tbody tr').length;
 
-    w.document.close();
-    w.focus();
-    w.print();
-    w.close();
+    // Create a temporary element for PDF generation
+    const element = document.createElement('div');
+    element.innerHTML = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #000000; background: #ffffff; padding: 25px;">
+        <!-- Professional Header with Logo on Right -->
+        <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px;">
+          <div style="flex: 1;">
+            <h1 style="margin: 0; color: #000000; font-size: 24px; font-weight: 700;">TAGOLOAN SENIOR HIGH SCHOOL</h1>
+            <h2 style="margin: 5px 0 0 0; color: #000000; font-size: 16px; font-weight: 500;">Student Violation Tracking System</h2>
+            <p style="margin: 8px 0 0 0; color: #000000; font-size: 14px;">Official Report Document</p>
+          </div>
+          <div style="text-align: right;">
+            <img src="/images/Logo.png" alt="School Logo" style="width: 70px; height: 70px; object-fit: contain;">
+          </div>
+        </div>
+
+        <!-- Adviser Information -->
+        <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="margin: 0; color: #000000; font-size: 18px; font-weight: 600;">${reportTitle}</h3>
+              <p style="margin: 5px 0 0 0; color: #000000; font-size: 14px;">
+                Total Records: <strong style="color: #000000;">${rowCount}</strong> | 
+                Adviser: <strong style="color: #000000;">${loggedAdviser.name}</strong> | 
+                Grade Level: <strong style="color: #000000;">${loggedAdviser.gradelevel}</strong> | 
+                Section: <strong style="color: #000000;">${loggedAdviser.section}</strong>
+              </p>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: #000000;">Document ID</div>
+              <div style="font-size: 14px; font-weight: 600; color: #000000;">REP-${Date.now().toString().slice(-6)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced Table -->
+        <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          ${table.outerHTML}
+        </div>
+
+        <!-- Date Section Below Table -->
+        <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="font-size: 14px; color: #000000; font-weight: 500;">
+            📅 Report Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
+          </div>
+        </div>
+
+        <!-- Footer Section -->
+        <div style="margin-top: 40px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
+          <div style="display: flex; justify-content: center; align-items: flex-start;">
+            <div style="text-align: center;">
+              <div style="font-size: 12px; color: #000000; margin-bottom: 5px;">Prepared By:</div>
+              <div style="border-bottom: 1px solid #cbd5e0; width: 200px; padding: 25px 0 5px 0; margin: 0 auto;"></div>
+              <div style="font-size: 12px; color: #000000; margin-top: 5px;">Class Adviser</div>
+            </div>
+          </div>
+          
+          <!-- Confidential Notice -->
+          <div style="text-align: center; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;">
+            <div style="font-size: 11px; color: #c53030; font-weight: 600;">
+              🔒 CONFIDENTIAL DOCUMENT - For Authorized Personnel Only
+            </div>
+            <div style="font-size: 10px; color: #e53e3e; margin-top: 5px;">
+              This document contains sensitive student information. Unauthorized distribution is prohibited.
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Enhanced table styling for PDF
+    const tables = element.getElementsByTagName('table');
+    for (let table of tables) {
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.fontSize = '11px';
+      
+      // Style table headers
+      const headers = table.getElementsByTagName('th');
+      for (let header of headers) {
+        header.style.backgroundColor = '#1e3a8a';
+        header.style.color = 'white';
+        header.style.padding = '10px 8px';
+        header.style.textAlign = 'left';
+        header.style.fontWeight = '600';
+        header.style.border = '1px solid #2d3748';
+        header.style.fontSize = '10px';
+        header.style.textTransform = 'uppercase';
+        header.style.letterSpacing = '0.5px';
+      }
+      
+      // Style table cells
+      const cells = table.getElementsByTagName('td');
+      for (let cell of cells) {
+        cell.style.padding = '8px 6px';
+        cell.style.border = '1px solid #e2e8f0';
+        cell.style.fontSize = '10px';
+        cell.style.color = '#000000';
+      }
+      
+      // Style table rows
+      const rows = table.getElementsByTagName('tr');
+      for (let i = 0; i < rows.length; i++) {
+        if (i % 2 === 0) {
+          rows[i].style.backgroundColor = '#ffffff';
+        } else {
+          rows[i].style.backgroundColor = '#f7fafc';
+        }
+      }
+    }
+
+    // PDF options
+    const options = {
+      margin: [15, 15, 15, 15],
+      filename: `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        logging: false
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compress: true
+      }
+    };
+
+    // Generate and download PDF
+    html2pdf().set(options).from(element).save().then(() => {
+      showNotification(modalId, 'PDF downloaded successfully!', 'success');
+    }).catch(error => {
+      console.error('PDF generation error:', error);
+      showNotification(modalId, 'PDF generation failed. Please try again.', 'error');
+    });
   }
 
   // Export CSV
@@ -1085,6 +1236,7 @@ function logout() {
     a.href = URL.createObjectURL(blob);
     a.download = modalId+'.csv';
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+    showNotification(modalId, 'CSV exported successfully!', 'success');
   }
 
   // Logout function
