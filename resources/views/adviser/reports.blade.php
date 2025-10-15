@@ -1060,164 +1060,222 @@
   }
 
   // Print as PDF - Automatically download as PDF when clicking Print button
-  function printAsPDF(modalId) {
-    const modal = document.getElementById(modalId);
-    const reportId = modalId.replace('modal', '');
-    const table = document.querySelector(`#${modalId} table`);
-    
-    if (!table) {
-      showNotification(modalId, 'No data available to export', 'error');
-      return;
-    }
+ // Print as PDF - Automatically download as PDF when clicking Print button
+function printAsPDF(modalId) {
+  const modal = document.getElementById(modalId);
+  const reportId = modalId.replace('modal', '');
+  const table = document.querySelector(`#${modalId} table`);
+  
+  if (!table) {
+    showNotification(modalId, 'No data available to export', 'error');
+    return;
+  }
 
-    const currentDate = new Date().toLocaleDateString('en-PH', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
+  const currentDate = new Date().toLocaleDateString('en-PH', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
 
-    const currentTime = new Date().toLocaleTimeString('en-PH', {
-      hour: '2-digit', minute: '2-digit'
-    });
+  const currentTime = new Date().toLocaleTimeString('en-PH', {
+    hour: '2-digit', minute: '2-digit'
+  });
 
-    const reportTitle = modal.querySelector('.modal-title').textContent;
-    const rowCount = table.querySelectorAll('tbody tr').length;
+  const reportTitle = modal.querySelector('.modal-title').textContent;
+  const rowCount = table.querySelectorAll('tbody tr').length;
 
-    // Create a temporary element for PDF generation
-    const element = document.createElement('div');
-    element.innerHTML = `
-      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #000000; background: #ffffff; padding: 25px;">
-        <!-- Professional Header with Logo on Right -->
-        <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px;">
-          <div style="flex: 1;">
-            <h1 style="margin: 0; color: #000000; font-size: 24px; font-weight: 700;">TAGOLOAN SENIOR HIGH SCHOOL</h1>
-            <h2 style="margin: 5px 0 0 0; color: #000000; font-size: 16px; font-weight: 500;">Student Violation Tracking System</h2>
-            <p style="margin: 8px 0 0 0; color: #000000; font-size: 14px;">Official Report Document</p>
+  // Clone the table to avoid modifying the original
+  const tableClone = table.cloneNode(true);
+  
+  // Create a temporary element for PDF generation
+  const element = document.createElement('div');
+  element.innerHTML = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #000000; background: #ffffff;">
+      <!-- Date at the top LEFT -->
+      <div style="text-align: left; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding: 25px 25px 0 25px;">
+        <div style="font-size: 14px; color: #000000; font-weight: 500;">
+          📅 Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
+        </div>
+      </div>
+
+      <!-- Professional Header with Logo on Right -->
+      <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px; padding: 0 25px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0; color: #000000; font-size: 24px; font-weight: 700;">TAGOLOAN SENIOR HIGH SCHOOL</h1>
+          <h2 style="margin: 5px 0 0 0; color: #000000; font-size: 16px; font-weight: 500;">Student Violation Tracking System</h2>
+          <p style="margin: 8px 0 0 0; color: #000000; font-size: 14px;">Official Report Document</p>
+        </div>
+        <div style="text-align: right;">
+          <img src="/images/Logo.png" alt="School Logo" style="width: 70px; height: 70px; object-fit: contain;">
+        </div>
+      </div>
+
+      <!-- Report Summary -->
+      <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px; margin: 0 25px 25px 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0; color: #000000; font-size: 18px; font-weight: 600;">${reportTitle}</h3>
+            <p style="margin: 5px 0 0 0; color: #000000; font-size: 14px;">
+              Total Records: <strong style="color: #000000;">${rowCount}</strong>
+            </p>
           </div>
           <div style="text-align: right;">
-            <img src="/images/Logo.png" alt="School Logo" style="width: 70px; height: 70px; object-fit: contain;">
-          </div>
-        </div>
-
-        <!-- Adviser Information -->
-        <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <h3 style="margin: 0; color: #000000; font-size: 18px; font-weight: 600;">${reportTitle}</h3>
-              <p style="margin: 5px 0 0 0; color: #000000; font-size: 14px;">
-                Total Records: <strong style="color: #000000;">${rowCount}</strong> | 
-                Adviser: <strong style="color: #000000;">${loggedAdviser.name}</strong> | 
-                Grade Level: <strong style="color: #000000;">${loggedAdviser.gradelevel}</strong> | 
-                Section: <strong style="color: #000000;">${loggedAdviser.section}</strong>
-              </p>
-            </div>
-            <div style="text-align: right;">
-              <div style="font-size: 12px; color: #000000;">Document ID</div>
-              <div style="font-size: 14px; font-weight: 600; color: #000000;">REP-${Date.now().toString().slice(-6)}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Enhanced Table -->
-        <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          ${table.outerHTML}
-        </div>
-
-        <!-- Date Section Below Table -->
-        <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="font-size: 14px; color: #000000; font-weight: 500;">
-            📅 Report Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
-          </div>
-        </div>
-
-        <!-- Footer Section -->
-        <div style="margin-top: 40px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
-          <div style="display: flex; justify-content: center; align-items: flex-start;">
-            <div style="text-align: center;">
-              <div style="font-size: 12px; color: #000000; margin-bottom: 5px;">Prepared By:</div>
-              <div style="border-bottom: 1px solid #cbd5e0; width: 200px; padding: 25px 0 5px 0; margin: 0 auto;"></div>
-              <div style="font-size: 12px; color: #000000; margin-top: 5px;">Class Adviser</div>
-            </div>
-          </div>
-          
-          <!-- Confidential Notice -->
-          <div style="text-align: center; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;">
-            <div style="font-size: 11px; color: #c53030; font-weight: 600;">
-              🔒 CONFIDENTIAL DOCUMENT - For Authorized Personnel Only
-            </div>
-            <div style="font-size: 10px; color: #e53e3e; margin-top: 5px;">
-              This document contains sensitive student information. Unauthorized distribution is prohibited.
-            </div>
+            <div style="font-size: 12px; color: #000000;">Document ID</div>
+            <div style="font-size: 14px; font-weight: 600; color: #000000;">REP-${Date.now().toString().slice(-6)}</div>
           </div>
         </div>
       </div>
-    `;
 
-    // Enhanced table styling for PDF
-    const tables = element.getElementsByTagName('table');
-    for (let table of tables) {
-      table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
-      table.style.fontSize = '11px';
+     
+
+      <!-- Enhanced Table Container -->
+      <div style="overflow: hidden; margin: 0 25px;">
+        ${tableClone.outerHTML}
+      </div>
+
+      <!-- Footer Section -->
+      <div style="margin-top: 40px; border-top: 2px solid #e2e8f0; padding-top: 20px; padding: 20px 25px 0 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="text-align: left;">
+            <div style="font-size: 12px; color: #000000; margin-bottom: 5px;">Prepared By:</div>
+            <div style="border-bottom: 1px solid #cbd5e0; width: 250px; padding: 25px 0 5px 0;"></div>
+            <div style="font-size: 12px; color: #000000; margin-top: 5px;">
+              <strong>${loggedAdviser.name}</strong><br>
+              Class Adviser - ${loggedAdviser.gradelevel} ${loggedAdviser.section}
+            </div>
+          </div>
+          
+        </div>
+        
+        <!-- Confidential Notice -->
+        <div style="text-align: center; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;">
+          <div style="font-size: 11px; color: #c53030; font-weight: 600;">
+            🔒 CONFIDENTIAL DOCUMENT - For Authorized Personnel Only
+          </div>
+          <div style="font-size: 10px; color: #e53e3e; margin-top: 5px;">
+            This document contains sensitive student information. Unauthorized distribution is prohibited.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Enhanced table styling for PDF with proper page break handling
+  const tables = element.getElementsByTagName('table');
+  for (let table of tables) {
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.fontSize = '10px';
+    table.style.tableLayout = 'fixed'; // Better control over table layout
+
+    // Style table headers with page break avoidance
+    const headers = table.getElementsByTagName('th');
+    for (let header of headers) {
+      header.style.backgroundColor = '#1e3a8a';
+      header.style.color = 'white';
+      header.style.padding = '8px 6px';
+      header.style.textAlign = 'left';
+      header.style.fontWeight = '600';
+      header.style.border = '1px solid #2d3748';
+      header.style.fontSize = '9px';
+      header.style.textTransform = 'uppercase';
+      header.style.letterSpacing = '0.5px';
+      header.style.pageBreakInside = 'avoid';
+      header.style.breakInside = 'avoid';
+    }
+
+    // Style table cells with proper page break handling
+    const cells = table.getElementsByTagName('td');
+    for (let cell of cells) {
+      cell.style.padding = '6px 4px';
+      cell.style.border = '1px solid #e2e8f0';
+      cell.style.fontSize = '9px';
+      cell.style.color = '#000000';
+      cell.style.pageBreakInside = 'avoid';
+      cell.style.breakInside = 'avoid';
+      cell.style.wordWrap = 'break-word';
+      cell.style.overflowWrap = 'break-word';
+    }
+
+    // Style table rows with page break handling
+    const rows = table.getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+      rows[i].style.pageBreakInside = 'avoid';
+      rows[i].style.breakInside = 'avoid';
       
-      // Style table headers
-      const headers = table.getElementsByTagName('th');
-      for (let header of headers) {
-        header.style.backgroundColor = '#1e3a8a';
-        header.style.color = 'white';
-        header.style.padding = '10px 8px';
-        header.style.textAlign = 'left';
-        header.style.fontWeight = '600';
-        header.style.border = '1px solid #2d3748';
-        header.style.fontSize = '10px';
-        header.style.textTransform = 'uppercase';
-        header.style.letterSpacing = '0.5px';
-      }
-      
-      // Style table cells
-      const cells = table.getElementsByTagName('td');
-      for (let cell of cells) {
-        cell.style.padding = '8px 6px';
-        cell.style.border = '1px solid #e2e8f0';
-        cell.style.fontSize = '10px';
-        cell.style.color = '#000000';
-      }
-      
-      // Style table rows
-      const rows = table.getElementsByTagName('tr');
-      for (let i = 0; i < rows.length; i++) {
-        if (i % 2 === 0) {
-          rows[i].style.backgroundColor = '#ffffff';
-        } else {
-          rows[i].style.backgroundColor = '#f7fafc';
-        }
+      if (i % 2 === 0) {
+        rows[i].style.backgroundColor = '#ffffff';
+      } else {
+        rows[i].style.backgroundColor = '#f7fafc';
       }
     }
 
-    // PDF options
-    const options = {
-      margin: [15, 15, 15, 15],
-      filename: `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        logging: false
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait',
-        compress: true
-      }
-    };
-
-    // Generate and download PDF
-    html2pdf().set(options).from(element).save().then(() => {
-      showNotification(modalId, 'PDF downloaded successfully!', 'success');
-    }).catch(error => {
-      console.error('PDF generation error:', error);
-      showNotification(modalId, 'PDF generation failed. Please try again.', 'error');
-    });
+    // Style table header row specifically
+    const thead = table.getElementsByTagName('thead')[0];
+    if (thead) {
+      thead.style.display = 'table-header-group';
+    }
   }
+
+  // PDF options with improved page break handling
+  const options = {
+    margin: [10, 15, 25, 15], // Adjusted margins for better page breaks
+    filename: `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
+    image: { 
+      type: 'jpeg', 
+      quality: 0.98 
+    },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      scrollY: -window.scrollY
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+      compress: true,
+      hotfixes: ["px_scaling"]
+    },
+    // Improved page break handling
+    pagebreak: { 
+      mode: ['avoid-all', 'css', 'legacy'],
+      before: '.page-break-before',
+      after: '.page-break-after',
+      avoid: ['tr', 'td', 'th']
+    }
+  };
+
+  showNotification(modalId, 'Generating PDF...', 'info');
+
+  // Generate and download PDF with proper page numbering
+  html2pdf().set(options).from(element).toPdf().get('pdf').then(function(pdf) {
+    const totalPages = pdf.internal.getNumberOfPages();
+    
+    // Add footer to each page
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      
+      // Add footer with system name on left and page number on right
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      
+      // System name on left footer
+      pdf.text('Tagoloan Senior High School - Student Violation Tracking System', 
+               pdf.internal.pageSize.getWidth() / 2 - 65, 
+               pdf.internal.pageSize.getHeight() - 8);
+      
+      // Page number on right footer
+      pdf.text(`Page ${i} of ${totalPages}`, 
+               pdf.internal.pageSize.getWidth() - 25, 
+               pdf.internal.pageSize.getHeight() - 8);
+    }
+  }).save().then(() => {
+    showNotification(modalId, 'PDF exported successfully!', 'success');
+  }).catch(error => {
+    console.error('PDF generation error:', error);
+    showNotification(modalId, 'PDF generation failed. Please try again.', 'error');
+  });
+}
 
   // Export CSV
   function exportCSV(modalId){

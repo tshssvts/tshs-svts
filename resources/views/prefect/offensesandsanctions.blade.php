@@ -297,6 +297,7 @@ document.getElementById('archiveSearch')?.addEventListener('input', function() {
 // ================= BEAUTIFUL PRINT & EXPORT =================
 
 // 🖨️ Print Table as PDF (Automatically Download)
+// 🖨️ Print Table as PDF (Automatically Download)
 document.getElementById('printBtn')?.addEventListener('click', () => {
   const table = document.querySelector('.table-container table');
   if (!table) return;
@@ -313,6 +314,13 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
   const element = document.createElement('div');
   element.innerHTML = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3748; background: #ffffff; padding: 25px;">
+      <!-- Date at the top LEFT -->
+      <div style="text-align: left; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+        <div style="font-size: 14px; color: #000000; font-weight: 500;">
+          📅 Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
+        </div>
+      </div>
+
       <!-- Professional Header with Logo -->
       <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px;">
         <div style="flex: 1;">
@@ -344,13 +352,6 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
       <!-- Enhanced Table -->
       <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         ${table.outerHTML.replace('<table', '<table style="width: 100%; border-collapse: collapse; font-size: 12px;"')}
-      </div>
-
-      <!-- Date Below Table -->
-      <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-        <div style="font-size: 14px; color: #000000; font-weight: 500;">
-          📅 Report Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
-        </div>
       </div>
 
       <!-- Footer Section -->
@@ -417,9 +418,9 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
     }
   }
 
-  // PDF options
+  // PDF options with custom footer
   const options = {
-    margin: [15, 15, 15, 15],
+    margin: [15, 15, 30, 15], // Increased bottom margin for footer
     filename: `Offense_Sanctions_Report_${new Date().toISOString().slice(0,10)}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { 
@@ -432,11 +433,33 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
       format: 'a4', 
       orientation: 'portrait',
       compress: true
-    }
+    },
+    // Add page numbers and system name to footer
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
-  // Generate and download PDF
-  html2pdf().set(options).from(element).save().then(() => {
+  // Generate and download PDF with proper page numbering
+  html2pdf().set(options).from(element).toPdf().get('pdf').then(function(pdf) {
+    const totalPages = pdf.internal.getNumberOfPages();
+    
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      
+      // Add footer with system name on left and page number on right
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      
+      // System name on left footer
+      pdf.text('Tagoloan Senior High School - Student Violation Tracking System', 
+               pdf.internal.pageSize.getWidth() / 2 - 70, 
+               pdf.internal.pageSize.getHeight() - 10);
+      
+      // Page number on right footer
+      pdf.text(`Page ${i} of ${totalPages}`, 
+               pdf.internal.pageSize.getWidth() - 30, 
+               pdf.internal.pageSize.getHeight() - 10);
+    }
+  }).save().then(() => {
     // Show success modal notification
     showSuccessModal('PDF downloaded successfully!');
   }).catch(error => {
@@ -444,6 +467,7 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
     showErrorModal('PDF generation failed. Please try again.');
   });
 });
+
 
 // 📤 Export Table to Excel
 document.getElementById('exportBtn')?.addEventListener('click', () => {

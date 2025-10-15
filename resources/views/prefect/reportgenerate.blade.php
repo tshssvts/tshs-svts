@@ -716,8 +716,9 @@ tr:nth-child(even) {
 
       <div class="toolbar">
         <input type="text" placeholder="Search..." oninput="liveSearch('modal{{ $i }}', this.value)">
+                <button class="btn btn-warning" onclick="printAsPDF('modal{{ $i }}')"><i class="fas fa-print"></i> Print to PDF</button>
+
         <button class="btn btn-success" onclick="exportCSV('modal{{ $i }}')"><i class="fas fa-file-csv"></i> Export CSV</button>
-        <button class="btn btn-warning" onclick="printAsPDF('modal{{ $i }}')"><i class="fas fa-print"></i> Print</button>
       </div>
 
       <div id="loading-{{ $i }}" class="loading">
@@ -1264,6 +1265,7 @@ function liveSearch(modalId, query){
 }
 
 /* Print as PDF - Automatically download as PDF when clicking Print button */
+/* Print as PDF - Automatically download as PDF when clicking Print button */
 function printAsPDF(modalId) {
   const modal = document.getElementById(modalId);
   const reportId = modalId.replace('modal', '');
@@ -1285,12 +1287,22 @@ function printAsPDF(modalId) {
   const reportTitle = modal.querySelector('h2').textContent;
   const rowCount = table.querySelectorAll('tbody tr').length;
 
+  // Clone the table to avoid modifying the original
+  const tableClone = table.cloneNode(true);
+  
   // Create a temporary element for PDF generation
   const element = document.createElement('div');
   element.innerHTML = `
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #000000; background: #ffffff; padding: 25px;">
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #000000; background: #ffffff;">
+      <!-- Date at the top LEFT -->
+      <div style="text-align: left; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding: 25px 25px 0 25px;">
+        <div style="font-size: 14px; color: #000000; font-weight: 500;">
+          📅 Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
+        </div>
+      </div>
+
       <!-- Professional Header with Logo on Right -->
-      <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px;">
+      <div style="display: flex; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 25px; padding: 0 25px;">
         <div style="flex: 1;">
           <h1 style="margin: 0; color: #000000; font-size: 24px; font-weight: 700;">TAGOLOAN SENIOR HIGH SCHOOL</h1>
           <h2 style="margin: 5px 0 0 0; color: #000000; font-size: 16px; font-weight: 500;">Student Violation Tracking System</h2>
@@ -1302,7 +1314,7 @@ function printAsPDF(modalId) {
       </div>
 
       <!-- Report Summary -->
-      <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px;">
+      <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px; margin: 0 25px 25px 25px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <h3 style="margin: 0; color: #000000; font-size: 18px; font-weight: 600;">${reportTitle}</h3>
@@ -1317,28 +1329,25 @@ function printAsPDF(modalId) {
         </div>
       </div>
 
-      <!-- Enhanced Table -->
-      <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        ${table.outerHTML}
+      <!-- Enhanced Table Container -->
+      <div style="overflow: hidden; margin: 0 25px;">
+        ${tableClone.outerHTML}
       </div>
 
-      <!-- Date Section Below Table -->
-      <div style="margin-top: 30px; text-align: right;">
-        <div style="font-size: 14px; color: #000000;">
-          Generated on: <strong>${currentDate}</strong> at <strong>${currentTime}</strong>
-        </div>
-      </div>
-
-      <!-- Footer Section - Removed "Reviewed By: School Principal" -->
-      <div style="margin-top: 40px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
+      <!-- Footer Section -->
+      <div style="margin-top: 40px; border-top: 2px solid #e2e8f0; padding-top: 20px; padding: 20px 25px 0 25px;">
         <div style="display: flex; justify-content: flex-start; align-items: flex-start;">
-          <div style="flex: 1;">
+          <div style="text-align: left;">
             <div style="font-size: 12px; color: #000000; margin-bottom: 5px;">Prepared By:</div>
-            <div style="border-bottom: 1px solid #cbd5e0; width: 200px; padding: 25px 0 5px 0;"></div>
-            <div style="font-size: 12px; color: #000000; margin-top: 5px;">Prefect of Discipline</div>
+            <div style="font-size: 14px; color: #000000; font-weight: 600; margin-bottom: 8px;">
+          {{ Auth::user()->prefect_fname }} {{ Auth::user()->prefect_lname }}            </div>
+            <div style="border-bottom: 1px solid #cbd5e0; width: 250px; padding: 15px 0 5px 0;"></div>
+            <div style="font-size: 12px; color: #000000; margin-top: 5px;">
+              Prefect of Discipline
+            </div>
           </div>
         </div>
-
+        
         <!-- Confidential Notice -->
         <div style="text-align: center; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;">
           <div style="font-size: 11px; color: #c53030; font-weight: 600;">
@@ -1352,69 +1361,118 @@ function printAsPDF(modalId) {
     </div>
   `;
 
-  // Enhanced table styling for PDF
+  // Enhanced table styling for PDF with proper page break handling
   const tables = element.getElementsByTagName('table');
   for (let table of tables) {
     table.style.width = '100%';
     table.style.borderCollapse = 'collapse';
-    table.style.fontSize = '11px';
+    table.style.fontSize = '10px';
+    table.style.tableLayout = 'fixed'; // Better control over table layout
 
-    // Style table headers
+    // Style table headers with page break avoidance
     const headers = table.getElementsByTagName('th');
     for (let header of headers) {
       header.style.backgroundColor = '#1e3a8a';
       header.style.color = 'white';
-      header.style.padding = '10px 8px';
+      header.style.padding = '8px 6px';
       header.style.textAlign = 'left';
       header.style.fontWeight = '600';
       header.style.border = '1px solid #2d3748';
-      header.style.fontSize = '10px';
+      header.style.fontSize = '9px';
       header.style.textTransform = 'uppercase';
       header.style.letterSpacing = '0.5px';
+      header.style.pageBreakInside = 'avoid';
+      header.style.breakInside = 'avoid';
     }
 
-    // Style table cells
+    // Style table cells with proper page break handling
     const cells = table.getElementsByTagName('td');
     for (let cell of cells) {
-      cell.style.padding = '8px 6px';
+      cell.style.padding = '6px 4px';
       cell.style.border = '1px solid #e2e8f0';
-      cell.style.fontSize = '10px';
+      cell.style.fontSize = '9px';
       cell.style.color = '#000000';
+      cell.style.pageBreakInside = 'avoid';
+      cell.style.breakInside = 'avoid';
+      cell.style.wordWrap = 'break-word';
+      cell.style.overflowWrap = 'break-word';
     }
 
-    // Style table rows
+    // Style table rows with page break handling
     const rows = table.getElementsByTagName('tr');
     for (let i = 0; i < rows.length; i++) {
+      rows[i].style.pageBreakInside = 'avoid';
+      rows[i].style.breakInside = 'avoid';
+      
       if (i % 2 === 0) {
         rows[i].style.backgroundColor = '#ffffff';
       } else {
         rows[i].style.backgroundColor = '#f7fafc';
       }
     }
+
+    // Style table header row specifically
+    const thead = table.getElementsByTagName('thead')[0];
+    if (thead) {
+      thead.style.display = 'table-header-group';
+    }
   }
 
-  // PDF options
+  // PDF options with improved page break handling
   const options = {
-    margin: [15, 15, 15, 15],
+    margin: [10, 15, 25, 15], // Adjusted margins for better page breaks
     filename: `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: { 
+      type: 'jpeg', 
+      quality: 0.98 
+    },
     html2canvas: {
       scale: 2,
       useCORS: true,
-      logging: false
+      logging: false,
+      scrollY: -window.scrollY
     },
     jsPDF: {
       unit: 'mm',
       format: 'a4',
       orientation: 'portrait',
-      compress: true
+      compress: true,
+      hotfixes: ["px_scaling"]
+    },
+    // Improved page break handling
+    pagebreak: { 
+      mode: ['avoid-all', 'css', 'legacy'],
+      before: '.page-break-before',
+      after: '.page-break-after',
+      avoid: ['tr', 'td', 'th']
     }
   };
 
   showNotification('Generating PDF...', 'info');
 
-  // Generate and download PDF
-  html2pdf().set(options).from(element).save().then(() => {
+  // Generate and download PDF with proper page numbering
+  html2pdf().set(options).from(element).toPdf().get('pdf').then(function(pdf) {
+    const totalPages = pdf.internal.getNumberOfPages();
+    
+    // Add footer to each page
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      
+      // Add footer with system name on left and page number on right
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      
+      // System name on left footer
+      pdf.text('Tagoloan Senior High School - Student Violation Tracking System', 
+               pdf.internal.pageSize.getWidth() / 2 - 65, 
+               pdf.internal.pageSize.getHeight() - 8);
+      
+      // Page number on right footer
+      pdf.text(`Page ${i} of ${totalPages}`, 
+               pdf.internal.pageSize.getWidth() - 25, 
+               pdf.internal.pageSize.getHeight() - 8);
+    }
+  }).save().then(() => {
     showNotification('PDF exported successfully!', 'success');
   }).catch(error => {
     console.error('PDF generation error:', error);
