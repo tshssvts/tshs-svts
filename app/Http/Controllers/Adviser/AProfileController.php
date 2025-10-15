@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use App\Models\PrefectOfDiscipline;
+use App\Models\Adviser;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -18,12 +18,12 @@ class AProfileController extends Controller
     public function sendVerificationCode(Request $request)
     {
         try {
-            $user = Auth::guard('prefect')->user();
-
-            Log::info('Send verification code attempt', ['user_id' => $user ? $user->prefect_id : 'none']);
-
+            $user = Auth::guard('adviser')->user();
+            
+            Log::info('Adviser send verification code attempt', ['user_id' => $user ? $user->adviser_id : 'none']);
+            
             if (!$user) {
-                Log::error('User not authenticated in prefect guard');
+                Log::error('Adviser not authenticated in adviser guard');
                 return response()->json([
                     'message' => 'User not authenticated. Please log in again.'
                 ], 401);
@@ -31,44 +31,44 @@ class AProfileController extends Controller
 
             // Generate 6-digit verification code
             $verificationCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
+            
             // Store code in cache for 10 minutes
-            $cacheKey = 'password_verification_code_' . $user->prefect_id;
+            $cacheKey = 'adviser_password_verification_code_' . $user->adviser_id;
             Cache::put($cacheKey, $verificationCode, 600); // 10 minutes
-
-            Log::info('Verification code generated', [
-                'user_id' => $user->prefect_id,
-                'email' => $user->prefect_email,
+            
+            Log::info('Adviser verification code generated', [
+                'user_id' => $user->adviser_id,
+                'email' => $user->adviser_email,
                 'cache_key' => $cacheKey
             ]);
 
             // Send email with verification code
             $data = [
-                'name' => $user->prefect_fname . ' ' . $user->prefect_lname,
-                'email' => $user->prefect_email,
+                'name' => $user->adviser_fname . ' ' . $user->adviser_lname,
+                'email' => $user->adviser_email,
                 'verification_code' => $verificationCode,
                 'valid_minutes' => 10
             ];
 
-            Log::info('Attempting to send email', ['email' => $user->prefect_email]);
+            Log::info('Attempting to send email to adviser', ['email' => $user->adviser_email]);
 
-            Mail::send('emails.password-verification', $data, function($message) use ($user) {
-                $message->to($user->prefect_email)
+            Mail::send('emails.adviser-password-verification', $data, function($message) use ($user) {
+                $message->to($user->adviser_email)
                         ->subject('Password Change Verification Code - Student Violation Tracking System');
             });
 
-            Log::info('Verification code sent successfully', ['email' => $user->prefect_email]);
+            Log::info('Adviser verification code sent successfully', ['email' => $user->adviser_email]);
 
             return response()->json([
                 'message' => 'Verification code sent to your email successfully!'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Verification email failed: ' . $e->getMessage(), [
+            Log::error('Adviser verification email failed: ' . $e->getMessage(), [
                 'exception' => $e,
-                'user_id' => isset($user) ? $user->prefect_id : 'unknown'
+                'user_id' => isset($user) ? $user->adviser_id : 'unknown'
             ]);
-
+            
             return response()->json([
                 'message' => 'Failed to send verification code: ' . $e->getMessage()
             ], 500);
@@ -78,8 +78,8 @@ class AProfileController extends Controller
     public function changePassword(Request $request)
     {
         try {
-            $user = Auth::guard('prefect')->user();
-
+            $user = Auth::guard('adviser')->user();
+            
             if (!$user) {
                 return response()->json([
                     'message' => 'User not authenticated'
@@ -101,8 +101,8 @@ class AProfileController extends Controller
             }
 
             // Verify the verification code
-            $cachedCode = Cache::get('password_verification_code_' . $user->prefect_id);
-
+            $cachedCode = Cache::get('adviser_password_verification_code_' . $user->adviser_id);
+            
             if (!$cachedCode || $cachedCode !== $request->verification_code) {
                 return response()->json([
                     'message' => 'Invalid or expired verification code.'
@@ -110,11 +110,11 @@ class AProfileController extends Controller
             }
 
             // Update password directly (no current password check)
-            $user->prefect_password = Hash::make($request->new_password);
+            $user->adviser_password = Hash::make($request->new_password);
             $user->save();
 
             // Clear the verification code
-            Cache::forget('password_verification_code_' . $user->prefect_id);
+            Cache::forget('adviser_password_verification_code_' . $user->adviser_id);
 
             // Send confirmation email
             $this->sendPasswordChangeConfirmation($user);
@@ -124,8 +124,8 @@ class AProfileController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Password change failed: ' . $e->getMessage());
-
+            Log::error('Adviser password change failed: ' . $e->getMessage());
+            
             return response()->json([
                 'message' => 'An error occurred while changing password.'
             ], 500);
@@ -136,29 +136,29 @@ class AProfileController extends Controller
     {
         try {
             $data = [
-                'name' => $user->prefect_fname . ' ' . $user->prefect_lname,
-                'email' => $user->prefect_email,
+                'name' => $user->adviser_fname . ' ' . $user->adviser_lname,
+                'email' => $user->adviser_email,
                 'change_date' => now()->format('F j, Y \a\t g:i A'),
                 'ip_address' => request()->ip()
             ];
 
-            Mail::send('emails.password-changed', $data, function($message) use ($user) {
-                $message->to($user->prefect_email)
+            Mail::send('emails.adviser-password-changed', $data, function($message) use ($user) {
+                $message->to($user->adviser_email)
                         ->subject('Password Changed Successfully - Student Violation Tracking System');
             });
 
-            Log::info('Password change confirmation sent', ['email' => $user->prefect_email]);
+            Log::info('Adviser password change confirmation sent', ['email' => $user->adviser_email]);
 
         } catch (\Exception $e) {
-            Log::error('Password change confirmation email failed: ' . $e->getMessage());
+            Log::error('Adviser password change confirmation email failed: ' . $e->getMessage());
         }
     }
 
     public function getProfileInfo(Request $request)
     {
         try {
-            $user = Auth::guard('prefect')->user();
-
+            $user = Auth::guard('adviser')->user();
+            
             if (!$user) {
                 return response()->json([
                     'message' => 'User not authenticated'
@@ -166,17 +166,19 @@ class AProfileController extends Controller
             }
 
             return response()->json([
-                'name' => $user->prefect_fname . ' ' . $user->prefect_lname,
-                'email' => $user->prefect_email,
-                'gender' => $user->prefect_sex,
-                'contact' => $user->prefect_contactinfo,
+                'name' => $user->adviser_fname . ' ' . $user->adviser_lname,
+                'email' => $user->adviser_email,
+                'gender' => $user->adviser_sex,
+                'contact' => $user->adviser_contactinfo,
+                'gradelevel' => $user->adviser_gradelevel,
+                'section' => $user->adviser_section,
                 'status' => $user->status,
                 'profile_image' => $user->profile_image ? Storage::url($user->profile_image) : '/images/user.jpg'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Get profile info failed: ' . $e->getMessage());
-
+            Log::error('Get adviser profile info failed: ' . $e->getMessage());
+            
             return response()->json([
                 'message' => 'Failed to load profile information'
             ], 500);
@@ -186,8 +188,8 @@ class AProfileController extends Controller
     public function uploadProfileImage(Request $request)
     {
         try {
-            $user = Auth::guard('prefect')->user();
-
+            $user = Auth::guard('adviser')->user();
+            
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -212,8 +214,8 @@ class AProfileController extends Controller
             }
 
             // Store new image
-            $imagePath = $request->file('profile_image')->store('profile_images', 'public');
-
+            $imagePath = $request->file('profile_image')->store('adviser_profile_images', 'public');
+            
             // Update user record
             $user->profile_image = $imagePath;
             $user->save();
@@ -225,8 +227,8 @@ class AProfileController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Profile image upload failed: ' . $e->getMessage());
-
+            Log::error('Adviser profile image upload failed: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to upload profile image: ' . $e->getMessage()
@@ -237,8 +239,8 @@ class AProfileController extends Controller
     public function removeProfileImage(Request $request)
     {
         try {
-            $user = Auth::guard('prefect')->user();
-
+            $user = Auth::guard('adviser')->user();
+            
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -261,8 +263,8 @@ class AProfileController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Profile image removal failed: ' . $e->getMessage());
-
+            Log::error('Adviser profile image removal failed: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to remove profile image'

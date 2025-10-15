@@ -6,16 +6,15 @@
   <title>Adviser Dashboard</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="{{ asset('css/adviser(1)/sidebar.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/adviser/cards.css') }}">
-     <link rel="stylesheet" href="{{ asset('css/adviser(1)/createViolation.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/adviser(1)/toolbar.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/adviser(1)/modal.css') }}">
-     <link rel="stylesheet" href="{{ asset('css/adviser(1)/createParent.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/adviser(1)/sidebar.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/adviser/cards.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/adviser(1)/createViolation.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/adviser(1)/toolbar.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/adviser(1)/modal.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/adviser(1)/createParent.css') }}">
   <link rel="stylesheet" href="{{ asset('css/adviser(1)/createStudent.css') }}">
   <link rel="stylesheet" href="{{ asset('css/adviser(1)/createComplaint.css') }}">
   <link rel="stylesheet" href="{{ asset('css/adviser(1)/notificationsmodal.css') }}">
-  
   <style>
     /* Add these styles for alerts and image upload */
     .alert {
@@ -150,7 +149,7 @@
 
     .notification-bell i {
       font-size: 22px;
-      color: #FFD700; /* Yellow color */
+      color: #FFD700;
       transition: transform 0.3s ease;
     }
 
@@ -174,7 +173,7 @@
       font-weight: bold;
     }
 
-    /* Notification Dropdown Styles - ADDED */
+    /* Notification Dropdown Styles */
     .notification-dropdown {
       position: absolute;
       top: 100%;
@@ -377,6 +376,14 @@
                         <span class="info-value" id="profile-contact">Loading...</span>
                     </div>
                     <div class="info-item">
+                        <span class="info-label">Grade Level:</span>
+                        <span class="info-value" id="profile-gradelevel">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Section:</span>
+                        <span class="info-value" id="profile-section">Loading...</span>
+                    </div>
+                    <div class="info-item">
                         <span class="info-label">Status:</span>
                         <span class="info-value" id="profile-status">Loading...</span>
                     </div>
@@ -464,58 +471,83 @@
     </div>
 </div>
 
- <!-- ✅ Main content area (for child pages) -->
-  <main class="main-content">
-     <!-- ======= HEADER ======= -->
-  <header class="main-header">
-    <div class="header-left">
-      <h2>Student Violation Tracking System</h2>
-    </div>
-    <div class="header-right">
-      <!-- Yellow Notification Bell -->
-      <div class="notification-bell" onclick="toggleNotifications(event)">
-        <i class="fas fa-bell"></i>
-        <div class="notification-badge">3</div>
-      </div>
-      
-      <!-- Notification Dropdown - ADDED -->
-      <div class="notification-dropdown" id="notificationDropdown">
-        <div class="notification-header">
-          <h3>Notifications</h3>
-          <button class="mark-all-read" onclick="markAllAsRead()">Mark all as read</button>
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-sign-out-alt"></i> Confirm Logout</h3>
+            <span class="close" onclick="closeLogoutModal()">&times;</span>
         </div>
-        <ul class="notification-list" id="notificationList">
-          <!-- Notifications will be populated here -->
-        </ul>
-        <div class="notification-footer">
-          <a href="#" onclick="viewAllNotifications()">View All Notifications</a>
+        <div class="modal-body">
+            <div style="text-align: center; padding: 20px 0;">
+                <i class="fas fa-question-circle" style="font-size: 48px; color: #e74c3c; margin-bottom: 15px;"></i>
+                <p style="font-size: 16px; margin-bottom: 25px; color: #333;">
+                    Are you sure you want to logout?
+                </p>
+            </div>
+            <div class="modal-actions" style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn-cancel" onclick="closeLogoutModal()" style="padding: 10px 20px;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-logout" onclick="confirmLogout()" style="padding: 10px 20px;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
         </div>
-      </div>
-      
-      <div class="user-info" onclick="toggleProfileDropdown()">
-        <img src="/images/user.jpg" alt="Adviser">
-        <span>Adviser</span>
-        <i class="fas fa-caret-down"></i>
-      </div>
-      <div class="profile-dropdown" id="profileDropdown">
-        <a href="#" onclick="showProfile(); return false;">
-          <i class="fas fa-user"></i> Profile
-        </a>
-        <a href="#" onclick="showChangePassword(); return false;">
-          <i class="fas fa-key"></i> Change Password
-        </a>
-        <a href="#" onclick="logout(); return false;">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
-      </div>
     </div>
-  </header>
+</div>
+
+<!-- Main content area -->
+<main class="main-content">
+    <header class="main-header">
+        <div class="header-left">
+            <h2>Student Violation Tracking System</h2>
+        </div>
+        <div class="header-right">
+            <!-- Yellow Notification Bell -->
+            <div class="notification-bell" onclick="toggleNotifications(event)">
+                <i class="fas fa-bell"></i>
+                <div class="notification-badge">3</div>
+            </div>
+            
+            <!-- Notification Dropdown -->
+            <div class="notification-dropdown" id="notificationDropdown">
+                <div class="notification-header">
+                    <h3>Notifications</h3>
+                    <button class="mark-all-read" onclick="markAllAsRead()">Mark all as read</button>
+                </div>
+                <ul class="notification-list" id="notificationList">
+                    <!-- Notifications will be populated here -->
+                </ul>
+                <div class="notification-footer">
+                    <a href="#" onclick="viewAllNotifications()">View All Notifications</a>
+                </div>
+            </div>
+            
+            <div class="user-info" onclick="toggleProfileDropdown()">
+                <img id="header-profile-image" src="/images/user.jpg" alt="Adviser">
+                <span id="header-user-name">Loading...</span>
+                <i class="fas fa-caret-down"></i>
+            </div>
+            <div class="profile-dropdown" id="profileDropdown">
+                <a href="#" onclick="openProfileModal()">
+                    <i class="fas fa-user-cog"></i> Profile Settings
+                </a>
+                <a href="#" onclick="openProfileModal('password-tab')">
+                    <i class="fas fa-lock"></i> Change Password
+                </a>
+                <a href="#" onclick="openLogoutModal()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </header>
 
     @yield('content')
-  </main>
+</main>
 
 <script>
- // Global variables for routes and CSRF token
+    // Global variables for routes and CSRF token
     const ROUTES = {
         sendVerificationCode: '{{ route("adviser.send-verification-code") }}',
         changePassword: '{{ route("adviser.change-password") }}',
@@ -527,7 +559,7 @@
     };
     const CSRF_TOKEN = '{{ csrf_token() }}';
 
-    // Sample notifications data - ADDED
+    // Sample notifications data
     let notifications = [
         {
             id: 1,
@@ -555,34 +587,402 @@
             time: "2 hours ago",
             unread: true,
             route: "student.list"
-        },
-        {
-            id: 4,
-            title: "Report Generated",
-            message: "Monthly violation report is ready for review",
-            type: "report",
-            time: "1 day ago",
-            unread: false,
-            route: "adviser.reports"
-        },
-        {
-            id: 5,
-            title: "Parent Meeting Scheduled",
-            message: "You have a parent meeting scheduled for tomorrow",
-            type: "parent",
-            time: "2 days ago",
-            unread: false,
-            route: "parent.list"
         }
     ];
 
-    // Initialize notifications - ADDED
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
+        loadProfileInfo();
         loadNotifications();
         updateNotificationBadge();
+        initializeProfileImageUpload();
+        initializeVerificationCodeInput();
     });
 
-    // Load notifications into the dropdown - ADDED
+    // Profile Functions
+    function loadProfileInfo() {
+        fetch(ROUTES.profileInfo, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.name) {
+                document.getElementById('profile-name').textContent = data.name;
+                document.getElementById('profile-email').textContent = data.email;
+                document.getElementById('profile-gender').textContent = data.gender || 'Not specified';
+                document.getElementById('profile-contact').textContent = data.contact || 'Not specified';
+                document.getElementById('profile-gradelevel').textContent = data.gradelevel || 'Not specified';
+                document.getElementById('profile-section').textContent = data.section || 'Not specified';
+                document.getElementById('profile-status').textContent = data.status || 'Active';
+                
+                // Update header
+                document.getElementById('header-user-name').textContent = data.name;
+                
+                // Update profile image
+                if (data.profile_image) {
+                    document.getElementById('profile-image-preview').src = data.profile_image;
+                    document.getElementById('header-profile-image').src = data.profile_image;
+                }
+                
+                // Update email in password tab
+                document.getElementById('user-email').textContent = data.email;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading profile info:', error);
+        });
+    }
+
+    function initializeProfileImageUpload() {
+        const profileImageInput = document.getElementById('profile-image-input');
+        
+        profileImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file type and size
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                showAlert('Please select a valid image file (JPEG, PNG, JPG, GIF)', 'error');
+                return;
+            }
+
+            if (file.size > 2 * 1024 * 1024) { // 2MB
+                showAlert('Image size should be less than 2MB', 'error');
+                return;
+            }
+
+            // Create FormData and upload
+            const formData = new FormData();
+            formData.append('profile_image', file);
+            formData.append('_token', CSRF_TOKEN);
+
+            fetch(ROUTES.uploadProfileImage, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update both preview and header images
+                    document.getElementById('profile-image-preview').src = data.image_url + '?t=' + new Date().getTime();
+                    document.getElementById('header-profile-image').src = data.image_url + '?t=' + new Date().getTime();
+                    showAlert('Profile image uploaded successfully!', 'success');
+                } else {
+                    showAlert(data.message || 'Failed to upload image', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                showAlert('Failed to upload image', 'error');
+            });
+        });
+    }
+
+    function removeProfileImage() {
+        if (!confirm('Are you sure you want to remove your profile image?')) return;
+
+        fetch(ROUTES.removeProfileImage, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reset to default image
+                const defaultImage = '/images/user.jpg';
+                document.getElementById('profile-image-preview').src = defaultImage;
+                document.getElementById('header-profile-image').src = defaultImage;
+                showAlert('Profile image removed successfully!', 'success');
+            } else {
+                showAlert(data.message || 'Failed to remove image', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Remove image error:', error);
+            showAlert('Failed to remove image', 'error');
+        });
+    }
+
+    // Password Change Functions
+    function sendVerificationCode() {
+        const sendBtn = document.getElementById('send-code-btn');
+        const originalText = sendBtn.innerHTML;
+        
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+        fetch(ROUTES.sendVerificationCode, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showAlert(data.message, 'success');
+                
+                // Show step 2
+                document.getElementById('verification-step-1').style.display = 'none';
+                document.getElementById('verification-step-2').style.display = 'block';
+                
+                // Start resend timer
+                startResendTimer();
+            } else {
+                showAlert(data.message || 'Failed to send verification code', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Send code error:', error);
+            showAlert('Failed to send verification code', 'error');
+        })
+        .finally(() => {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalText;
+        });
+    }
+
+    function startResendTimer() {
+        const resendBtn = document.getElementById('resend-code-btn');
+        const timerSpan = document.getElementById('resend-timer');
+        let timeLeft = 60;
+
+        resendBtn.disabled = true;
+
+        const timer = setInterval(() => {
+            timeLeft--;
+            timerSpan.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                resendBtn.disabled = false;
+                timerSpan.textContent = '60';
+            }
+        }, 1000);
+    }
+
+    function initializeVerificationCodeInput() {
+        const verificationCodeInput = document.getElementById('verification_code');
+        
+        verificationCodeInput.addEventListener('input', function(e) {
+            // Auto-advance to step 3 when 6-digit code is entered
+            if (e.target.value.length === 6) {
+                document.getElementById('verification-step-3').style.display = 'block';
+            } else {
+                document.getElementById('verification-step-3').style.display = 'none';
+            }
+        });
+    }
+
+    // Password Form Submission
+    document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const verificationCode = document.getElementById('verification_code').value;
+        const newPassword = document.getElementById('new_password').value;
+        const confirmPassword = document.getElementById('new_password_confirmation').value;
+
+        // Basic validation
+        if (!verificationCode || verificationCode.length !== 6) {
+            showAlert('Please enter a valid 6-digit verification code', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showAlert('Password must be at least 6 characters long', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showAlert('Passwords do not match', 'error');
+            return;
+        }
+
+        const submitBtn = document.getElementById('change-password-btn');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Changing...';
+
+        fetch(ROUTES.changePassword, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            },
+            body: JSON.stringify({
+                verification_code: verificationCode,
+                new_password: newPassword,
+                new_password_confirmation: confirmPassword
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showAlert(data.message, 'success');
+                closeProfileModal();
+                
+                // Reset form
+                document.getElementById('changePasswordForm').reset();
+                document.getElementById('verification-step-1').style.display = 'block';
+                document.getElementById('verification-step-2').style.display = 'none';
+                document.getElementById('verification-step-3').style.display = 'none';
+            } else if (data.errors) {
+                // Handle validation errors
+                const errors = data.errors;
+                Object.keys(errors).forEach(field => {
+                    const errorElement = document.getElementById(field + '_error');
+                    if (errorElement) {
+                        errorElement.textContent = errors[field][0];
+                    }
+                });
+                showAlert('Please fix the errors above', 'error');
+            } else {
+                showAlert(data.message || 'Failed to change password', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Change password error:', error);
+            showAlert('Failed to change password', 'error');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+
+    // Modal Functions
+    function openProfileModal(tab = 'profile-tab') {
+        const modal = document.getElementById('profileSettingsModal');
+        modal.style.display = 'block';
+        
+        // Switch to specified tab
+        openTab(tab);
+        
+        // Load profile info when opening modal
+        if (tab === 'profile-tab') {
+            loadProfileInfo();
+        }
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profileSettingsModal').style.display = 'none';
+        
+        // Reset password form
+        document.getElementById('changePasswordForm').reset();
+        document.getElementById('verification-step-1').style.display = 'block';
+        document.getElementById('verification-step-2').style.display = 'none';
+        document.getElementById('verification-step-3').style.display = 'none';
+    }
+
+    function openLogoutModal() {
+        document.getElementById('logoutModal').style.display = 'block';
+        toggleProfileDropdown(); // Close profile dropdown
+    }
+
+    function closeLogoutModal() {
+        document.getElementById('logoutModal').style.display = 'none';
+    }
+
+    function confirmLogout() {
+        fetch(ROUTES.logout, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = ROUTES.login;
+            } else {
+                throw new Error('Logout failed');
+            }
+        })
+        .catch(error => {
+            console.error('Logout error:', error);
+            alert('Logout failed. Please try again.');
+        });
+    }
+
+    // Tab switching function
+    function openTab(tabId) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Remove active class from all tab buttons
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+
+        // Show the selected tab content
+        document.getElementById(tabId).classList.add('active');
+
+        // Activate the clicked tab button
+        event.currentTarget.classList.add('active');
+
+        // If switching to password tab and step 2 is visible, show step 3 when code is entered
+        if (tabId === 'password-tab') {
+            const verificationCode = document.getElementById('verification_code').value;
+            if (verificationCode.length === 6) {
+                document.getElementById('verification-step-3').style.display = 'block';
+            }
+        }
+    }
+
+    // Utility Functions
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const icon = field.nextElementSibling.querySelector('i');
+        
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            field.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function showAlert(message, type) {
+        // Remove existing alerts
+        const existingAlerts = document.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => alert.remove());
+
+        // Create new alert
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}"></i>
+            ${message}
+        `;
+
+        // Insert at the top of modal body
+        const modalBody = document.querySelector('.modal-body');
+        modalBody.insertBefore(alert, modalBody.firstChild);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    // Notification Functions
     function loadNotifications() {
         const notificationList = document.getElementById('notificationList');
         notificationList.innerHTML = '';
@@ -637,7 +1037,6 @@
         });
     }
 
-    // Toggle notifications dropdown - MODIFIED
     function toggleNotifications(event) {
         event.stopPropagation();
         const dropdown = document.getElementById('notificationDropdown');
@@ -655,7 +1054,6 @@
         });
     }
 
-    // Mark a notification as read - ADDED
     function markAsRead(notificationId) {
         const notification = notifications.find(n => n.id === notificationId);
         if (notification && notification.unread) {
@@ -670,21 +1068,16 @@
         }
     }
 
-    // Mark all notifications as read - MODIFIED
     function markAllAsRead() {
-        // Remove all notifications from the array
-        notifications = [];
+        notifications.forEach(notification => {
+            notification.unread = false;
+        });
         
         // Update the UI
         loadNotifications();
         updateNotificationBadge();
-        
-        // Show a message that all notifications are cleared
-        const notificationList = document.getElementById('notificationList');
-        notificationList.innerHTML = '<div class="notification-empty">No notifications</div>';
     }
 
-    // Update the notification badge count - ADDED
     function updateNotificationBadge() {
         const unreadCount = notifications.filter(n => n.unread).length;
         const badge = document.querySelector('.notification-badge');
@@ -697,7 +1090,6 @@
         }
     }
 
-    // Navigate to the appropriate module based on the notification - ADDED
     function navigateToModule(routeName) {
         // Close the notification dropdown
         document.getElementById('notificationDropdown').classList.remove('show');
@@ -706,7 +1098,6 @@
         window.location.href = getRouteUrl(routeName);
     }
 
-    // Helper function to get route URL - ADDED
     function getRouteUrl(routeName) {
         const routeMap = {
             'adviser.dashboard': '{{ route("adviser.dashboard") }}',
@@ -721,13 +1112,12 @@
         return routeMap[routeName] || '#';
     }
 
-    // View all notifications (placeholder function) - ADDED
     function viewAllNotifications() {
         alert("This would open a full notifications page in a real implementation");
         document.getElementById('notificationDropdown').classList.remove('show');
     }
 
-    // Toggle profile dropdown
+    // Profile Dropdown Functions
     function toggleProfileDropdown() {
         const dropdown = document.getElementById('profileDropdown');
         const notificationDropdown = document.getElementById('notificationDropdown');
@@ -738,7 +1128,7 @@
         userInfo.classList.toggle('active');
     }
 
-    // Close dropdown when clicking outside - MODIFIED
+    // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
         const dropdown = document.getElementById('profileDropdown');
         const notificationDropdown = document.getElementById('notificationDropdown');
@@ -755,82 +1145,23 @@
         }
     });
 
-    // Show profile modal (without functionality)
-    function showProfile() {
-        alert("Profile functionality would open here");
-        toggleProfileDropdown(); // Close dropdown after selection
-    }
-
-    // Show change password modal (without functionality)
-    function showChangePassword() {
-        alert("Change Password functionality would open here");
-        toggleProfileDropdown(); // Close dropdown after selection
-    }
-
-    // Logout function
-    function logout() {
-        const confirmLogout = confirm("Are you sure you want to logout?");
-        if (!confirmLogout) return;
-
-        fetch("{{ route('adviser.logout') }}", {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => {
-            if(response.ok) {
-                // Redirect to login after successful logout
-                window.location.href = "{{ route('login') }}";
-            } else {
-                console.error('Logout failed:', response.statusText);
-            }
-        })
-        .catch(error => console.error('Logout failed:', error));
-        
-        // Close dropdown after selection
-        toggleProfileDropdown();
-    }
-
-    // Tab switching function (for modal if needed later)
-    function openTab(tabId) {
-        // Hide all tab contents
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabContents.forEach(tab => {
-            tab.classList.remove('active');
-        });
-
-        // Remove active class from all tab buttons
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        tabButtons.forEach(button => {
-            button.classList.remove('active');
-        });
-
-        // Show the selected tab content
-        document.getElementById(tabId).classList.add('active');
-
-        // Activate the clicked tab button
-        event.currentTarget.classList.add('active');
-    }
-
-    // Close profile modal
-    function closeProfileModal() {
-        document.getElementById('profileSettingsModal').style.display = 'none';
-    }
-
-    // Close modal when clicking on X
-    document.querySelector('.close').addEventListener('click', closeProfileModal);
-
-    // Close modal when clicking outside
+    // Close modals when clicking outside
     window.addEventListener('click', function(event) {
-        const modal = document.getElementById('profileSettingsModal');
-        if (event.target === modal) {
+        const profileModal = document.getElementById('profileSettingsModal');
+        const logoutModal = document.getElementById('logoutModal');
+        
+        if (event.target === profileModal) {
             closeProfileModal();
         }
+        
+        if (event.target === logoutModal) {
+            closeLogoutModal();
+        }
     });
+
+    // Close modal when clicking on X
+    document.querySelector('#profileSettingsModal .close').addEventListener('click', closeProfileModal);
 </script>
-<script src="{{ asset('js/prefect/layout.js') }}"></script>
 
 </body>
 </html>

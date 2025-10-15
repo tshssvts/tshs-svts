@@ -230,6 +230,11 @@ Route::prefix('adviser')->group(function () {
     Route::middleware('auth:adviser')->group(function () {
         // Dashboard
         Route::get('/dashboard', [ADashboardController::class, 'dashboard'])->name('adviser.dashboard');
+        Route::post('/send-verification-code', [AProfileController::class, 'sendVerificationCode'])->name('adviser.send-verification-code');
+        Route::post('/change-password', [AProfileController::class, 'changePassword'])->name('adviser.change-password');
+        Route::get('/profile-info', [AProfileController::class, 'getProfileInfo'])->name('adviser.profile-info');
+        Route::post('/upload-profile-image', [AProfileController::class, 'uploadProfileImage'])->name('adviser.upload-profile-image');
+        Route::post('/remove-profile-image', [AProfileController::class, 'removeProfileImage'])->name('adviser.remove-profile-image');
 
         // Management Routes
         Route::get('/violationrecord', [AViolationController::class, 'violationrecord'])->name('violation.record');
