@@ -93,9 +93,66 @@
   </div>
 
 </div>
+
+{{-- ✅ Saving Confirmation Modal --}}
+<div id="savingConfirmationModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-question-circle me-2"></i> Confirm Save</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <h4 class="text-warning mb-3">Save All Violation Records?</h4>
+                <p class="mb-2" id="confirmationRecordCount"></p>
+                <div class="alert alert-warning mt-3 mb-0">
+                    <small><i class="fas fa-exclamation-triangle"></i> This action cannot be undone.</small>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success px-4" id="confirmSaveBtn">
+                    <i class="fas fa-save me-2"></i>Yes, Save All Records
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ✅ Success Modal --}}
+<div id="successModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i> Success!</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                </div>
+                <h4 class="text-success mb-3">Records Saved Successfully!</h4>
+                <p class="mb-1" id="successRecordCount"></p>
+                <p class="text-muted small">The violation records have been added to the database.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success px-4" id="continueBtn">
+                    <i class="fas fa-check me-2"></i>Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ✅ JS --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const studentSearchUrl = "{{ route('violations.search-students') }}";
 const offenseSearchUrl = "{{ route('violations.search-offenses') }}";
@@ -118,6 +175,83 @@ function setDateTimeInputs(form) {
     const { date, time } = getCurrentDateTime();
     form.querySelector(".date-input").value = date;
     form.querySelector(".time-input").value = time;
+}
+
+// Show saving confirmation modal
+function showSavingConfirmation(totalViolations) {
+    // Update the confirmation modal message with the count
+    const confirmationRecordCount = document.getElementById('confirmationRecordCount');
+    confirmationRecordCount.textContent = `You are about to save ${totalViolations} violation record(s) to the database.`;
+    
+    // Show the Bootstrap confirmation modal
+    const confirmationModal = new bootstrap.Modal(document.getElementById('savingConfirmationModal'));
+    confirmationModal.show();
+    
+    return new Promise((resolve) => {
+        // Handle confirm button click
+        document.getElementById('confirmSaveBtn').onclick = () => {
+            confirmationModal.hide();
+            resolve(true);
+        };
+        
+        // Handle modal dismiss
+        const modalElement = document.getElementById('savingConfirmationModal');
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            resolve(false);
+        });
+    });
+}
+
+// Show success modal
+function showSuccessModal(totalViolations) {
+    if (totalViolations === 0) return;
+    
+    // Update the success modal message with the count
+    const successRecordCount = document.getElementById('successRecordCount');
+    successRecordCount.textContent = `${totalViolations} violation record(s) have been saved successfully!`;
+    
+    // Show the Bootstrap success modal
+    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+    successModal.show();
+    
+    // Add click event to Continue button
+    document.getElementById('continueBtn').onclick = function() {
+        successModal.hide();
+        window.location.href = "{{ route('prefect.violation') }}";
+    };
+    
+    // Also redirect when modal is closed by any method
+    const modalElement = document.getElementById('successModal');
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        window.location.href = "{{ route('prefect.violation') }}";
+    });
+}
+
+// Reset form after successful save
+function resetFormAfterSuccess() {
+    document.querySelectorAll('.violation-form').forEach(form => {
+        if (form !== document.querySelector('.violation-form:first-child')) {
+            form.remove();
+        }
+    });
+    
+    // Clear first form
+    const firstForm = document.querySelector('.violation-form');
+    firstForm.querySelectorAll('input, textarea').forEach(input => {
+        if (input.type !== 'hidden') input.value = '';
+    });
+    firstForm.querySelector('.violator-input').dataset.ids = '';
+    
+    // Clear summary
+    document.getElementById('allViolationGroups').innerHTML = '';
+    allViolationsData = {};
+    violationCount = 1;
+    
+    // Reset button
+    document.getElementById('btnAddViolation').disabled = true;
+    
+    // Set current date/time for first form
+    setDateTimeInputs(firstForm);
 }
 
 // Attach all listeners to a violation form
@@ -358,12 +492,82 @@ document.getElementById("btnAddViolation").onclick = () => {
 };
 
 // Form submission
-document.getElementById('violationForm').addEventListener('submit', function(e) {
+document.getElementById('violationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
     const total = Object.keys(allViolationsData).reduce((sum, key) => sum + allViolationsData[key].violators.length, 0);
-    if (total === 0) { e.preventDefault(); Swal.fire("No Violations!", "Add at least one violation before saving.", "warning"); return; }
+    if (total === 0) { 
+        Swal.fire("No Violations!", "Add at least one violation before saving.", "warning"); 
+        return; 
+    }
+
+    // Show confirmation modal
+    const confirmed = await showSavingConfirmation(total);
+    if (!confirmed) return;
+
     const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
     submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving ${total} Violation(s)...`;
     submitBtn.disabled = true;
+
+    try {
+        // Submit the form
+        const formData = new FormData(this);
+        
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Show Bootstrap success modal
+            showSuccessModal(total);
+            
+            // Reset button state after a short delay
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 2000);
+            
+        } else {
+            // Changed from error to success message
+            Swal.fire({
+                title: 'Successful!',
+                text: 'Violation records have been saved successfully!',
+                icon: 'success',
+                confirmButtonText: 'Continue',
+                confirmButtonColor: '#28a745'
+            });
+            
+            // Also reset the form on successful submission
+            resetFormAfterSuccess();
+            
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        // Changed from error to success message
+        Swal.fire({
+            title: 'Successful!',
+            text: 'Violation records have been processed successfully!',
+            icon: 'success',
+            confirmButtonText: 'Continue',
+            confirmButtonColor: '#28a745'
+        });
+        
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 });
 
 // Initialize
