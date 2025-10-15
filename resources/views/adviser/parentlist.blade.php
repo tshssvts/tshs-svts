@@ -88,7 +88,6 @@
           <th>Email</th>
           <th>Contact Info</th>
           <th>Relationship</th>
-          <th>Status</th>
           <th>Action</th>
         </tr>
       </thead>
@@ -104,11 +103,11 @@
           <td>{{ $parent->parent_email ?? 'N/A' }}</td>
           <td>{{ $parent->parent_contactinfo }}</td>
           <td>{{ $parent->parent_relationship ?? 'N/A' }}</td>
-          <td>
+          {{-- <td>
             <span class="status-badge {{ $parent->status === 'active' ? 'status-active' : 'status-inactive' }}">
               {{ ucfirst($parent->status) }}
             </span>
-          </td>
+          </td> --}}
           <td>
             <button class="btn-primary edit-btn">✏️ Edit</button>
           </td>
@@ -133,7 +132,7 @@
   </div>
 
   <!-- ✏️ Edit Parent Modal -->
-  <div class="modal" id="editModal">
+<div class="modal" id="editModal">
     <div class="modal-content">
       <button class="close-btn" id="closeEditModal">✖</button>
       <h2>Edit Parent</h2>
@@ -173,17 +172,17 @@
 
           <div class="form-group">
             <label>Contact Info</label>
-            <input type="text" name="parent_contactinfo" id="edit_parent_contactinfo">
+            <input type="text" name="parent_contactinfo" id="edit_parent_contactinfo" required>
           </div>
 
           <div class="form-group">
             <label>Relationship</label>
-            <input type="text" name="parent_relationship" id="edit_parent_relationship">
+            <input type="text" name="parent_relationship" id="edit_parent_relationship" required>
           </div>
 
           <div class="form-group">
             <label>Status</label>
-            <select name="status" id="edit_parent_status">
+            <select name="status" id="edit_parent_status" required>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
@@ -197,6 +196,7 @@
       </form>
     </div>
   </div>
+
 
   <!-- 🗃️ Archive Modal -->
   <div class="modal" id="archiveModal">
@@ -267,10 +267,10 @@ function showNotification(type, message, callback = null) {
 
   // Set content based on type
   messageEl.textContent = message;
-  
+
   // Remove existing classes
   content.className = 'notification-content';
-  
+
   // Add appropriate class and icon
   switch(type) {
     case 'success':
@@ -278,7 +278,7 @@ function showNotification(type, message, callback = null) {
       icon.textContent = '✅';
       // Hide OK button for success messages
       actionsEl.style.display = 'none';
-      
+
       // Auto-close after 1 second
       modal.style.display = 'flex';
       setTimeout(() => {
@@ -288,7 +288,7 @@ function showNotification(type, message, callback = null) {
         }
       }, 1000);
       return; // Exit early for success type
-      
+
     case 'error':
       content.classList.add('notification-error');
       icon.textContent = '❌';
@@ -615,33 +615,36 @@ document.getElementById('archiveSearch').addEventListener('input', function() {
 });
 
 // ==========================
-// Edit Modal Functionality
+// Edit Modal Functionality - FIXED
 // ==========================
 document.addEventListener('DOMContentLoaded', function() {
-  const editButtons = document.querySelectorAll('.edit-btn');
   const editModal = document.getElementById('editModal');
   const closeEditModal = document.getElementById('closeEditModal');
   const cancelEditBtn = document.getElementById('cancelEditBtn');
   const editForm = document.getElementById('editParentForm');
 
-  editButtons.forEach(btn => {
-    btn.addEventListener('click', function(e) {
+  // Use event delegation for edit buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('edit-btn')) {
       e.stopPropagation();
-      const row = this.closest('tr');
-      const parentId = row.children[1].innerText.trim();
-      const fname = row.children[2].innerText.trim();
-      const lname = row.children[3].innerText.trim();
-      const sex = row.children[4].innerText.trim();
-      const birthdate = row.children[5].innerText.trim();
-      const email = row.children[6].innerText.trim();
-      const contact = row.children[7].innerText.trim();
-      const relationship = row.children[8].innerText.trim();
-      const status = row.children[9].innerText.trim();
+      const row = e.target.closest('tr');
+      const parentId = row.getAttribute('data-parent-id');
+      const cells = row.cells;
+
+      // Extract data from table cells
+      const fname = cells[2].innerText.trim();
+      const lname = cells[3].innerText.trim();
+      const sex = cells[4].innerText.trim();
+      const birthdate = cells[5].innerText.trim();
+      const email = cells[6].innerText.trim();
+      const contact = cells[7].innerText.trim();
+      const relationship = cells[8].innerText.trim();
 
       // Convert birthdate to YYYY-MM-DD format if not N/A
       let birthdateInput = '';
       if (birthdate !== 'N/A') {
-        birthdateInput = new Date(birthdate).toISOString().split('T')[0];
+        const date = new Date(birthdate);
+        birthdateInput = date.toISOString().split('T')[0];
       }
 
       // Fill form
@@ -653,14 +656,59 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('edit_parent_email').value = email === 'N/A' ? '' : email;
       document.getElementById('edit_parent_contactinfo').value = contact;
       document.getElementById('edit_parent_relationship').value = relationship === 'N/A' ? '' : relationship;
-      document.getElementById('edit_parent_status').value = status.toLowerCase();
 
       // Set form action
-      editForm.action = `{{ url('adviser/parents/update') }}/${parentId}`;
+      editForm.action = `/adviser/parents/update/${parentId}`;
 
       // Show modal
       editModal.style.display = 'flex';
-    });
+    }
+  });
+
+  // Handle form submission
+  editForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      submitBtn.disabled = true;
+
+      const formData = new FormData(this);
+
+      const response = await fetch(this.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showNotification('success', result.message, function() {
+          editModal.style.display = 'none';
+          location.reload(); // Reload to show updated data
+        });
+      } else {
+        if (result.errors) {
+          let messages = Object.values(result.errors).flat().join('\n');
+          showNotification('error', 'Validation failed:\n' + messages);
+        } else {
+          showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showNotification('error', 'Error updating parent.');
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
   });
 
   // Close modal
@@ -668,6 +716,13 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.addEventListener('click', function() {
       editModal.style.display = 'none';
     });
+  });
+
+  // Close modal when clicking outside
+  editModal.addEventListener('click', function(e) {
+    if (e.target === editModal) {
+      editModal.style.display = 'none';
+    }
   });
 });
 

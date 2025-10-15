@@ -299,6 +299,10 @@ Route::prefix('adviser')->group(function () {
         Route::post('/violation-appointments/store-multiple', [AViolationController::class, 'storeMultipleAppointments'])->name('adviser.storeMultipleAppointments');
         Route::post('/violation-anecdotals/store-multiple', [AViolationController::class, 'storeMultipleAnecdotals'])->name('adviser.storeMultipleAnecdotals');
                 // Violation Routes
+                // ✅ ADD THESE NEW ROUTES FOR EDIT FUNCTIONALITY
+// Change from POST to PUT
+Route::put('/violation-appointments/update/{appointmentId}', [AViolationController::class, 'updateAppointment'])->name('adviser.violation-appointments.update');
+Route::put('/violation-anecdotals/update/{anecdotalId}', [AViolationController::class, 'updateAnecdotal'])->name('adviser.violation-anecdotals.update');
         Route::get('/violations/create', [AViolationController::class, 'create'])->name('adviser.violations.create');
         Route::post('/violations/store', [AViolationController::class, 'store'])->name('adviser.violations.store');
         Route::put('/violations/update/{violationId}', [AViolationController::class, 'update'])->name('adviser.violations.update');
@@ -329,7 +333,7 @@ Route::prefix('adviser')->group(function () {
         Route::get('/complaints', [AComplaintController::class, 'index'])->name('adviser.prefect.complaints');
         Route::get('/complaints/create', [AComplaintController::class, 'create'])->name('adviser.complaints.create');
         Route::post('/complaints/storing', [AComplaintController::class, 'store'])->name('adviser.complaints.store');
-        Route::put('/complaints/{id}', [AComplaintController::class, 'update'])->name('adviser.complaints.update');
+        Route::put('/complaints/{id}', [AComplaintController::class, 'updateComplaint'])->name('adviser.complaints.update');
 
         // Complaint AJAX Routes
         Route::post('/complaints/search-students', [AComplaintController::class, 'searchStudents'])->name('adviser.complaints.search-students');
@@ -337,6 +341,8 @@ Route::prefix('adviser')->group(function () {
         Route::post('/complaints/search-offenses', [AComplaintController::class, 'searchOffenses'])->name('adviser.complaints.search-offenses');
         Route::get('/complaints/search-offenses1', [AComplaintController::class, 'searchOffenses'])->name('adviser.offenses.search');
         Route::get('/complaints/get-sanction', [AComplaintController::class, 'getSanction'])->name('adviser.complaints.get-sanction');
+Route::put('/complaint-appointments/update/{id}', [AComplaintController::class, 'updateAppointment'])->name('adviser.complaint-appointments.update');
+Route::put('/complaint-anecdotals/update/{id}', [AComplaintController::class, 'updateAnecdotal'])->name('adviser.complaint-anecdotals.update');
 
 
         // Archive routes Complaint Management

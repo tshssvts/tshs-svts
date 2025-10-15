@@ -656,11 +656,7 @@ tr:nth-child(even) {
       <a href="{{ route('report.generate') }}"><i class="fas fa-chart-line"></i> Reports</a>
     </li>
 
-    <li>
-      <a href="#" onclick="event.preventDefault(); logout();">
-        <i class="fas fa-sign-out-alt"></i> Logout
-      </a>
-    </li>
+
   </ul>
 </div>
 
@@ -717,7 +713,7 @@ tr:nth-child(even) {
   <div id="modal{{ $i }}" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
-      
+
       <div class="toolbar">
         <input type="text" placeholder="Search..." oninput="liveSearch('modal{{ $i }}', this.value)">
         <button class="btn btn-success" onclick="exportCSV('modal{{ $i }}')"><i class="fas fa-file-csv"></i> Export CSV</button>
@@ -961,12 +957,12 @@ document.querySelectorAll('.dropdown-btn').forEach(btn=>{
 function showNotification(message, type = 'info') {
   const notification = document.getElementById('notification');
   const overlay = document.getElementById('notificationOverlay');
-  
+
   notification.textContent = message;
   notification.className = `notification ${type}`;
   notification.style.display = 'block';
   overlay.style.display = 'block';
-  
+
   // Auto-hide after 3 seconds
   setTimeout(() => {
     notification.style.display = 'none';
@@ -979,7 +975,7 @@ async function openReportModal(reportId) {
   const modal = document.getElementById(`modal${reportId}`);
   const loading = document.getElementById(`loading-${reportId}`);
   const tableBody = modal.querySelector("tbody");
-  
+
   modal.style.display = "block";
   loading.style.display = "block";
   tableBody.innerHTML = "";
@@ -1272,7 +1268,7 @@ function printAsPDF(modalId) {
   const modal = document.getElementById(modalId);
   const reportId = modalId.replace('modal', '');
   const table = document.getElementById(`table-${reportId}`);
-  
+
   if (!table) {
     showNotification('No data available to export', 'error');
     return;
@@ -1342,7 +1338,7 @@ function printAsPDF(modalId) {
             <div style="font-size: 12px; color: #000000; margin-top: 5px;">Prefect of Discipline</div>
           </div>
         </div>
-        
+
         <!-- Confidential Notice -->
         <div style="text-align: center; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;">
           <div style="font-size: 11px; color: #c53030; font-weight: 600;">
@@ -1362,7 +1358,7 @@ function printAsPDF(modalId) {
     table.style.width = '100%';
     table.style.borderCollapse = 'collapse';
     table.style.fontSize = '11px';
-    
+
     // Style table headers
     const headers = table.getElementsByTagName('th');
     for (let header of headers) {
@@ -1376,7 +1372,7 @@ function printAsPDF(modalId) {
       header.style.textTransform = 'uppercase';
       header.style.letterSpacing = '0.5px';
     }
-    
+
     // Style table cells
     const cells = table.getElementsByTagName('td');
     for (let cell of cells) {
@@ -1385,7 +1381,7 @@ function printAsPDF(modalId) {
       cell.style.fontSize = '10px';
       cell.style.color = '#000000';
     }
-    
+
     // Style table rows
     const rows = table.getElementsByTagName('tr');
     for (let i = 0; i < rows.length; i++) {
@@ -1402,14 +1398,14 @@ function printAsPDF(modalId) {
     margin: [15, 15, 15, 15],
     filename: `${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
+    html2canvas: {
       scale: 2,
       useCORS: true,
       logging: false
     },
-    jsPDF: { 
-      unit: 'mm', 
-      format: 'a4', 
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
       orientation: 'portrait',
       compress: true
     }
