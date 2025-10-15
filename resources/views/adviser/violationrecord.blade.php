@@ -644,7 +644,7 @@
         <div class="modal-body">
             <p id="successMessage"></p>
             <div class="success-actions">
-                <button class="btn-print" id="printAnecdotalBtn">🖨️ Print Records</button>
+                {{-- <button class="btn-print" id="printAnecdotalBtn">🖨️ Print Records</button> --}}
                 <button class="btn-primary" id="closeSuccessModal">OK</button>
             </div>
         </div>
@@ -2073,45 +2073,45 @@ document.getElementById('createAnecdotalForm').addEventListener('submit', async 
 });
 
 // Print Anecdotal Records
-document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
-    if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
-        notifications.showNotification('No anecdotal records to print.', 'warning');
-        return;
-    }
+// document.getElementById('printAnecdotalBtn').addEventListener('click', function() {
+//     if (!window.lastCreatedAnecdotals || window.lastCreatedAnecdotals.length === 0) {
+//         notifications.showNotification('No anecdotal records to print.', 'warning');
+//         return;
+//     }
 
-    const printWindow = window.open('', '_blank');
-    const printContent = generateAnecdotalPrintContent(window.lastCreatedAnecdotals);
+//     const printWindow = window.open('', '_blank');
+//     const printContent = generateAnecdotalPrintContent(window.lastCreatedAnecdotals);
 
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Anecdotal Records</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-                .anecdotal-record { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; page-break-inside: avoid; }
-                .record-header { background: #f5f5f5; padding: 10px; margin: -15px -15px 15px -15px; border-bottom: 1px solid #ddd; }
-                .field { margin-bottom: 10px; }
-                .field label { font-weight: bold; display: inline-block; width: 150px; }
-                @media print {
-                    .no-print { display: none; }
-                    .anecdotal-record { page-break-inside: avoid; }
-                }
-            </style>
-        </head>
-        <body>
-            ${printContent}
-            <div class="no-print" style="margin-top: 20px; text-align: center;">
-                <button onclick="window.print()">Print</button>
-                <button onclick="window.close()">Close</button>
-            </div>
-        </body>
-        </html>
-    `);
+//     printWindow.document.write(`
+//         <!DOCTYPE html>
+//         <html>
+//         <head>
+//             <title>Anecdotal Records</title>
+//             <style>
+//                 body { font-family: Arial, sans-serif; margin: 20px; }
+//                 .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+//                 .anecdotal-record { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; page-break-inside: avoid; }
+//                 .record-header { background: #f5f5f5; padding: 10px; margin: -15px -15px 15px -15px; border-bottom: 1px solid #ddd; }
+//                 .field { margin-bottom: 10px; }
+//                 .field label { font-weight: bold; display: inline-block; width: 150px; }
+//                 @media print {
+//                     .no-print { display: none; }
+//                     .anecdotal-record { page-break-inside: avoid; }
+//                 }
+//             </style>
+//         </head>
+//         <body>
+//             ${printContent}
+//             <div class="no-print" style="margin-top: 20px; text-align: center;">
+//                 <button onclick="window.print()">Print</button>
+//                 <button onclick="window.close()">Close</button>
+//             </div>
+//         </body>
+//         </html>
+//     `);
 
-    printWindow.document.close();
-});
+//     printWindow.document.close();
+// });
 
 // Close Success Modal
 document.getElementById('closeSuccessModal').addEventListener('click', function() {
