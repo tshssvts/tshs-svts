@@ -81,7 +81,7 @@ class PComplaintController extends Controller
             ->orderBy('c.updated_at', 'desc') // Most recently updated first
             ->orderBy('c.created_at', 'desc') // Then by creation date
             ->orderBy('c.complaints_date', 'desc') // Finally by complaint date
-            ->paginate(10);
+            ->paginate(20);
 
         return view('prefect.complaint', compact(
             'complaints',

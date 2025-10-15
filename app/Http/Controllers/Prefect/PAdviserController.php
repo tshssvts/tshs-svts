@@ -31,7 +31,7 @@ class PAdviserController extends Controller
 
         $advisers = Adviser::where('status', 'active')
             ->orderBy('updated_at', 'desc')
-            ->paginate(15)
+            ->paginate(20)
             ->appends($request->query());
 
         // Get archived advisers for the archive modal

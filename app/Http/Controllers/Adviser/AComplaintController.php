@@ -33,6 +33,7 @@ public function complaintsall()
         ->whereHas('complaint.respondent', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
+        ->orderBy('created_at', 'desc') // Sort by newest first
         ->get();
 
     $canecdotals = ComplaintsAnecdotal::with(['complaint.complainant', 'complaint.respondent'])
@@ -42,6 +43,7 @@ public function complaintsall()
         ->whereHas('complaint.respondent', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
+        ->orderBy('created_at', 'desc') // Sort by newest first
         ->get();
 
     // ✅ Get Actual Complaint Date Range - filtered by adviser's students (BOTH students)
@@ -96,6 +98,7 @@ public function complaintsall()
             'c.complaints_date',
             'c.complaints_time',
             'c.status',
+            'c.created_at', // Include created_at for sorting
             'comp.student_fname as complainant_fname',
             'comp.student_lname as complainant_lname',
             'resp.student_fname as respondent_fname',
@@ -103,8 +106,9 @@ public function complaintsall()
             'o.offense_type',
             'o.sanction_consequences'
         )
-        ->orderBy('c.complaints_date', 'desc')
-        ->paginate(10);
+        ->orderBy('c.created_at', 'desc') // Sort by newest created first
+        ->orderBy('c.complaints_date', 'desc') // Secondary sort by complaint date
+        ->paginate(20);
 
     return view('adviser.complaintsall', compact(
         'complaints',
@@ -125,98 +129,98 @@ public function complaintsall()
 }
 
 public function store(Request $request)
-    {
-        try {
-            DB::beginTransaction();
+{
+    try {
+        DB::beginTransaction();
 
-            $messages = [];
-            $prefect_id = 1;
-            $savedCount = 0;
+        $messages = [];
+        $prefect_id = 1;
+        $savedCount = 0;
 
-            // Get all complaints data
-            $complaintsData = $request->input('complaints', []);
+        // Get all complaints data
+        $complaintsData = $request->input('complaints', []);
 
-            // Check if we have any data
-            if (empty($complaintsData)) {
-                DB::rollBack();
-                return back()->with('error', 'No complaint data found. Please make sure you added complaints to the summary.');
-            }
-
-            // Loop through each complaint
-            foreach ($complaintsData as $complaintIndex => $complaint) {
-                $complainant_id = $complaint['complainant_id'] ?? null;
-                $respondent_id = $complaint['respondent_id'] ?? null;
-                $offense_sanc_id = $complaint['offense_sanc_id'] ?? null;
-                $date = $complaint['date'] ?? null;
-                $time = $complaint['time'] ?? null;
-                $incident = $complaint['incident'] ?? null;
-
-                // Validate required fields
-                if (!$complainant_id || !$respondent_id || !$offense_sanc_id || !$date || !$time || !$incident) {
-                    continue;
-                }
-
-                // Validate that students and offense exist
-                $complainantExists = DB::table('tbl_student')->where('student_id', $complainant_id)->exists();
-                $respondentExists = DB::table('tbl_student')->where('student_id', $respondent_id)->exists();
-                $offenseExists = DB::table('tbl_offenses_with_sanction')->where('offense_sanc_id', $offense_sanc_id)->exists();
-
-                if (!$complainantExists || !$respondentExists || !$offenseExists) {
-                    continue;
-                }
-
-                // Get student names for success message
-                $complainant = DB::table('tbl_student')->where('student_id', $complainant_id)->first();
-                $respondent = DB::table('tbl_student')->where('student_id', $respondent_id)->first();
-
-                $complainantName = $complainant ? $complainant->student_fname . ' ' . $complainant->student_lname : 'Unknown';
-                $respondentName = $respondent ? $respondent->student_fname . ' ' . $respondent->student_lname : 'Unknown';
-
-                // Create the complaint record
-                try {
-                    $newComplaint = Complaints::create([
-                        'complainant_id' => $complainant_id,
-                        'respondent_id' => $respondent_id,
-                        'prefect_id' => $prefect_id,
-                        'offense_sanc_id' => $offense_sanc_id,
-                        'complaints_incident' => $incident,
-                        'complaints_date' => $date,
-                        'complaints_time' => $time,
-                        'status' => 'active'
-                    ]);
-
-                    $savedCount++;
-                    $messages[] = "✅ {$complainantName} vs {$respondentName}";
-
-                } catch (\Exception $e) {
-                    continue;
-                }
-            }
-
-            DB::commit();
-
-            if ($savedCount === 0) {
-                return back()->with('error',
-                    'No complaints were saved. Please check that:<br>'
-                    . '1. All students exist in the database<br>'
-                    . '2. The offense exists in the database<br>'
-                    . '3. All fields are properly filled'
-                );
-            }
-
-            $successMessage = "Successfully saved $savedCount complaint record(s)!<br><br>" . implode('<br>', array_slice($messages, 0, 10));
-            if (count($messages) > 10) {
-                $successMessage .= "<br>... and " . (count($messages) - 10) . " more";
-            }
-
-            return back()->with('success', $successMessage);
-
-        } catch (\Exception $e) {
+        // Check if we have any data
+        if (empty($complaintsData)) {
             DB::rollBack();
-            return back()->with('error', 'Error saving complaints: ' . $e->getMessage());
+            return back()->with('error', 'No complaint data found. Please make sure you added complaints to the summary.');
         }
-    }
 
+        // Loop through each complaint
+        foreach ($complaintsData as $complaintIndex => $complaint) {
+            $complainant_id = $complaint['complainant_id'] ?? null;
+            $respondent_id = $complaint['respondent_id'] ?? null;
+            $offense_sanc_id = $complaint['offense_sanc_id'] ?? null;
+            $date = $complaint['date'] ?? null;
+            $time = $complaint['time'] ?? null;
+            $incident = $complaint['incident'] ?? null;
+
+            // Validate required fields
+            if (!$complainant_id || !$respondent_id || !$offense_sanc_id || !$date || !$time || !$incident) {
+                continue;
+            }
+
+            // Validate that students and offense exist
+            $complainantExists = DB::table('tbl_student')->where('student_id', $complainant_id)->exists();
+            $respondentExists = DB::table('tbl_student')->where('student_id', $respondent_id)->exists();
+            $offenseExists = DB::table('tbl_offenses_with_sanction')->where('offense_sanc_id', $offense_sanc_id)->exists();
+
+            if (!$complainantExists || !$respondentExists || !$offenseExists) {
+                continue;
+            }
+
+            // Get student names for success message
+            $complainant = DB::table('tbl_student')->where('student_id', $complainant_id)->first();
+            $respondent = DB::table('tbl_student')->where('student_id', $respondent_id)->first();
+
+            $complainantName = $complainant ? $complainant->student_fname . ' ' . $complainant->student_lname : 'Unknown';
+            $respondentName = $respondent ? $respondent->student_fname . ' ' . $respondent->student_lname : 'Unknown';
+
+            // Create the complaint record
+            try {
+                $newComplaint = Complaints::create([
+                    'complainant_id' => $complainant_id,
+                    'respondent_id' => $respondent_id,
+                    'prefect_id' => $prefect_id,
+                    'offense_sanc_id' => $offense_sanc_id,
+                    'complaints_incident' => $incident,
+                    'complaints_date' => $date,
+                    'complaints_time' => $time,
+                    'status' => 'active'
+                ]);
+
+                $savedCount++;
+                $messages[] = "✅ {$complainantName} vs {$respondentName}";
+
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        DB::commit();
+
+        if ($savedCount === 0) {
+            return back()->with('error',
+                'No complaints were saved. Please check that:<br>'
+                . '1. All students exist in the database<br>'
+                . '2. The offense exists in the database<br>'
+                . '3. All fields are properly filled'
+            );
+        }
+
+        $successMessage = "Successfully saved $savedCount complaint record(s)!<br><br>" . implode('<br>', array_slice($messages, 0, 10));
+        if (count($messages) > 10) {
+            $successMessage .= "<br>... and " . (count($messages) - 10) . " more";
+        }
+
+        // Only redirect to complaints.all route on SUCCESS
+        return redirect()->route('complaints.all')->with('success', $successMessage);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Error saving complaints: ' . $e->getMessage());
+    }
+}
 
     // Store multiple anecdotal records
     public function storeMultipleAnecdotals(Request $request)

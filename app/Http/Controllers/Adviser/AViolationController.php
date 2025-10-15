@@ -32,12 +32,14 @@ public function violationrecord()
         ->whereHas('violation.student', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
+        ->orderBy('created_at', 'desc') // Sort by newest created first
         ->get();
 
     $vanecdotals = ViolationAnecdotal::with(['violation.student'])
         ->whereHas('violation.student', function($query) use ($adviserId) {
             $query->where('adviser_id', $adviserId);
         })
+        ->orderBy('created_at', 'desc') // Sort by newest created first
         ->get();
 
     // Get the actual dates from your violation records for students under this adviser
@@ -78,8 +80,9 @@ public function violationrecord()
     // ✅ Fetch Main Violation Records - only for adviser's students
     $violations = ViolationRecord::with(['student', 'offense'])
         ->whereIn('violator_id', $studentIds) // Changed to violator_id
-        ->orderBy('violation_date', 'desc')
-        ->paginate(30);
+        ->orderBy('created_at', 'desc') // Sort by newest created first
+        ->orderBy('violation_date', 'desc') // Secondary sort by violation date
+        ->paginate(20);
 
     // ✅ Fetch Violation Appointments - only for adviser's students
     $appointments = DB::table('tbl_violation_appointment')
@@ -89,8 +92,9 @@ public function violationrecord()
             'tbl_violation_appointment.*',
             'tbl_violation_record.violation_incident'
         )
-        ->orderBy('tbl_violation_appointment.violation_app_date', 'desc')
-        ->paginate(30);
+        ->orderBy('tbl_violation_appointment.created_at', 'desc') // Sort by newest created first
+        ->orderBy('tbl_violation_appointment.violation_app_date', 'desc') // Secondary sort by appointment date
+        ->paginate(20);
 
     // ✅ Fetch Violation Anecdotals - only for adviser's students
     $anecdotals = DB::table('tbl_violation_anecdotal')
@@ -100,8 +104,9 @@ public function violationrecord()
             'tbl_violation_anecdotal.*',
             'tbl_violation_record.violation_incident'
         )
-        ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc')
-        ->paginate(30);
+        ->orderBy('tbl_violation_anecdotal.created_at', 'desc') // Sort by newest created first
+        ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc') // Secondary sort by anecdotal date
+        ->paginate(20);
 
     // ✅ Fetch Offenses (if needed for dropdowns)
     $offenses = OffensesWithSanction::all();
@@ -175,6 +180,7 @@ public function store(Request $request)
 
         Log::info("Successfully created {$createdCount} violations");
 
+        // Redirect to violation.record route on SUCCESS
         return redirect()->route('violation.record')
             ->with('success', "✅ {$createdCount} violation(s) stored successfully!");
 

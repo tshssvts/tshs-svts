@@ -342,7 +342,7 @@
        =========================== */
     .reports-title {
       font-size: 2rem;
-      color: #4b0000;
+      color: #003366;
       font-weight: 600;
       text-align: center;
       margin: 20px 0 30px 0;
@@ -608,11 +608,7 @@
         <li class="{{ request()->routeIs('adviser.reports') ? 'active' : '' }}">
             <a href="{{ route('adviser.reports') }}"><i class="fas fa-chart-line"></i> Reports</a>
         </li>
-        <li>
-            <a href="#" onclick="event.preventDefault(); logout();">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </li>
+
     </ul>
 </div>
 

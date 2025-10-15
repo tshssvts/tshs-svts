@@ -28,8 +28,10 @@ class AParentController extends Controller
         $archivedParents = DB::table('tbl_parent')
             ->where('status', 'archived')
             ->count();
-        $parents = ParentModel::where('status', 'active')->paginate(10);
-        $archivedParents = ParentModel::where('status', 'inactive')->get();
+// Alternative if no created_at column exists:
+$parents = ParentModel::where('status', 'active')
+    ->orderBy('parent_id', 'desc') // Sort by highest ID first (newest)
+    ->paginate(20);        $archivedParents = ParentModel::where('status', 'inactive')->get();
 
     return view('adviser.parentlist', compact('parents', 'archivedParents','totalParents','activeParents','archivedParents'));
 
@@ -87,7 +89,7 @@ class AParentController extends Controller
         }
 
         if ($insertedCount > 0) {
-            return redirect()->route('adviser.parentlist')->with('success', $insertedCount . ' parent(s) added successfully!');
+            return redirect()->route('parent.list')->with('success', $insertedCount . ' parent(s) added successfully!');
         } else {
             return back()->withInput()->with('error', 'No parents were saved. Please check your data.');
         }

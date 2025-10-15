@@ -35,7 +35,7 @@ public function studentmanagement()
     $students = Student::where('status', 'active')
         ->orderBy('created_at', 'desc')
         ->orderBy('updated_at', 'desc')
-        ->paginate(10);
+        ->paginate(20);
         
     $sections = Adviser::select('adviser_section')->distinct()->pluck('adviser_section');
 

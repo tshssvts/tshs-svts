@@ -135,8 +135,7 @@ body {
 /* 🚪 Logout */
 .sidebar ul li:last-child {
     margin-top: auto;
-    background: rgba(0, 102, 204, 0.2); /* soft blue background */
-    border: 1px solid rgba(0, 102, 204, 0.3); /* light blue border */
+
     cursor: pointer;
     display: flex; /* Align icon + text */
     justify-content: block;

@@ -26,10 +26,11 @@ public function studentlist()
 {
     $adviserId = Auth::guard('adviser')->id();
 
-    // Get students only for the logged-in adviser
+    // Get students only for the logged-in adviser - sorted by newest created first
     $students = Student::where('adviser_id', $adviserId)
                       ->where('status', 'active')
-                      ->paginate(10);
+                      ->orderBy('created_at', 'desc') // Sort by newest created first
+                      ->paginate(20);
 
     // Get sections only for the logged-in adviser
     $sections = Adviser::where('adviser_id', $adviserId)
@@ -73,8 +74,6 @@ public function studentlist()
     // Violations and appointments for students under this adviser
     $studentIds = Student::where('adviser_id', $adviserId)->pluck('student_id');
 
-
-
     return view('adviser.studentlist', compact(
         'totalStudents',
         'grade11Students',
@@ -86,10 +85,8 @@ public function studentlist()
         'maleStudents',
         'femaleStudents',
         'otherStudents',
-
     ));
 }
-
 
 public function store(Request $request)
 {
@@ -164,18 +161,21 @@ public function archive(Request $request)
     /**
      * Get archived students
      */
-    public function getArchived()
-    {
-        try {
-            $archivedStudents = Student::where('status', 'inactive')
-                                      ->orderBy('updated_at', 'desc')
-                                      ->get();
+/**
+ * Get archived students (including graduated)
+ */
+public function getArchived()
+{
+    try {
+        $archivedStudents = Student::whereIn('status', ['inactive', 'graduated'])
+                                  ->orderBy('updated_at', 'desc')
+                                  ->get();
 
-            return response()->json($archivedStudents);
-        } catch (\Exception $e) {
-            return response()->json([], 500);
-        }
+        return response()->json($archivedStudents);
+    } catch (\Exception $e) {
+        return response()->json([], 500);
     }
+}
 
     /**
      * Restore archived students
@@ -308,6 +308,32 @@ public function searchAdvisers(Request $request)
         ->get(['adviser_id', 'adviser_fname', 'adviser_lname']);
 
     return response()->json($advisers);
+}
+
+/**
+ * Mark students as cleared/graduated
+ */
+public function markAsCleared(Request $request)
+{
+    $request->validate([
+        'student_ids' => 'required|array',
+        'student_ids.*' => 'exists:tbl_student,student_id'
+    ]);
+
+    try {
+        Student::whereIn('student_id', $request->student_ids)
+               ->update(['status' => 'graduated']);
+
+        return response()->json([
+            'success' => true,
+            'message' => count($request->student_ids) . ' student(s) marked as graduated successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error marking students as graduated: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
 }

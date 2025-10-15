@@ -7,7 +7,6 @@
             <div class="toolbar">
                 <h2>Create Student</h2>
                 <div class="actions">
-                    <input type="search" placeholder="🔍 Search student..." id="searchInput">
 
                     <div class="buttons-row">
                         <button type="button" class="btn-Add-Student" id="btnAddStudent">

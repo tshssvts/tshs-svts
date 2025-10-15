@@ -40,7 +40,6 @@
     <div class="toolbar">
         <h2>Create Adviser</h2>
         <div class="actions">
-            <input type="search" placeholder="🔍 Search adviser..." id="searchInput">
 
             <div class="buttons-row">
                 <button type="button" class="btn-Add-Violation" id="btnAddViolation">

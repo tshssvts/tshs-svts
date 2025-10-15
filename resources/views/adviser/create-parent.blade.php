@@ -38,7 +38,6 @@
         <div class="toolbar">
             <h2>Create Parents</h2>
             <div class="actions">
-                <input type="search" placeholder="🔍 Search parent..." id="searchInput">
 
                 <div class="buttons-row">
                     <button type="button" class="btn-Add-Violation" id="btnAddViolation">

@@ -662,6 +662,62 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+// ✅ Mark as Graduated (Cleared)
+document.getElementById('markAsClearedBtn').addEventListener('click', async function() {
+    const selectedCheckboxes = document.querySelectorAll('.rowCheckbox:checked');
+
+    if (!selectedCheckboxes.length) {
+        showNotification('warning', 'Please select at least one student to mark as graduated.');
+        return;
+    }
+
+    const studentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+    showConfirmation(
+        `Are you sure you want to mark ${studentIds.length} student(s) as graduated?`,
+        async function() {
+            try {
+                const response = await fetch('{{ route("adviser.students.markCleared") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ student_ids: studentIds })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('success', `${studentIds.length} student(s) marked as graduated successfully.`, function() {
+                        // Remove the graduated rows from the main table
+                        studentIds.forEach(id => {
+                            const row = document.querySelector(`tr[data-student-id="${id}"]`);
+                            if (row) row.remove();
+                        });
+
+                        // Update UI
+                        document.getElementById('selectAll').checked = false;
+
+                        // Reload to update counts
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    });
+                } else {
+                    showNotification('error', 'Error: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('error', 'Error marking students as graduated.');
+            }
+        }
+    );
+});
+
+
 </script>
 
 @endsection

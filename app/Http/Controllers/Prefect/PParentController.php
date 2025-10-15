@@ -34,7 +34,7 @@ class PParentController extends Controller
     $parents = ParentModel::where('status', 'active')
         ->orderBy('created_at', 'desc')
         ->orderBy('updated_at', 'desc')
-        ->paginate(10);
+        ->paginate(20);
 
     // Get archived parents sorted by latest created/updated first
     $archivedParents = ParentModel::where('status', 'inactive')

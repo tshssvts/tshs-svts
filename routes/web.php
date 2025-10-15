@@ -246,6 +246,9 @@ Route::prefix('adviser')->group(function () {
         // Student Routes
         Route::put('/students/update/{id}', [PStudentController::class, 'update'])->name('students.update');
 
+        Route::post('/students/mark-cleared', [AStudentController::class, 'markAsCleared'])->name('adviser.students.markCleared');
+
+        
         // Violation Routes
         Route::get('/violations/create', [AViolationController::class, 'Acreate'])->name('Aviolations.create');
         Route::post('/violations', [AViolationController::class, 'Astore'])->name('Aviolations.store');

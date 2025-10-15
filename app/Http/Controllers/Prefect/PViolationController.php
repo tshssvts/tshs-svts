@@ -61,7 +61,7 @@ class PViolationController extends Controller
             ->orderBy('updated_at', 'desc')
             ->orderBy('created_at', 'desc')
             ->orderBy('violation_date', 'desc')
-            ->paginate(30);
+            ->paginate(20);
 
         // ✅ Fetch Violation Appointments - UPDATED ORDERING
         $appointments = DB::table('tbl_violation_appointment')
@@ -73,7 +73,7 @@ class PViolationController extends Controller
             ->orderBy('tbl_violation_appointment.updated_at', 'desc')
             ->orderBy('tbl_violation_appointment.created_at', 'desc')
             ->orderBy('tbl_violation_appointment.violation_app_date', 'desc')
-            ->paginate(30);
+            ->paginate(20);
 
         // ✅ Fetch Violation Anecdotals - UPDATED ORDERING
         $anecdotals = DB::table('tbl_violation_anecdotal')
@@ -85,7 +85,7 @@ class PViolationController extends Controller
             ->orderBy('tbl_violation_anecdotal.updated_at', 'desc')
             ->orderBy('tbl_violation_anecdotal.created_at', 'desc')
             ->orderBy('tbl_violation_anecdotal.violation_anec_date', 'desc')
-            ->paginate(30);
+            ->paginate(20);
 
         // ✅ Fetch Offenses (if needed for dropdowns)
         $offenses = OffensesWithSanction::all();
