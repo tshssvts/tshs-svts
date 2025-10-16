@@ -706,7 +706,7 @@ class PViolationController extends Controller
                     $restoredCount++;
                 } elseif ($record['type'] === 'appointment') {
                     ViolationAppointment::where('violation_app_id', $record['id'])
-                        ->update(['violation_app_status' => 'Pending']);
+                        ->update(['violation_app_status' => 'Scheduled']);
                     $restoredCount++;
                 } elseif ($record['type'] === 'anecdotal') {
                     ViolationAnecdotal::where('violation_anec_id', $record['id'])
